@@ -354,6 +354,7 @@ gluNewNurbsRenderer
 gluNewQuadric
 gluNewTess
 gluNextContour
+gluPerspective
 gluProject
 gluQuadricCallback
 gluScaleImage

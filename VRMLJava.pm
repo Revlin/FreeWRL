@@ -51,6 +51,8 @@ sub connect {
 	$this->{O}->print("\n"); # Directory - currently ""
 }
 
+sub initialize {return ()}
+
 sub newscript {
 	my($this, $purl, $url, $node) = @_;
 	undef $1;

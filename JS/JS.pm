@@ -15,15 +15,17 @@ init(); # C-level init
 	SFFloat => sub {$_[0]+0},
 	SFTime => sub {$_[0]+0},
 	SFInt32 => sub {$_[0]+0},
-	SFString => sub {$_[0]}, # XXX
+	SFString => sub {'"'.$_[0].'"'}, # XXX
+	SFNode => sub {'new SFNode("","'.(VRML::Handles::reserve($_[0])).'")'},
 );
 
 sub new {
-	my($type,$text,$node) = @_;
+	my($type,$text,$node,$browser) = @_;
 	my $this = bless { },$type;
 	$this->{GLO} = "";
 	$this->{CX} = newcontext($this->{GLO},$this);
 	$this->{Node} = $node;
+	$this->{Browser} = $browser;
 	print "START JS $text\n";
 	my $rs;
 	print "INITIALIZE $this->{CX} $this->{GLO}\n";
@@ -89,6 +91,7 @@ sub sendevent {
 	my($this,$node,$event,$value,$timestamp) = @_;
 	my $rs;
 	my $typ = $node->{Type}{FieldTypes}{$event};
+	print "JS: receive event $node $event $value $timestamp ($typ)\n";
 	my $aname = "__tmp_arg_$event";
 	$this->set_prop($event,$value,$aname);
 	runscript($this->{CX}, $this->{GLO}, "$event($aname,$timestamp)", $rs);
@@ -140,47 +143,10 @@ sub gathersent {
 				$v = runscript($this->{CX},$this->{GLO},
 					"$_.__touched()",$rs);
 			}
-			print "GOT $v $rs\n";
+			print "GOT $v $rs $_\n";
 			if($v) {
-				print "RS2: $rs\n";
-				if($type =~ /^MF/) {
-					my $l = runscript($this->{CX},$this->{GLO},
-						"$_.length",$rs);
-					my $fn = $_;
-					my $st = $type;
-					$st =~ s/MF/SF/;
-					my @res = map {
-					     runscript($this->{CX},$this->{GLO},
-						"$fn"."[$_]",$rs);
-					     print "RES: '$rs'\n";
-					     (pos $rs) = 0;
-					     "VRML::Field::$st"
-					      -> parse(undef, $rs);
-					} (0..$l-1);
-					print "RESVAL:\n";
-					for(@res) {
-						if("ARRAY" eq ref $_) {
-							print "@$_\n";
-						}
-					}
-					my $r = \@res;
-					print "REF: $r\n";
-					push @a, [$node, $_, $r];
-				} elsif($Types{$ftyp}) {
-					$v = runscript($this->{CX},$this->{GLO},
-						"_${_}_touched=0; $_",$rs);
-					print "SIMP VAL: $v '$rs'\n";
-					push @a, [$node, $_,
-						$v];
-				} else {
-					runscript($this->{CX},$this->{GLO},
-						"$_",$rs);
-					# print "VAL: $rs\n";
-					(pos $rs) = 0;
-					push @a, [$node, $_,
-					 "VRML::Field::$t->{FieldTypes}{$_}"
-					   -> parse(undef,$rs)];
-				}
+				push @a, [$node, $_,
+					$this->get_prop($type,$_)];
 			}
 		}
 		# $this->{O}->print("$t->{FieldKinds}{$_}\n
@@ -214,16 +180,148 @@ sub set_prop { # Assigns a value to a property.
 			$rs);
 		runscript($this->{CX},$this->{GLO},"_${prop}__touched=0",$rs);
 	} else {
-		print "set_property_ CALL: $ftyp\n";
+		print "set_property_ CALL: $ftyp $prop $value\n";
 		&{"set_property_$ftyp"}(
 			$this->{CX}, $this->{GLO}, $prop, $value);
 		runscript($this->{CX},$this->{GLO},"$prop.__touched()",$rs);
 	}
 }
 
-
-sub brow_getName {
-	print "Brow:getname!\n";
+sub get_prop {
+	my($this,$type,$prop) = @_;
+	my $rs;
+	print "RS2: $rs\n";
+	if($type =~ /^SFNode$/) {
+		runscript($this->{CX},$this->{GLO},
+			"$prop.__id",$rs);
+		return VRML::Handles::get($rs);
+	} elsif ($type =~ /^MFNode$/) {
+		my $l = runscript($this->{CX},$this->{GLO},
+			"$prop.length",$rs);
+		print "LENGTH: $l, '$rs'\n";
+		my $fn = $prop;
+		my @res = map {
+		     runscript($this->{CX},$this->{GLO},
+			"$fn",$rs);
+		     print "Just mfnode: '$rs'\n";
+		     runscript($this->{CX},$this->{GLO},
+			"$fn"."[$_]",$rs);
+		     print "Just node: '$rs'\n";
+		     runscript($this->{CX},$this->{GLO},
+			"$fn"."[$_][0]",$rs);
+		     print "Just node[0]: '$rs'\n";
+		     runscript($this->{CX},$this->{GLO},
+			"$fn"."[$_].__id",$rs);
+		     print "MFN: Got '$rs'\n";
+		     VRML::Handles::get($rs);
+		} (0..$l-1);
+		return \@res;
+	} elsif ($type =~ /^MFString$/) {
+		my $l = runscript($this->{CX},$this->{GLO},
+			"$prop.length",$rs);
+		my $fn = $prop;
+		my @res = map {
+		     runscript($this->{CX},$this->{GLO},
+			"$fn"."[$_]",$rs);
+		     $rs
+		} (0..$l-1);
+		return \@res;
+	}elsif($type =~ /^MF/) {
+		my $l = runscript($this->{CX},$this->{GLO},
+			"$prop.length",$rs);
+		print "LENGTH: $l, '$rs'\n";
+		my $fn = $prop;
+		my $st = $type;
+		$st =~ s/MF/SF/;
+		my @res = map {
+		     runscript($this->{CX},$this->{GLO},
+			"$fn"."[$_]",$rs);
+		     print "RES: '$rs'\n";
+		     (pos $rs) = 0;
+		     "VRML::Field::$st"
+		      -> parse(undef, $rs);
+		} (0..$l-1);
+		print "RESVAL:\n";
+		for(@res) {
+			if("ARRAY" eq ref $_) {
+				print "@$_\n";
+			}
+		}
+		my $r = \@res;
+		print "REF: $r\n";
+		return $r;
+	} elsif($Types{$type}) {
+		my $v = runscript($this->{CX},$this->{GLO},
+			"_${_}_touched=0; $prop",$rs);
+		print "SIMP VAL: $v '$rs'\n";
+		return $v;
+	} else {
+		runscript($this->{CX},$this->{GLO},
+			"$prop",$rs);
+		# print "VAL: $rs\n";
+		(pos $rs) = 0;
+		return "VRML::Field::$type"->parse(undef,$rs);
+	}
 }
 
+sub node_setprop {
+	my($this) = @_;
+	print "SETTING NODE PROP\n";
+	my ($node, $prop, $val);
+	runscript($this->{CX},$this->{GLO},"__node.__id",$node);
+	runscript($this->{CX},$this->{GLO},"__prop",$prop);
+	print "SETTING NODE PROP R: '$node' '$prop' \n";
+	$node = VRML::Handles::get($node);
+	my $vt = $node->{Type}{FieldTypes}{$prop};
+	if(!defined $vt) {
+		die("Javascript tried to assign to invalid property!\n");
+	}
+	my $val = $this->get_prop($vt, "__val");
+#	if($vt =~ /Node/) {die("Can't handle yet");}
+#	if($Types{$vt}) {
+#		runscript($this->{CX},$this->{GLO},"__val",$val);
+#		print "GOT '$val'\n";
+#		$val = "VRML::Field::$vt"->parse(undef, $val);
+#	} else {
+#		runscript($this->{CX},$this->{GLO},"__val.toString()",$val);
+#		print "GOT '$val'\n";
+#		$val = "VRML::Fields::$vt"->parse(undef, $val);
+#	}
+	print "SETTING TO '$val'\n";
+	$node->{RFields}{$prop} = $val;
 
+}
+
+sub brow_getName {
+	my($this) = @_;
+	print "Brow:getname ($this) !\n";
+	my $n = $this->{Browser}->getName(); my $rs;
+	runscript($this->{CX},$this->{GLO},"Browser.__bret = \"$n\"",$rs);
+}
+
+sub brow_getVersion {
+	my($this) = @_;
+	print "Brow:getname ($this) !\n";
+	my $n = $this->{Browser}->getVersion(); my $rs;
+	runscript($this->{CX},$this->{GLO},"Browser.__bret = \"$n\"",$rs);
+}
+
+sub brow_getVersion {
+	my($this) = @_;
+	print "Brow:getname ($this) !\n";
+	my $n = $this->{Browser}->getFrameRate(); my $rs;
+	runscript($this->{CX},$this->{GLO},"Browser.__bret = $n",$rs);
+}
+
+sub brow_createVrmlFromString {
+	my($this) = @_; my $rs;
+	runscript($this->{CX},$this->{GLO},"Browser.__arg0",$rs);
+	print "BROW_CVRLFSTR '$rs'\n";
+	my $mfn = $this->{Browser}->createVrmlFromString(
+		$rs
+	);
+	my @hs = map {VRML::Handles::reserve($_)} @$mfn;
+	my $sc = "Browser.__bret = new MFNode(".
+		(join ',',map {qq'new SFNode("","$_")'} @hs).")";
+	runscript($this->{CX},$this->{GLO},$sc,$rs);
+}

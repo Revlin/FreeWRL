@@ -37,6 +37,7 @@ static Bool WaitForNotify(Display *d, XEvent *e, char *arg) {
 
 
 MODULE = VRML::OpenGL		PACKAGE = VRML::OpenGL
+PROTOTYPES: DISABLE
 
 
 void
@@ -305,40 +306,6 @@ glpGetClipPlane(plane)
 	    PUSHs(sv_2mortal(newSVnv(equation[3])));
 	}
 
-void
-glpReadTex(file)
-	char *	file
-	CODE:
-	{
-	    GLsizei w,h;
-	    int d,i;
-	    char buf[250];
-	    unsigned char *image;
-	    FILE *fp;
-	    fp=fopen(file,"r");
-	    if(!fp) {
-	        fprintf(stderr,"couldn't open file %s\n",file);
-	        return;
-	    }
-	    fgets(buf,250,fp);
-	    fgets(buf,250,fp);
-	    fscanf(fp,"%d%d",&w,&h);
-	    fscanf(fp,"%d",&d);
-	    if(d != 255 || w<64 || h<64 || w>10000 || h>10000) {
-	        fprintf(stderr,"error reading %s\n",file);
-	        return;
-	    }
-	    image=(unsigned char *)malloc(w*h*3);
-	    for(i=0;i<w*h*3;i++) {
-		int v;
-	        fscanf(fp,"%d",&v);
-	        image[i]=(unsigned char) v;
-	    }
-	    fclose(fp);
-	    glTexImage2D(GL_TEXTURE_2D, 0, 3, w,h, 
-	                 0, GL_RGB, GL_UNSIGNED_BYTE,image);
-	}
-
 
 void
 glpLoadMatrixd(m0,m1,m2,m3,m4,m5,m6,m7,m8,m9,ma,mb,mc,md,me,mf)
@@ -466,12 +433,12 @@ gluOrtho2D(left,right,bottom,top)
 	GLdouble	bottom
 	GLdouble	top
 
-void
-gluPerspective(fovy,aspect,zNear,zFar)
-	GLdouble	fovy
-	GLdouble	aspect
-	GLdouble	zNear
-	GLdouble	zFar
+# void
+# gluPerspective(fovy,aspect,zNear,zFar)
+# 	GLdouble	fovy
+# 	GLdouble	aspect
+# 	GLdouble	zNear
+# 	GLdouble	zFar
 
 void
 gluLookAt(eyex,eyey,eyez,centerx,centery,centerz,upx,upy,upz)
@@ -509,10 +476,13 @@ glPolygonOffsetEXT(factor,bias)
 	GLfloat bias
 	CODE:
 	{
+/* Commented out -- a bug report said this stopped the program from running somewhere :( */
+/*
 		#ifdef GL_EXT_polygon_offset
 			extern void glPolygonOffsetEXT(GLfloat factor, GLfloat units);
 			glPolygonOffsetEXT(factor,bias);
 		#endif
+*/
 	}
 
 
@@ -2681,6 +2651,13 @@ glPushName(name)
 
 void
 glPopName()
+
+void
+gluPerspective(fovy,aspect,zNear,zFar)
+	GLdouble	fovy
+	GLdouble	aspect
+	GLdouble	zNear
+	GLdouble	zFar
 
 GLint
 gluProject(objx,objy,objz,modelMatrix,projMatrix,viewport,winx,winy,winz)

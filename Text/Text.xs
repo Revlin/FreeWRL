@@ -232,8 +232,8 @@ static void tjl_rendertext(int n,SV **p,int nl, float *length,
 				   v2[2] == vlast[2]) {
 					continue;
 				}
-				if(verbose) printf("OX, OY: %f, %f, X,Y: %f,%f FLAG %d\n",(glyph->outline.xCoord[point]+0.0),
-							(glyph->outline.yCoord[point]+0.0),x,y,flag);
+				if(verbose) printf("OX, OY: %f, %f, X,Y: %f,%f FLAG %d\n",XCOORD(glyph->outline,point)+0.0,
+							YCOORD(glyph->outline,point)+0.0,x,y,flag);
 				if(flag) {
 					gluTessVertex(triang,v2,v2);
 				} else {
@@ -265,7 +265,10 @@ static void tjl_rendertext(int n,SV **p,int nl, float *length,
    }
 }
 
+
 MODULE=VRML::Text 	PACKAGE=VRML::Text
+
+PROTOTYPES: ENABLE
 
 void *
 get_rendptr()

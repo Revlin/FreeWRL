@@ -18,6 +18,7 @@ sub verbn {return !!grep {$_ eq $_[0]} @verb}
 # Turn these switches on if you are debugging
 $VRML::verbose = verb all;
 $VRML::verbose::be = verb be;
+$VRML::verbose::oint = verb oint; # OrientationIntepr
 $VRML::verbose::events = verb ev;
 $VRML::verbose::script = verb scr ;  
 $VRML::verbose::glsens = verb glsens;  # GL sensor code
@@ -26,12 +27,13 @@ $VRML::verbose::timesens = verb "time";
 $VRML::verbose::interp = verb "interp"; # interpolators
 $VRML::verbose::text = verbn "text"; # interpolators
 $VRML::verbose::rend = verb "rend";
+$VRML::verbose::nodec = verb "nodec";
 
 if($VRML::verbose::text) {
 	eval 'require VRML::Text; VRML::Text::set_verbose(1);'
 }
 
-require 'Browser.pm';
+require 'VRML/Browser.pm';
 
 $b = new VRML::Browser(); # By default creates front- and back-ends.
 

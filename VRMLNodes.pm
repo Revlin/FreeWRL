@@ -31,6 +31,20 @@
 
 package VRML::NodeType; # Same for internal and external!
 
+sub check_perl_script {
+	if(!$VRML::DO_PERL) {
+		die(q~Perl scripts are currently unsafe as they are
+trusted and run in the main interpreter. If you are sure of your
+code (i.e. you have written it or know the writer), set 
+the variable '$VRML::DO_PERL' to 1.
+
+FreeWRL will soon be modified to be able to run untrusted Perl code
+in Safe compartments. Until that, Perl scripts are disabled by default
+now that the browser can get files from the internet.
+~);
+	}
+}
+
 sub init_image {
 	my($name, $urlname, $t, $f, $scene) = @_;
 		my $purl = $t->{PURL} = $scene->get_url;
@@ -172,6 +186,7 @@ ImageTexture => new VRML::NodeType("ImageTexture",
 	Initialize => sub {
 		my($t,$f,$time,$scene) = @_;
 		init_image("","url",$t,$f,$scene);
+		return ();
 	}
 	}
 ),
@@ -287,19 +302,20 @@ Text => new VRML::NodeType ("Text",
 		my $a = eval 'require VRML::Text; VRML::Text::get_rendptr();';
 		if($@) {die("Warning: text loading error: '$@'\n");}
 		$f->{__rendersub} = $a;
+		return ();
 	}
 	}
 ),
 
 FontStyle => new VRML::NodeType("FontStyle",
-	{family => [MFString, "SERIF"],
+	{family => [MFString, ["SERIF"]],
 	 horizontal => [SFBool, 1],
-	 justify => [MFString, "BEGIN"],
+	 justify => [MFString, ["BEGIN"]],
 	 language => [SFString, ""],
 	 leftToRight => [SFBool, 1],
 	 size => [SFFloat, 1.0],
 	 spacing => [SFFloat, 1.0],
-	 style => [SFString, "PLAIN"],
+	 style => [SFString, ["PLAIN"]],
 	 topToBottom => [SFBool, 1],
 	}
 ),
@@ -438,8 +454,8 @@ OrientationInterpolator => new VRML::NodeType("OrientationInterpolator",
 			my $i;
 			for($i=1; $i<=$#$k; $i++) {
 				if($f->{set_fraction} < $k->[$i]) {
-					print "ORIENTX: $i @{$k->[$i-1]} | @{$k->[$i]}\n"
-						if $VRML::verbose::events;
+					print "ORIENTX: $i ($#$k) $k->[$i] $k->[$i-1] @{$kv->[$i]} | @{$kv->[$i-1]}\n"
+						if $VRML::verbose::oint;
 					my $f = ($f->{set_fraction} - $k->[$i-1]) /
 					     ($k->[$i] - $k->[$i-1]) ;
 					my $s = VRML::Quaternion->
@@ -460,8 +476,8 @@ OrientationInterpolator => new VRML::NodeType("OrientationInterpolator",
 				}
 			}
 		}
-		print "SCALAR: NEW_VALUE $v ($k $kv $f->{set_fraction}, $k->[0] $k->[1] $k->[2] $kv->[0] $kv->[1] $kv->[2])\n"
-			if $VRML::verbose;
+		print "OR: NEW_VALUE $v ($k $kv $f->{set_fraction}, $k->[0] $k->[1] $k->[2] $kv->[0] $kv->[1] $kv->[2])\n"
+			if $VRML::verbose::oint;
 		return [$t, value_changed, $v];
 	}
 	}
@@ -910,6 +926,9 @@ NavigationInfo => new VRML::NodeType("NavigationInfo",
 	 headlight => [SFBool, 1],
 	 avatarSize => [MFFloat, [0.25, 1.6, 0.75]],
 	 visibilityLimit => [SFFloat, 0.0],
+	 set_bind => [SFBool, undef, eventIn],
+	 isBound => [SFBool, undef, eventOut],
+	 speed => [SFFloat, 1.0],
 	 } # Unimpl
 ),
 
@@ -946,6 +965,7 @@ Background => new VRML::NodeType("Background",
 		for(qw/back front top bottom left right/) {
 			init_image("_$_","${_}Url",$t,$f,$scene);
 		}
+		return ();
 	}
 	}
 ),
@@ -969,6 +989,17 @@ Viewpoint => new VRML::NodeType("Viewpoint",
 			return [$t, isBound, 1];
 		}
 		return ();
+	},
+	WhenBound => sub {
+		my($t,$scene,$revealed) = @_;
+		print "VP_BOUND!\n";
+		$t->{BackEnd}->bind_viewpoint($t,
+			($revealed?$t->{VP_Info}:undef));
+	},
+	WhenUnBound => sub {
+		my($t,$scene) = @_;
+		print "VP_UNBOUND!\n";
+		$t->{VP_Info} = $t->{BackEnd}->unbind_viewpoint($t);
 	}
 	}
 ),
@@ -986,10 +1017,12 @@ Script => new VRML::NodeType("Script",
 			print "ScriptInit $_[0] $_[1]!!\n";
 			print "Parsing script\n";
 			my $h;
+			my $Browser = $scene->get_browser();
 			for(@{$f->{url}}) {
 				my $str = $_;
 				print "TRY $str\n";
 				if(s/^perl_tjl_xxx://) {
+					check_perl_script();
 					$h = eval "({$_})";
 					if($@) {
 						die "Inv script '$@'"
@@ -998,8 +1031,8 @@ Script => new VRML::NodeType("Script",
 				} elsif(s/^perl_tjl_xxx1://) {
 					{
 					print "XXX1 script\n";
+					check_perl_script();
 					my $t = $t->{RFields};
-					my $Browser = $scene->get_browser();
 					$h = eval "({$_})";
 					print "Evaled: $h\n";
 					if($@) {
@@ -1010,7 +1043,7 @@ Script => new VRML::NodeType("Script",
 				} elsif(/\.class$/) {
 					$t->{PURL} = $scene->get_url;
 					if(!defined $VRML::J) {
-						eval('require "VRMLJava.pm"');
+						eval('require "VRML/VRMLJava.pm"');
 						if($@) {die $@;}
 						$VRML::J = 
 							VRML::JavaCom->new();
@@ -1018,12 +1051,14 @@ Script => new VRML::NodeType("Script",
 					$VRML::J->newscript($t->{PURL},$_,$t);
 					$t->{J} = $VRML::J;
 					$t->{J}->sendinit($t);
+					last;
 				} elsif(/\.js/) {
-					die("Sorry, no javascript files yet");
+					die("Sorry, no javascript files yet -- XXX FIXME (trivial fix!)");
 				} elsif(s/^(java|vrml)script://) {
 					eval('require VRML::JS;');
 					if($@) {die $@}
-					$t->{J} = VRML::JS->new($_,$t);
+					$t->{J} = VRML::JS->new($_,$t,$Browser);
+					last;
 				} else {
 					warn("unknown script: $_");
 				}

@@ -2,6 +2,10 @@
 CVS/
 ^Makefile$
 ^JPEG/Makefile$
+^OpenGL/Makefile$
+^Text/Makefile$
+^Text/Text.bs$
+^Text/Text.c$
 ^JS/Makefile$
 Makefile\.old$
 ^OLD/

@@ -7,7 +7,7 @@
 # Config system idea from PDL
 #
 
-$VERSION = "0.06";
+$VERSION = "0.08";
 
 BEGIN{
  eval "use 5.004";

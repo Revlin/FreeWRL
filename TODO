@@ -1,16 +1,8 @@
-XXX tests/3.wrl segfault
+- separate RFields into eventIns, eventOuts and fields
 
+- as_string: ensure DEF/USE ordering correct-- how?
 
-1. > Minor niggle - include path for GL/ stuff does not get used when
-> compiling VRMLfunc.c. Compiled by hand to get around this.
->
-		>
-	>
-	. you ought to mention in INSTALLATION for the completely boneheaded
-> user like me that to actually see something happen:
->
-> perl browse tests/1.wrl
->
+- EAI : see ARCHITECTURE for how to
 
 
 - fix bindable nodes' loading so that the correct nodes get bound..
@@ -66,3 +58,14 @@ XXX tests/3.wrl segfault
 
 
 - sunos5.6 config == earlier (in email)
+
+1. > Minor niggle - include path for GL/ stuff does not get used when
+> compiling VRMLfunc.c. Compiled by hand to get around this.
+>
+		>
+	>
+	. you ought to mention in INSTALLATION for the completely boneheaded
+> user like me that to actually see something happen:
+>
+> perl browse tests/1.wrl
+>

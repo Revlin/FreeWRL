@@ -3,6 +3,7 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#include <math.h>
 
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -52,7 +53,7 @@ struct VRML_Virt {
  * set of triangles.
  * done so that we get rid of concave polygons etc.
  */
-struct VRML_PolyRep {
+struct VRML_PolyRep { /* Currently a bit wasteful, because copying */
 	int _change;
 	int ntri; /* number of triangles */
 	int *cindex;   /* triples (per triangle) */
@@ -440,18 +441,10 @@ void render_ray_polyrep(void *node,
 
 
 	if(!((this_->isBound))) {return;}
-	
-		        if(!this_->_dlist) {
-				this_->_dlist = glGenLists(1);
-			}
-			if(this_->_dlchange != this_->_change) {
-				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
-				this_->_dlchange = this_->_change;
-			} else {
-				glCallList(this_->_dlist); return;
-			};
+	/* Cannot start_list() because of moving center */
 
 	glPushAttrib(GL_LIGHTING_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
+	glShadeModel(GL_SMOOTH);
 	glPushMatrix();
 
 	glGetDoublev(GL_MODELVIEW_MATRIX, mod);
@@ -472,10 +465,10 @@ void render_ray_polyrep(void *node,
 
 	/* Undo the translation and scale effects */
 	glScalef(sx,sy,sz);
-	if(verbose) printf("TS: %f %f %f,      %f %f %f\n",x,y,z,sx,sy,sz);
+	 if(verbose)  printf("TS: %f %f %f,      %f %f %f\n",x,y,z,sx,sy,sz);
 	glDisable(GL_LIGHTING);
 
-	glScalef(100,100,100);
+	glScalef(200,200,200);
 
 	glBegin(GL_QUADS);
 	for(v=0; v<((this_->skyColor).n); v++) {
@@ -751,28 +744,36 @@ void render_ray_polyrep(void *node,
 		}
 	glPopMatrix();
 	glPopAttrib();
-	
-			glEndList()
-			;
 }
 			}void Viewpoint_Prep(void *nod_){
 			struct VRML_Viewpoint *this_ = (struct VRML_Viewpoint *)nod_;
 			{
 	if(render_vp) {
-		if(verbose) printf("RENDVIEWP: %d %d\n",this_,what_vp); 
-		if(this_ == what_vp) {
+		GLint vp[10];
+		double a1;
+		double angle;
+		if(!((this_->isBound))) {return;}
 		render_anything = 0; /* Stop rendering any more */
 		glTranslatef(-(((this_->position).c[0])),-(((this_->position).c[1])),-(((this_->position).c[2]))
 		);
 		glRotatef(-(((this_->orientation).r[3]))/3.1415926536*180,((this_->orientation).r[0]),((this_->orientation).r[1]),((this_->orientation).r[2])
 		);
-	/*
-#		glMatrixMode(&GL_PROJECTION);
-#		glLoadIdentity();
-#		gluPerspective($f->{fieldOfView}/3.1415926536*180,1,0.1,10000);
-#		glMatrixMode(&GL_MODELVIEW);
-	 */
-	 	}
+		glGetIntegerv(GL_VIEWPORT, vp);
+		if(vp[2] > vp[3]) {
+			a1=0;
+			angle = (this_->fieldOfView)/3.1415926536*180;
+		} else {
+			a1 = (this_->fieldOfView);
+			a1 = atan2(sin(a1),vp[2]/((float)vp[3]) * cos(a1));
+			angle = a1/3.1415926536*180;
+		}
+		if(verbose) printf("Vp: %d %d %d %d %f %f\n", vp[0], vp[1], vp[2], vp[3],
+			a1, angle);
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(angle,vp[2]/(float)vp[3],0.1,200000);
+		glMatrixMode(GL_MODELVIEW);
 	}
 }
 			}void Cone_Rend(void *nod_){
@@ -782,7 +783,7 @@ void render_ray_polyrep(void *node,
 		float df = div;
 		float h = (this_->height)/2;
 		float r = (this_->bottomRadius); 
-		float a,a1,a2;
+		float a,a1;
 		int i;
 		
 		        if(!this_->_dlist) {
@@ -795,10 +796,6 @@ void render_ray_polyrep(void *node,
 				glCallList(this_->_dlist); return;
 			};
 		if(h <= 0 && r <= 0) {return;}
-		/* XXX
-		glPushAttrib(GL_LIGHTING);
-		glShadeModel(GL_FLAT);
-		*/
 		if(((this_->bottom))) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,-1,0);
@@ -809,22 +806,14 @@ void render_ray_polyrep(void *node,
 			}
 			glEnd();
 		}
-		/*
-		glShadeModel(GL_SMOOTH);
-		*/
 		if(((this_->side))) {
 			double ml = sqrt(h*h + r * r);
 			double mlh = h / ml;
 			double mlr = r / ml;
-				/* if(!nomode) {
-				glPushAttrib(GL_LIGHTING);
-				# glShadeModel(GL_SMOOTH);
-				} */
+			glBegin(GL_QUADS);
 			for(i=0; i<div; i++) {
 				a = i * 6.29 / div;
 				a1 = (i+1) * 6.29 / div;
-				a2 = (a+a1)/2;
-				glBegin(GL_POLYGON);
 				glNormal3f(mlh*sin(a),mlr,mlh*cos(a));
 				TC((i+1)/df,0);
 				glVertex3f(0,h,0);
@@ -835,35 +824,10 @@ void render_ray_polyrep(void *node,
 				glVertex3f(r*sin(a1),-h,r*cos(a1));
 				TC((i+1)/df,1);
 				glVertex3f(0,h,0);
-				glEnd();
-				#ifdef FOOBAR
-				glBegin(GL_POLYGON);
-				glNormal3f(mlh*sin(a),mlr,mlh*cos(a));
-				glVertex3f(0,h,0);
-				glVertex3f(0.5*r*sin(a),0,0.5*r*cos(a));
-				glNormal3f(mlh*sin(a1),mlr,mlh*cos(a1));
-				glVertex3f(0.5*r*sin(a1),0,0.5*r*cos(a1));
-				glVertex3f(0,h,0);
-				glEnd();
-				glBegin(GL_POLYGON);
-				glNormal3f(mlh*sin(a),mlr,mlh*cos(a));
-				glVertex3f(0.5*r*sin(a),0,0.5*r*cos(a));
-				glVertex3f(r*sin(a),-h,r*cos(a));
-				glNormal3f(mlh*sin(a1),mlr,mlh*cos(a1));
-				glVertex3f(r*sin(a1),-h,r*cos(a1));
-				glVertex3f(0.5*r*sin(a1),0,0.5*r*cos(a1));
-				glEnd();
-				#endif
+
 			}
-				/*
-				if(!nomode) {
-				glPopAttrib();
-				}
-				*/
+			glEnd();
 		}
-		/*
-		glPopAttrib();
-		*/
 		
 		
 			glEndList()
@@ -1062,7 +1026,7 @@ void render_ray_polyrep(void *node,
 	float tr1tr2 = VECPT(t_r1,t_r2);
 	struct pt dr2r1;
 	float dlen;
-	float a,b,c,und;
+	float a,b,c,disc;
 
 	VECDIFF(t_r2,t_r1,dr2r1);
 	dlen = VECSQ(dr2r1);
@@ -1071,17 +1035,23 @@ void render_ray_polyrep(void *node,
 	b = 2*(VECPT(dr2r1, t_r1));
 	c = tr1sq - r*r;
 
-	b /= a; c/= a; /* Normalize first term out */
+	disc = b*b - 4*a*c; /* The discriminant */
 	
-	und = b*b - 4*c; /* What is the term under square root */
-	if(und > 0) { /* HITS */
-		float sol1 = (-b+sqrt(und))/2;
-		float sol2 = (-b-sqrt(und))/2;
+	if(disc > 0) { /* HITS */
+		float q ;
+		float sol1 ;
+		float sol2 ;
 		float cx,cy,cz;
+		q = sqrt(disc);
+		/* q = (-b+(b>0)?q:-q)/2; */
+		sol1 = (-b+q)/(2*a);
+		sol2 = (-b-q)/(2*a);
+		/*
 		printf("SPHSOL0: (%f %f %f) (%f %f %f)\n",
 			t_r1.x, t_r1.y, t_r1.z, t_r2.x, t_r2.y, t_r2.z);
 		printf("SPHSOL: (%f %f %f) (%f) (%f %f) (%f) (%f %f)\n",
 			tr1sq, tr2sq, tr1tr2, a, b, c, und, sol1, sol2);
+		*/
 		cx = MRATX(sol1);
 		cy = MRATY(sol1);
 		cz = MRATZ(sol1);
@@ -1969,20 +1939,20 @@ void render_ray_polyrep(void *node,
 		if(((this_->bottom))) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,1,0);
-			for(i=div-1; i>=0; i--) {
+			for(i=0; i<div; i++) {
 				a = i * 6.29 / div;
 				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),-h,r*cos(a));
+				glVertex3f(r*sin(a),h,r*cos(a));
 			}
 			glEnd();
 		} 
 		if(((this_->top))) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,-1,0);
-			for(i=0; i<div; i++) {
+			for(i=div-1; i>=0; i--) {
 				a = i * 6.29 / div;
 				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),h,r*cos(a));
+				glVertex3f(r*sin(a),-h,r*cos(a));
 			}
 			glEnd();
 		}
@@ -2166,6 +2136,7 @@ void render_ray_polyrep(void *node,
 	int i;
 	int cin = ((this_->coordIndex).n);
 	int cpv = ((this_->colorPerVertex));
+	/* int npv = xf(normalPerVertex); */
 	int ntri = 0;
 	int nvert = 0;
 	struct SFColor *c1,*c2,*c3;
@@ -2200,12 +2171,16 @@ void render_ray_polyrep(void *node,
 			nvert ++;
 		}
 	}
+	if(nvert>2) {ntri += nvert-2;}
 	cindex = rep_->cindex = malloc(sizeof(*(rep_->cindex))*3*(ntri));
 	rep_->ntri = ntri;
 	if(!nnormals) {
 		/* We have to generate -- do flat only for now */
 		rep_->normal = malloc(sizeof(*(rep_->normal))*3*ntri);
 		rep_->norindex = malloc(sizeof(*(rep_->norindex))*3*ntri);
+	} else {
+		rep_->normal = NULL;
+		rep_->norindex = NULL;
 	}
 	/* color = NULL; coord = NULL; normal = NULL;
 		colindex = NULL; norindex = NULL;
@@ -2441,6 +2416,9 @@ void render_polyrep(void *node,
 		if(r->colindex) {coli = r->colindex[i];}
 		else coli = ind;
 		if(nnormals) {
+			if(nori >= nnormals) {
+				warn("Too large normal index -- help??");
+			}
 			glNormal3fv(normals[nori].c);
 		} else if(r->normal) {
 			glNormal3fv(r->normal+3*nori);
@@ -2475,6 +2453,17 @@ void render_ray_polyrep(void *node,
 	int pt;
 	int pti;
 	float *point[3];
+	struct pt v1, v2, v3;
+	struct pt x1, x2, x3;
+	struct pt ray;
+	float pt1, pt2, pt3;
+	struct pt hitpoint;
+	float tmp1,tmp2,tmp3;
+	float v1len, v2len, v3len;
+	float v12pt;
+	ray.x = t_r2.x - t_r1.x;
+	ray.y = t_r2.y - t_r1.y;
+	ray.z = t_r2.z - t_r1.z;
 	v = *(struct VRML_Virt **)node;
 	p = node;
 	r = p->_intern;
@@ -2482,6 +2471,7 @@ void render_ray_polyrep(void *node,
 		p->_change, r->_change, r->ntri);
  */
 	for(i=0; i<r->ntri; i++) {
+		float len;
 		for(pt = 0; pt<3; pt++) {
 			int ind = r->cindex[i*3+pt];
 			if(points) {
@@ -2491,7 +2481,92 @@ void render_ray_polyrep(void *node,
 			}
 		}
 		/* First we need to project our point to the surface */
-		/* XXXXXXX!!! */
+		/* Poss. 1: */
+		/* Solve s1xs2 dot ((1-r)r1 + r r2 - pt0)  ==  0 */
+		/* I.e. calculate s1xs2 and ... */
+		v1.x = point[1][0] - point[0][0];
+		v1.y = point[1][1] - point[0][1];
+		v1.z = point[1][2] - point[0][2];
+		v2.x = point[2][0] - point[0][0];
+		v2.y = point[2][1] - point[0][1];
+		v2.z = point[2][2] - point[0][2];
+		v1len = sqrt(VECSQ(v1)); VECSCALE(v1, 1/v1len);
+		v2len = sqrt(VECSQ(v2)); VECSCALE(v2, 1/v2len);
+		v12pt = VECPT(v1,v2);
+		/* v3 is our normal to the surface */
+		VECCP(v1,v2,v3);
+		v3len = sqrt(VECSQ(v3)); VECSCALE(v3, 1/v3len);
+		pt1 = VECPT(t_r1,v3);
+		pt2 = VECPT(t_r2,v3);
+		pt3 = v3.x * point[0][0] + v3.y * point[0][1] + 
+			v3.z * point[0][2]; 
+		/* Now we have (1-r)pt1 + r pt2 - pt3 = 0
+		 * r * (pt1 - pt2) = pt1 - pt3
+		 */
+		 tmp1 = pt1-pt2;
+		 if(!APPROX(tmp1,0)) {
+		 	float ra, rb;
+			float k,l;
+			struct pt p0h;
+		 	tmp2 = (pt1-pt3) / (pt1-pt2);
+			hitpoint.x = MRATX(tmp2);
+			hitpoint.y = MRATY(tmp2);
+			hitpoint.z = MRATZ(tmp2);
+			/* Now we want to see if we are in the triangle */
+			/* Projections to the two triangle sides */
+			p0h.x = hitpoint.x - point[0][0];
+			p0h.y = hitpoint.y - point[0][1];
+			p0h.z = hitpoint.z - point[0][2];
+			ra = VECPT(v1, p0h);
+			if(ra < 0) {continue;}
+			rb = VECPT(v2, p0h);
+			if(rb < 0) {continue;}
+			/* Now, the condition for the point to
+			 * be inside 
+			 * (ka + lb = p)
+			 * (k + l b.a = p.a)
+			 * (k b.a + l = p.b)
+			 * (k - (b.a)**2 k = p.a - (b.a)*p.b)
+			 * k = (p.a - (b.a)*(p.b)) / (1-(b.a)**2)
+			 */
+			 k = (ra - v12pt * rb) / (1-v12pt*v12pt);
+			 l = (rb - v12pt * ra) / (1-v12pt*v12pt);
+			 k /= v1len; l /= v2len;
+			 if(k+l > 1 || k < 0 || l < 0) {
+			 	continue;
+			 }
+			 HIT(tmp2, hitpoint.x,hitpoint.y,hitpoint.z,
+			 	v3.x,v3.y,v3.z, -1,-1, "polyrep");
+		 }
+
+#ifdef FOOEIFJOESFIJESF
+		/* But maybe easier: calc. (ray1->p1) x ray,
+		 * (ray1->p2) x ray and (ray1->p3) x ray 
+		 * and dot products of these. if sum > -180, ok.
+		 * XXX Doesn't give us point/normal easily.
+		 */
+		v1.x = point[0][0] - t_r1.x;
+		v1.y = point[0][1] - t_r1.y;
+		v1.z = point[0][2] - t_r1.z;
+		v2.x = point[1][0] - t_r1.x;
+		v2.y = point[1][1] - t_r1.y;
+		v2.z = point[1][2] - t_r1.z;
+		v3.x = point[2][0] - t_r1.x;
+		v3.y = point[2][1] - t_r1.y;
+		v3.z = point[2][2] - t_r1.z;
+		VECCP(v1, ray, x1);
+		VECCP(v2, ray, x2);
+		VECCP(v3, ray, x3);
+		len = 1/sqrt(VECSQ(x1)); VECSCALE(x1,len);
+		len = 1/sqrt(VECSQ(x2)); VECSCALE(x2,len);
+		len = 1/sqrt(VECSQ(x3)); VECSCALE(x3,len);
+		pt1 = VECPT(x1,x2);
+		pt2 = VECPT(x2,x3);
+		pt3 = VECPT(x3,x1);
+		/* Now the simple condition: one of the angles 
+		if( acos(pt1) + acos(pt2) + acos(pt3)
+		*/
+#endif FOEIJFOEJFOIEJ
 	}
 }
 
@@ -2618,6 +2693,8 @@ void render_node(void *node) {
 
 MODULE = VRML::VRMLFunc PACKAGE = VRML::VRMLFunc
 
+PROTOTYPES: ENABLE
+
 void *
 alloc_struct(siz,virt)
 	int siz
@@ -2625,7 +2702,7 @@ alloc_struct(siz,virt)
 CODE:
 	void *ptr = malloc(siz);
 	struct VRML_Box *p = ptr;
-	printf("Alloc: %d %d -> %d\n", siz, virt, ptr);
+	if(verbose) printf("Alloc: %d %d -> %d\n", siz, virt, ptr); 
 	*(struct VRML_Virt **)ptr = (struct VRML_Virt *)virt;
 	p->_sens = p->_hit = 0;
 	p->_intern = 0;

@@ -114,6 +114,14 @@ sub propagate_events {
 					   $_->[0]->receive_event($_->[1],
 							$e->[2],$timestamp);
 					$ep{$_->[0]} = $_->[0];
+					for(@{$this->{PIs}{$_->[0]}{$_->[1]}}) {
+						print "P_IS: send to $_\n"
+						 if $VRML::verbose::events;
+						push @ne, 
+						    $_->[0]->receive_event($_->[1],
+							$e->[2], $timestamp);
+						$ep{$_->[0]} = $_->[0];
+					}
 				}
 				my $c;
 				if($c = $this->{CIs}{$e->[0]}{$e->[1]}) {
@@ -122,14 +130,6 @@ sub propagate_events {
 					push @ne, [
 						$c->[0], $c->[1], $e->[2]
 					];
-				}
-				for(@{$this->{PIs}{$e->[0]}{$e->[1]}}) {
-					print "P_IS: send to $_\n"
-					 if $VRML::verbose::events;
-					push @ne, 
-					    $_->[0]->receive_event($_->[1],
-						$e->[2], $timestamp);
-					$ep{$_->[0]} = $_->[0];
 				}
 			}
 			@e = (@ne,@{$this->{Queue}});
@@ -157,6 +157,18 @@ sub put_event {
 	print "Put_event $node $node->{TypeName} $field $value\n"
 		if $VRML::verbose::events;
 	push @{$this->{Queue}}, [$node, $field, $value];
+}
+
+sub put_events {
+	my($this,$events) = @_;
+	print "Put_events\n"
+		if $VRML::verbose::events;
+	for(@$events) {
+		if(ref $_ ne "ARRAY") {
+			die("Invalid put_events event: '$_'\n");
+		}
+	}
+	push @{$this->{Queue}}, @$events;
 }
 
 sub handle_touched {

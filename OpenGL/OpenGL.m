@@ -318,6 +318,7 @@ extern OpenGLVTab *OpenGLVPtr;
 #define glLoadName (*OpenGLVPtr->V_glLoadName)
 #define glPushName (*OpenGLVPtr->V_glPushName)
 #define glPopName (*OpenGLVPtr->V_glPopName)
+#define gluPerspective (*OpenGLVPtr->V_gluPerspective)
 #define gluProject (*OpenGLVPtr->V_gluProject)
 #define gluUnProject (*OpenGLVPtr->V_gluUnProject)
 #define gluErrorString (*OpenGLVPtr->V_gluErrorString)

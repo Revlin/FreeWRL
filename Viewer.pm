@@ -15,21 +15,60 @@
 
 
 package VRML::Viewer;
-require 'Quaternion.pm';
+require 'VRML/Quaternion.pm';
 
 # Default gaze: -z, pos: z
 sub new {
-	my($type) = @_;
-	return bless {
+	my($type,$old) = @_;
+	my $this = bless {
 		Pos => [0,0,10],
 		Dist => 10,
 		Quat => new VRML::Quaternion(1,0,0,0),
 	}, $type;
+	if($old) {
+		$this->{Pos} = $old->{Pos};
+		$this->{Quat} = $old->{Quat};
+		$this->{Dist} = $old->{Dist};
+	}
+	return $this;
 }
 
 sub use_keys { 0 }
 
 sub handle_tick { }
+
+sub bind_viewpoint {
+	my($this,$node,$bind_info) = @_;
+	if(defined $bind_info) {
+		$this->{Pos} = $bind_info->[0];
+		$this->{Quat} = $bind_info->[1];
+	}
+}
+
+# Just restore these later...
+sub unbind_viewpoint {
+	my($this,$node) = @_;
+	return [$this->{Pos},$this->{Quat}];
+}
+
+package VRML::Viewer::None;
+@ISA=VRML::Viewer;
+
+sub new {
+	my($type, $loc, $ori) = @_;
+	my $this = bless {
+		Pos => $loc,
+		Quat => new_vrmlrot VRML::Quaternion(@$ori),
+	}, $type;
+	return $this;
+}
+
+sub togl {
+	my($this) = @_;
+	$this->{Quat}->togl();
+	VRML::OpenGL::glTranslatef(map {-$_} @{$this->{Pos}});
+	$ind ++;
+}
 
 package VRML::Viewer::Walk;
 @ISA=VRML::Viewer;

@@ -5,8 +5,8 @@
 
 # Parser.pm -- implement a VRML parser
 #  
-require 'VRMLNodes.pm';
-require 'VRMLFields.pm';
+require 'VRML/VRMLNodes.pm';
+require 'VRML/VRMLFields.pm';
 
 use strict vars;
 
@@ -253,7 +253,9 @@ sub parse {
 		last if ($_[2] =~ /\G\s*}\s*/gsc);
 		print "Pos: ",(pos $_[2]),"\n"
 			if $VRML::verbose::parse;
-		$_[2] =~ /\G\s*($Word)\s+/gsc or parsefail($_[2],"field def");
+		# Apparently, some people use it :(
+		$_[2] =~ /\G\s*,\s*/gsc and parsewarnstd($_[2], "Comma not really right");
+		$_[2] =~ /\G\s*($Word)\s+/gsc or parsefail($_[2],"Node body","field name not found");
 		print "FIELD: '$1'\n"
 			if $VRML::verbose::parse;
 		my $f = $1;

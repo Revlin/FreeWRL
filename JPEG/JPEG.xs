@@ -8,10 +8,13 @@
 #include "perl.h"
 #include "XSUB.h"
 
+#undef LOCAL
+#undef METHODDEF
+#include "jpeglib.h"
+
 
 #include <stdio.h>
 
-#include "jpeglib.h"
 #define RETVAL XXX_RETVAL
 
 #include <setjmp.h>
@@ -99,7 +102,9 @@ my_error_exit (j_common_ptr cinfo)
 }
 
 
+
 MODULE = VRML::JPEG	PACKAGE = VRML::JPEG
+PROTOTYPES: ENABLE
 
 int
 read_file(filename,sv,dep,hei,wi)

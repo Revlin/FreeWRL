@@ -19,6 +19,18 @@
 
 use strict vars;
 
+#######################################################
+#
+# The FieldHash
+#
+# This is the object behind the "RFields" hash member of
+# the object VRML::Node. It allows you to send an event by
+# simply saying "$node->{RFields}{xyz} = [3,4,5]" for which 
+# calls the STORE method here which then queues the event.
+#
+# XXX This needs to be separated into eventins and eventouts --
+# assigning has different meanings.
+
 package VRML::FieldHash;
 @VRML::FieldHash::ISA=Tie::StdHash;
 
@@ -73,6 +85,20 @@ sub FIRSTKEY {
 	return undef
 }
 
+#####################################################
+#
+# IS, DEF, USE, NULL
+#
+# The following packages implement some of the possible 
+# structures in the VRML file.
+#
+# The implementation here may change for efficiency later.
+# 
+# However, the fact that we go through these does not usually
+# make performance too bad since it only affects us when there
+# are changes of the scene graph or IS'ed field values.
+#
+
 package VRML::IS;
 sub new {bless [$_[1]],$_[0]}
 sub copy {my $a = $_[0][0]; bless [$a], ref $_[0]}
@@ -86,8 +112,9 @@ sub iterate_nodes {
 sub name { $_[0][0] }
 sub set_ref { $_[0][1] = $_[1] }
 sub get_ref { if(!defined $_[0][1]) {die("IS not def!")} $_[0][1] }
-sub initialize {}
+sub initialize {()}
 
+sub as_string {" IS $_[0][0] "}
 
 package VRML::DEF;
 sub new {bless [$_[1],$_[2]],$_[0]}
@@ -106,11 +133,12 @@ sub iterate_nodes {
 }
 sub name { return $_[0][0]; }
 sub def { return $_[0][1]; }
-sub set_name { $_[0][1]->set_name($_[1]) }
 sub get_ref { $_[0][1] }
 
 sub real_node { return $_[0][1]->real_node(); }
-sub initialize {}
+sub initialize {()}
+
+sub as_string {" DEF $_[0][0] ".$_[0][1]->as_string}
 
 package VRML::USE;
 sub new {bless [$_[1]],$_[0]}
@@ -130,21 +158,28 @@ sub iterate_nodes {
 	&$sub($this,$parent);
 }
 sub name { return $_[0][0]; }
-sub set_name { $_[0][1]->set_name($_[1]) }
 sub real_node { return $_[0][1]->real_node(); }
 sub get_ref { $_[0][1] }
-sub initialize {}
+sub initialize {()}
+
+sub as_string {" USE $_[0][0] "}
 
 package NULL; # ;)
 sub make_backend {return ()}
 sub make_executable {}
 sub iterate_nodes {}
+sub as_string {NULL}
+
+###############################################################
+#
+# This is VRML::Node, the internal representation for a single
+# node.
 
 package VRML::Node;
 
-
 sub new {
 	my($type, $scene, $ntype, $fields,$eventmodel) = @_;
+	print "new Node: $ntype\n" if $VRML::verbose::nodec;
 	my %rf;
 	my $this = bless {
 		TypeName => $ntype,
@@ -167,8 +202,11 @@ sub new {
 	return $this;
 }
 
+# Construct a new Script node -- the Type argument is different
+# and there is no way of this being a proto.
 sub new_script {
 	my($type, $scene, $stype, $fields, $eventmodel) = @_;
+	print "new Node: $stype->{Name}\n" if $VRML::verbose::nodec;
 	my %rf;
 	my $this = bless {
 		TypeName => $stype->{Name},
@@ -183,6 +221,8 @@ sub new_script {
 	return $this;
 }
 
+# Fill in nonexisting field values by the default values.
+# XXX Maybe should copy?
 sub do_defaults {
 	my($this) = @_;
 	for(keys %{$this->{Type}{Defaults}}) {
@@ -192,6 +232,24 @@ sub do_defaults {
 	}
 }
 
+sub as_string {
+	my($this) = @_;
+	my $s = " $this->{TypeName} { \n";
+	for(keys %{$this->{Fields}}) {
+		$s .= "\n $_ ";
+		if("VRML::IS" eq ref $this->{Fields}{$_}) {
+			$s .= $this->{Fields}{$_}->as_string();
+		} else {
+			$s .= "VRML::Field::$this->{Type}{FieldTypes}{$_}"->
+				as_string($this->{Fields}{$_});
+		}
+	}
+	$s .= "}\n";
+	return $s;
+}
+
+# If this is a PROTO expansion, return the actual "physical" VRML
+# node under it.
 sub real_node {
 	my($this) = @_;
 	if($this->{IsProto}) {
@@ -201,6 +259,7 @@ sub real_node {
 	}
 }
 
+# Return the initial events returned by this node.
 sub get_firstevent {
 	my($this,$timestamp) = @_;
 	print "GFE $this $this->{TypeName} $timestamp\n" if $VRML::verbose;
@@ -257,6 +316,7 @@ sub receive_event {
 	}
 }
 
+# Get the outermost scene we are in
 sub get_global_scene {
 	my($this) = @_;
 	return $this->{Scene}->get_scene();
@@ -274,11 +334,6 @@ sub events_processed {
 	if($this->{BackNode}) {
 		$this->set_backend_fields();
 	}
-}
-
-sub set_name {
-	my($this,$name) = @_;
-	push @{$this->{Names}}, $name; # Could have several...
 }
 
 # Copy a deeper struct
@@ -587,16 +642,10 @@ sub get_as_mfnode {
 	return $_[0]{Nodes};
 }
 
-# Must be done after copies are made..
-# sub add_def{
-# 	my($this,$name,$node) = @_;
-# 	$this->{DEF}{$name} = $node;
-# }
-# 
-# sub get_def {
-# 	my($this,$name) = @_;
-# 	return $this->{DEF}{$name};
-# }
+sub as_string {
+	my($this) = @_;
+	join "\n",map {$_->as_string} @{$this->{Nodes}};
+}
 
 # Construct a full copy of this scene -- used for protos.
 # Note: much data is shared - problems?
@@ -654,7 +703,7 @@ sub make_executable {
 		$_->make_executable($this);
 	}
 	# Give all ISs references to my data
-	print "MAKEEX $this\n";
+	# print "MAKEEX $this\n";
 	if($this->{NodeParent}) {
 		# print "MAKEEXNOD\n";
 		$this->iterate_nodes(sub {
@@ -798,6 +847,8 @@ sub init_routing {
 		# print "SET_BINDABLE $_ $this->{Bindable}{$_}{BackNode}\n";
 		# $backend->set_bindable($_, $this->{Bindable}{$_}{BackNode});
 	}
+
+	$eventmodel->put_events(\@e);
 }
 
 sub set_bind {
@@ -818,11 +869,17 @@ sub set_bind {
 		print "WAS AS '$i'\n"
 			if $VRML::verbose::bind;
 		$this->{Stack}{$t}->[-1]->{RFields}{isBound} = 0;
+		if($s->[-1]->{Type}{Actions}{WhenUnBound}) {
+			&{$s->[-1]->{Type}{Actions}{WhenUnBound}}($s->[-1],$this);
+		}
 		if(defined $i) {
 			splice @$s, $i, 1;
 		}
 		$node->{RFields}{bindTime} = $time;
 		$node->{RFields}{isBound} = 1;
+		if($node->{Type}{Actions}{WhenBound}) {
+			&{$node->{Type}{Actions}{WhenBound}}($node,$this,0);
+		}
 		push @$s, $node;
 	} else {
 		# We're unbinding a node.
@@ -832,9 +889,16 @@ sub set_bind {
 			print "WAS ON TOP!\n"
 				if $VRML::verbose::bind;
 			$node->{RFields}{isBound} = 0;
+			if($node->{Type}{Actions}{WhenUnBound}) {
+				&{$node->{Type}{Actions}{WhenUnBound}}($node,$this);
+			}
 			pop @$s;
 			if(@$s) {
 				$s->[-1]->{RFields}{isBound} = 1;
+				$s->[-1]->{RFields}{bindTime} = $time;
+				if($s->[-1]->{Type}{Actions}{WhenBound}) {
+					&{$s->[-1]->{Type}{Actions}{WhenBound}}($s->[-1],$this,1);
+				}
 			}
 		} else {
 			my $i;

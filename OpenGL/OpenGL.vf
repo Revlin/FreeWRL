@@ -364,6 +364,8 @@ VFUNC(void,glInitNames,V_glInitNames,( void ))
 VFUNC(void,glLoadName,V_glLoadName,( GLuint name ))
 VFUNC(void,glPushName,V_glPushName,( GLuint name ))
 VFUNC(void,glPopName,V_glPopName,( void ))
+VFUNC(void,gluPerspective,V_gluPerspective,( GLdouble fovy, GLdouble aspect,
+                                     GLdouble zNear, GLdouble zFar ))
 VFUNC(GLint,gluProject,V_gluProject,( GLdouble objx, GLdouble objy, GLdouble objz,
                                   const GLdouble modelMatrix[16],
                                   const GLdouble projMatrix[16],

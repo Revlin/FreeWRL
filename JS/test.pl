@@ -8,12 +8,14 @@ use blib;
 require 'VRML/JS.pm';
 
 package VRML::JS;
+my $t = {};
+my $t2 = {};
 
 VRML::JS::init();
 my $cx,$glo;
 my $cx2,$glo2;
-$cx = VRML::JS::newcontext($glo);
-$cx2 = VRML::JS::newcontext($glo2);
+$cx = VRML::JS::newcontext($glo,$t);
+$cx2 = VRML::JS::newcontext($glo2,$t2);
 
 print "GLO: $glo\n";
 
@@ -86,4 +88,17 @@ rs " time = 6; ";
 rs " _time_touched;";
 rs " _time_touched=0;";
 rs " time ; ";
+
+rs ' foo = new SFNode("","BARBAZ"); ';
+rs ' foo.__id ';
+rs ' bar = new MFNode(new SFNode("","EJFLIEJLFSF")) ';
+rs ' bar[0].__id ';
+
+rs ' zip = new MFVec3f(new SFVec3f(1,1,1),new SFVec3f(1,2,4)); ';
+rs ' zip ';
+rs ' zip.length ';
+rs ' zip.length ';
+rs ' zip[0] ';
+rs ' zip[1] ';
+rs ' zip[2] ';
 

@@ -39,8 +39,18 @@ browser_createVrmlFromString(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 1) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -59,6 +69,9 @@ browser_createVrmlFromString(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -68,8 +81,18 @@ browser_setDescription(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 1) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -88,6 +111,9 @@ browser_setDescription(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -97,8 +123,18 @@ browser_getName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 0) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -117,6 +153,9 @@ browser_getName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -126,8 +165,18 @@ browser_deleteRoute(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 4) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -146,6 +195,9 @@ browser_deleteRoute(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -155,8 +207,18 @@ browser_loadURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 2) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -175,6 +237,9 @@ browser_loadURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -184,8 +249,18 @@ browser_replaceWorld(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 1) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -204,6 +279,9 @@ browser_replaceWorld(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -213,8 +291,18 @@ browser_getCurrentSpeed(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 0) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -233,6 +321,9 @@ browser_getCurrentSpeed(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -242,8 +333,18 @@ browser_getVersion(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 0) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -262,6 +363,9 @@ browser_getVersion(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -271,8 +375,18 @@ browser_addRoute(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 4) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -291,6 +405,9 @@ browser_addRoute(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -300,8 +417,18 @@ browser_getCurrentFrameRate(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 0) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -320,6 +447,9 @@ browser_getCurrentFrameRate(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -329,8 +459,18 @@ browser_getWorldURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 0) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -349,6 +489,9 @@ browser_getWorldURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -358,8 +501,18 @@ browser_createVrmlFromURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != 3) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -378,6 +531,9 @@ browser_createVrmlFromURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		
@@ -1101,7 +1257,15 @@ addprop_MFColor(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF setprop '%s'\n",p);
+	printf("JS MF %d addprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
 	if(!JSVAL_IS_INT(id)){ 
 		die("MF prop not int");
 	}
@@ -1122,6 +1286,19 @@ static JSBool
 setprop_MFColor(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	jsval myv;
+	JSString *str;
+	char *p;
+	str = JS_ValueToString(cx, id);
+	p = JS_GetStringBytes(str);
+	printf("JS MF %d setprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
 	if(JSVAL_IS_INT(id)) {
 		myv = INT_TO_JSVAL(1);
 		JS_SetProperty(cx,obj,"__touched_flag",&myv);
@@ -1204,7 +1381,7 @@ assign_MFColor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSFunctionSpec (meth_MFColor)[] = {
 /* , */
 {"assign", assign_MFColor, 0},
-/* {"toString", tostr_MFColor, 0}, */
+/* {"toString", tostr_MFColor, 0},  */
 {0}
 };
 
@@ -1226,7 +1403,15 @@ addprop_MFVec3f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF setprop '%s'\n",p);
+	printf("JS MF %d addprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
 	if(!JSVAL_IS_INT(id)){ 
 		die("MF prop not int");
 	}
@@ -1247,6 +1432,19 @@ static JSBool
 setprop_MFVec3f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	jsval myv;
+	JSString *str;
+	char *p;
+	str = JS_ValueToString(cx, id);
+	p = JS_GetStringBytes(str);
+	printf("JS MF %d setprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
 	if(JSVAL_IS_INT(id)) {
 		myv = INT_TO_JSVAL(1);
 		JS_SetProperty(cx,obj,"__touched_flag",&myv);
@@ -1329,7 +1527,7 @@ assign_MFVec3f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSFunctionSpec (meth_MFVec3f)[] = {
 /* , */
 {"assign", assign_MFVec3f, 0},
-/* {"toString", tostr_MFVec3f, 0}, */
+/* {"toString", tostr_MFVec3f, 0},  */
 {0}
 };
 
@@ -1351,7 +1549,15 @@ addprop_MFRotation(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF setprop '%s'\n",p);
+	printf("JS MF %d addprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
 	if(!JSVAL_IS_INT(id)){ 
 		die("MF prop not int");
 	}
@@ -1372,6 +1578,19 @@ static JSBool
 setprop_MFRotation(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	jsval myv;
+	JSString *str;
+	char *p;
+	str = JS_ValueToString(cx, id);
+	p = JS_GetStringBytes(str);
+	printf("JS MF %d setprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
 	if(JSVAL_IS_INT(id)) {
 		myv = INT_TO_JSVAL(1);
 		JS_SetProperty(cx,obj,"__touched_flag",&myv);
@@ -1454,31 +1673,378 @@ assign_MFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 static JSFunctionSpec (meth_MFRotation)[] = {
 /* , */
 {"assign", assign_MFRotation, 0},
-/* {"toString", tostr_MFRotation, 0}, */
+/* {"toString", tostr_MFRotation, 0},  */
+{0}
+};
+
+
+static JSObject *proto_MFNode;
+
+static JSBool
+addprop_MFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+	jsval v;
+	jsval myv;
+	int ind = JSVAL_TO_INT(id);
+	int len;
+	JSString *str;
+	char *p;
+	str = JS_ValueToString(cx, id);
+	p = JS_GetStringBytes(str);
+	if(!strcmp(p,"length") || !strcmp(p,"constructor") || 
+	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
+		return JS_TRUE;
+	}
+	printf("JS MF %d addprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
+	if(!JSVAL_IS_INT(id)){ 
+		die("MF prop not int");
+	}
+	if(!JS_GetProperty(cx,obj,"length",&v)) {die("MF lenval");}
+	len = JSVAL_TO_INT(v);
+	printf("MF addprop %d %d\n",ind,len);
+	if(ind >= len) {
+		len = ind+1;
+		v = INT_TO_JSVAL(len);
+		JS_SetProperty(cx,obj,"length",&v);
+	}
+	myv = INT_TO_JSVAL(1);
+	JS_SetProperty(cx,obj,"__touched_flag",&myv);
+	return JS_TRUE;
+}
+
+static JSBool 
+setprop_MFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+	jsval myv;
+	JSString *str;
+	char *p;
+	str = JS_ValueToString(cx, id);
+	p = JS_GetStringBytes(str);
+	printf("JS MF %d setprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
+	if(JSVAL_IS_INT(id)) {
+		myv = INT_TO_JSVAL(1);
+		JS_SetProperty(cx,obj,"__touched_flag",&myv);
+	}
+	return JS_TRUE;
+}
+
+
+static JSClass cls_MFNode = {
+	"MFNode", JSCLASS_HAS_PRIVATE,
+    addprop_MFNode,  JS_PropertyStub,  JS_PropertyStub, setprop_MFNode,
+    JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   JS_FinalizeStub
+};
+
+static JSBool
+cons_MFNode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	jsval v = INT_TO_JSVAL(argc);
+	int i;
+	if(!JS_DefineProperty(cx,obj,"length",v,
+		NULL,NULL, JSPROP_PERMANENT )) {
+			die("Array length property");
+	};
+	v = INT_TO_JSVAL(0);
+	if(!JS_DefineProperty(cx,obj,"__touched_flag",v,
+		NULL,NULL, JSPROP_PERMANENT)) {
+			die("MF tflag");
+	};
+	if(!argv) return JS_TRUE;
+	for(i=0; i<argc; i++) {
+		jsval ind = INT_TO_JSVAL(i);
+		char buf[80]; sprintf(buf,"%d",i);
+		/* XXX Check type */
+		if(!JS_DefineProperty(cx,obj,buf,argv[i],
+			JS_PropertyStub, JS_PropertyStub,
+			JSPROP_ENUMERATE)) {
+				die("Array element"); 
+		}
+	}
+	return JS_TRUE;
+}
+
+static JSBool
+assign_MFNode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    jsval val;
+    jsval myv;
+    int len;
+    int i;
+    JSObject *o;
+    if (!JS_InstanceOf(cx, obj, &cls_MFNode, argv))
+        return JS_FALSE;
+    printf("ASSIGN HACK MFNode %d\n",argc);
+	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
+			printf("Convarg: false\n");
+			return JS_FALSE;
+	};
+    if (!JS_InstanceOf(cx, o, &cls_MFNode, argv)) {
+    	die("Assignobj wasn't instance of me");
+        return JS_FALSE;
+    }
+/* Now, we assign length properties from o to obj */
+/* XXX HERE */
+	myv = INT_TO_JSVAL(1);
+    JS_SetProperty(cx,obj,"__touched_flag",&myv);
+    JS_GetProperty(cx,o,"length",&val);
+    JS_SetProperty(cx,obj,"length",&val);
+    len = JSVAL_TO_INT(val); /* XXX Assume int */
+    for(i=0; i<len; i++) {
+		char buf[80]; sprintf(buf,"%d",i);
+	    JS_GetProperty(cx,o,buf,&val);
+	    JS_SetProperty(cx,obj,buf,&val);
+    }
+
+    *rval = OBJECT_TO_JSVAL(obj); 
+    printf("Assgn: true\n");
+    return JS_TRUE;
+}
+
+static JSFunctionSpec (meth_MFNode)[] = {
+/* , */
+{"assign", assign_MFNode, 0},
+/* {"toString", tostr_MFNode, 0},  */
+{0}
+};
+
+
+static JSObject *proto_MFString;
+
+static JSBool
+addprop_MFString(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+	jsval v;
+	jsval myv;
+	int ind = JSVAL_TO_INT(id);
+	int len;
+	JSString *str;
+	char *p;
+	str = JS_ValueToString(cx, id);
+	p = JS_GetStringBytes(str);
+	if(!strcmp(p,"length") || !strcmp(p,"constructor") || 
+	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
+		return JS_TRUE;
+	}
+	printf("JS MF %d addprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
+	if(!JSVAL_IS_INT(id)){ 
+		die("MF prop not int");
+	}
+	if(!JS_GetProperty(cx,obj,"length",&v)) {die("MF lenval");}
+	len = JSVAL_TO_INT(v);
+	printf("MF addprop %d %d\n",ind,len);
+	if(ind >= len) {
+		len = ind+1;
+		v = INT_TO_JSVAL(len);
+		JS_SetProperty(cx,obj,"length",&v);
+	}
+	myv = INT_TO_JSVAL(1);
+	JS_SetProperty(cx,obj,"__touched_flag",&myv);
+	return JS_TRUE;
+}
+
+static JSBool 
+setprop_MFString(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+	jsval myv;
+	JSString *str;
+	char *p;
+	str = JS_ValueToString(cx, id);
+	p = JS_GetStringBytes(str);
+	printf("JS MF %d setprop '%s'\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'
+",p);
+	}
+	if(JSVAL_IS_INT(id)) {
+		myv = INT_TO_JSVAL(1);
+		JS_SetProperty(cx,obj,"__touched_flag",&myv);
+	}
+	return JS_TRUE;
+}
+
+
+static JSClass cls_MFString = {
+	"MFString", JSCLASS_HAS_PRIVATE,
+    addprop_MFString,  JS_PropertyStub,  JS_PropertyStub, setprop_MFString,
+    JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   JS_FinalizeStub
+};
+
+static JSBool
+cons_MFString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	jsval v = INT_TO_JSVAL(argc);
+	int i;
+	if(!JS_DefineProperty(cx,obj,"length",v,
+		NULL,NULL, JSPROP_PERMANENT )) {
+			die("Array length property");
+	};
+	v = INT_TO_JSVAL(0);
+	if(!JS_DefineProperty(cx,obj,"__touched_flag",v,
+		NULL,NULL, JSPROP_PERMANENT)) {
+			die("MF tflag");
+	};
+	if(!argv) return JS_TRUE;
+	for(i=0; i<argc; i++) {
+		jsval ind = INT_TO_JSVAL(i);
+		char buf[80]; sprintf(buf,"%d",i);
+		/* XXX Check type */
+		if(!JS_DefineProperty(cx,obj,buf,argv[i],
+			JS_PropertyStub, JS_PropertyStub,
+			JSPROP_ENUMERATE)) {
+				die("Array element"); 
+		}
+	}
+	return JS_TRUE;
+}
+
+static JSBool
+assign_MFString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    jsval val;
+    jsval myv;
+    int len;
+    int i;
+    JSObject *o;
+    if (!JS_InstanceOf(cx, obj, &cls_MFString, argv))
+        return JS_FALSE;
+    printf("ASSIGN HACK MFString %d\n",argc);
+	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
+			printf("Convarg: false\n");
+			return JS_FALSE;
+	};
+    if (!JS_InstanceOf(cx, o, &cls_MFString, argv)) {
+    	die("Assignobj wasn't instance of me");
+        return JS_FALSE;
+    }
+/* Now, we assign length properties from o to obj */
+/* XXX HERE */
+	myv = INT_TO_JSVAL(1);
+    JS_SetProperty(cx,obj,"__touched_flag",&myv);
+    JS_GetProperty(cx,o,"length",&val);
+    JS_SetProperty(cx,obj,"length",&val);
+    len = JSVAL_TO_INT(val); /* XXX Assume int */
+    for(i=0; i<len; i++) {
+		char buf[80]; sprintf(buf,"%d",i);
+	    JS_GetProperty(cx,o,buf,&val);
+	    JS_SetProperty(cx,obj,buf,&val);
+    }
+
+    *rval = OBJECT_TO_JSVAL(obj); 
+    printf("Assgn: true\n");
+    return JS_TRUE;
+}
+
+static JSFunctionSpec (meth_MFString)[] = {
+/* , */
+{"assign", assign_MFString, 0},
+/* {"toString", tostr_MFString, 0},  */
 {0}
 };
 
 
 
 static JSObject *proto_SFNode;
-#define cons_SFNode NULL
+
+static JSBool
+cons_SFNode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	if(argc == 0) {
+		die("SFNode construction: need at least 1 arg");
+	} 
+	if(argc == 1) {
+		die("Sorry, can't construct a SFNode from VRML yet (XXX FIXME)");
+	} else if(argc == 2) {
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, argv[1]);
+		p = JS_GetStringBytes(str);
+		/* Hidden two-arg constructor: we construct it using
+		 * an id... */
+		printf("CONS_SFNODE: '%s'
+",p);
+		if(!JS_DefineProperty(cx,obj,"__id",argv[1],
+			NULL,NULL,JSPROP_PERMANENT)) {
+				die("SFNode defprop error");
+		}
+		return JS_TRUE;
+	} else {
+		die("SFNode construction: invalid no of args");
+	}
+}
+
 #define meth_SFNode NULL
 
 static JSBool
 setprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	dSP;
+	JSObject *globalObj = JS_GetGlobalObject(cx);
+	Browser_s *brow;
+	jsval pv;
+	int count;
+	jsval v = OBJECT_TO_JSVAL(obj);
+	JS_GetProperty(cx, globalObj, "Browser", &pv);
+	if(!JSVAL_IS_OBJECT(pv)) {die("Browser not object?!?");}
+	brow = JS_GetPrivate(cx, JSVAL_TO_OBJECT(pv));
+	JS_SetProperty(cx, globalObj, "__node", &v);
+	JS_SetProperty(cx, globalObj, "__prop", &id);
+	JS_SetProperty(cx, globalObj, "__val", vp);
+	printf("SFNode setprop 
+");
+		ENTER;
+		SAVETMPS;
+		PUSHMARK(sp);
+		XPUSHs(brow->js_sv);
+		PUTBACK;
+		count = perl_call_method("node_setprop", G_SCALAR);
+		if(count) {
+			printf("Got return %f\n",POPn);
+		}
+		PUTBACK;
+		FREETMPS;
+		LEAVE;
 	return JS_TRUE;
 }
 
 static JSBool
 getprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	printf("SFNode getprop 
+");
 	return JS_TRUE;
 }
 
 static JSClass cls_SFNode = {
 	"SFNode", JSCLASS_HAS_PRIVATE,
-    JS_PropertyStub,  JS_PropertyStub,  getprop_SFNode, setprop_SFNode,
+    JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub, /* getprop_SFNode,*/ setprop_SFNode,
     JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   JS_FinalizeStub
 };
 
@@ -1522,6 +2088,16 @@ void load_classes(JSContext *cx, JSObject *globalObj, SV *jssv) {
 			NULL, meth_MFRotation /* methods */,
 			NULL, NULL);
 	
+	    proto_MFNode = JS_InitClass(cx, globalObj, NULL, &cls_MFNode,
+			cons_MFNode, 3,
+			NULL, meth_MFNode /* methods */,
+			NULL, NULL);
+	
+	    proto_MFString = JS_InitClass(cx, globalObj, NULL, &cls_MFString,
+			cons_MFString, 3,
+			NULL, meth_MFString /* methods */,
+			NULL, NULL);
+	
     proto_SFNode = JS_InitClass(cx, globalObj, NULL, &cls_SFNode,
 		cons_SFNode, 3,
 		NULL, meth_SFNode /* methods */,
@@ -1556,7 +2132,9 @@ set_touchable(JSContext *cx, JSObject *obj, jsval id, jsval *vp) {
 	return JS_TRUE;
 }
 
+
 MODULE=VRML::JS	PACKAGE=VRML::JS
+PROTOTYPES: ENABLE
 
 void 
 init()
@@ -1712,6 +2290,10 @@ CODE:
     }
  */ /* Trust it... ARGH */
 	set_SFRotation(JS_GetPrivate(cx,obj), sv);
+
+
+
+
 
 
 

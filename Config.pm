@@ -7,10 +7,10 @@
 	FREETYPE_LIBS	=>	"\-lttf",
 	FREETYPE_DEFINE	=>	"",
 	OPENGL_INC	=>	"",
-	OPENGL_LIBS	=>	"\-L\/BIG2\/Mesa\-3\.0\/lib\ \-L\/home\/l\/u\/lukka\/lib\ \-L\/usr\/X11R6\/lib\ \-L\/usr\/lib\/mesa\ \-lMesaGL\ \-lMesaGLU\ \-lXext\ \-lX11",
+	OPENGL_LIBS	=>	"\-L\/BIG3\/Mesa\-3\.0\/lib\ \-L\/home\/l\/u\/lukka\/lib\ \-L\/usr\/X11R6\/lib\ \-L\/usr\/lib\/mesa\ \-lMesaGL_static\ \-lMesaGLU_static\ \-lXext\ \-lX11",
 	JPEG_INC	=>	"",
 	JPEG_LIBS	=>	"\-ljpeg",
 	OPENGL_DEFINE	=>	"",
-VERSION => "0.06"
+VERSION => "0.08"
 );
 1;

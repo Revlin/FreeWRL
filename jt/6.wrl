@@ -6,7 +6,7 @@
 
 
 Shape {
- geometry Box { }
+ geometry DEF TXT Text { }
  appearance Appearance { material DEF MAT Material { } }
 }
 
@@ -16,22 +16,15 @@ DEF TS TimeSensor {
 	loop TRUE
 }
 
-DEF CI ColorInterpolator {
-	key [0 0.5 1]
-	keyValue [0 0 0 1 1 1 1 0 0]
-}
-
 DEF SCR Script {
-	url "javascript: function frac(val,time) {
-		Browser.getName();
-		nfrac = val*val*val
+	url "javascript: function initialize(time) {
+		name = new MFString(Browser.getName());
 	}
 	"
-	eventIn SFFloat frac
-	eventOut SFFloat nfrac
+#	eventIn SFFloat frac
+	eventOut MFString name
 }
 
-ROUTE TS.fraction_changed TO SCR.frac
-ROUTE SCR.nfrac TO CI.set_fraction
-ROUTE CI.value_changed TO MAT.diffuseColor
+# ROUTE TS.fraction_changed TO SCR.frac
+ROUTE SCR.name TO TXT.string
 

@@ -6,9 +6,8 @@
 
 Welcome to a developer-alpha release of VRML::Browser.
 
-Currently, only simple things are implemented - however, my hope
-is that I have implemented enough simple things so that adding
-the complicated things will not be too much work after this.
+For updates, see the FreeWRL homepage, currently at 
+http://www.fas.harvard.edu/~lukka/freewrl
 
 DO NOT EXPECT YOUR COMPLICATED WORLD TO WORK!
 If your world doesn't expect *much* more than the browser provides
@@ -24,7 +23,7 @@ See the file INSTALL for how to compile this program.
 
 After installation, try
 
-	./browse tests/1.wrl
+	./freewrl tests/1.wrl
 
 (the file browse is the perl script which starts the browser -- if
 there is a problem ("file not found"), try
@@ -38,8 +37,12 @@ This should open a new window with a view of the VRML world in question.
 Use the first and third button of your mouse (while moving your mouse)
 to move around.
 
-To change viewers between walk and examine, press 'w' or 'e' in 
-the browser window.
+To change viewers between walk and examine, press 'w' or 'e' or 'd' in 
+the browser window ('d' only works with the keyboard currently).
+
+There are more tests in the bt/ and jt/ and pt/ directories, which
+are, respectively, the browser API tests, java/javascript tests and
+perl API tests.
 
 E-mail any comments, questions & patches to me at lukka@fas.harvard.edu
 
@@ -49,10 +52,52 @@ P.s. I am available for employment after july 1999 - email me if your
 university or company is interested. I would like to be able 
 at the same time to continue free software development and research.
 
-Also, if your company wants to use this code with a different license,
-contact me -- I can give you a different license in exchange for money.
-
 -----------------
+V0.08 - important details
+ - using libwww-perl for getting documents from over the web.
+   we can use general URLS, hurray!
+   Because of this, perl scripts are now disabled by default
+   because of security -- the code is completely trusted and
+   we don't want you to get http://evil.foo/rm-rf.wrl containing
+   a Perl script doing "system('rm -rf /'')".
+ - use gunzip to decompress gzipped content
+ - general ray code -- now IndexedFaceSet, ElevationGrid and even
+   Extrusions should work with TouchSensors
+ - "install" should now at least partially work. 
+   Changed all "require 'foo.pm'" to "require VRML/foo.pm"
+ - get_scene for the browser object -- now it is possible to
+   create scenes in Perl scripts:
+    "
+    	use VRML::Browser;
+	$b = new VRML::Browser;
+	$s = $b->get_scene;
+	$nod1 = $b->new_node(Shape, {
+		geometry => $b->new_node(Box, { ... } ),
+		...
+	});
+	...
+	$s->topnodes([$nod1,$nod2,...]);
+	$b->eventloop;
+    "
+   so you can use scripts to generate scenes.
+ - then, use $scene->as_string to actually generate the VRML code
+   in ASCII.
+ - $backend->snapshot. See pt/* for samples
+ - Documentation
+ - Make the browser accept some faulty VRML (commas after field values)
+ - Some portability fixes from John Breen and Lupe Christoph
+ - fix IndexedFaceSet core dump if coordIndex doesn't end in -1
+ - some event fixes. 
+
+V0.07 - quick bug fixes
+ - parse: make the optimization for MFFloat and MFTime correct when
+   there are commas :(
+ - fix FontStyle defaults
+ - stabler quadratic solution from Robin Williams
+ - background works again -- we can't displaylist something that moves ;)
+ - better viewpoint implementation -- it still doesn't quite work
+   like the spec. 
+
 V0.06 - solidification:
  - input of SFColor etc. to javascript
  - output of floats etc. from javascript

@@ -39,6 +39,8 @@ $field_funcs = join '',map {get_offsf($_)} @Fields;
  	MFColor      
 	MFVec3f
 	MFRotation
+	MFNode
+	MFString
 /;
 
 $field_funcs .= join '',map {def_mffield($_)} @MFFields;
@@ -62,8 +64,18 @@ browser_$_(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	Browser_s *brow = JS_GetPrivate(cx,obj);
 	int count;
 	SV *sv;
+	jsval v;
+	int i;
 	if(brow->magic != BROWMAGIC) {
 		die("Wrong browser magic!");
+	}
+	if(argc != $bapi{$_}) {
+		die("Invalid number of arguments for browser method");
+	}
+	for(i=0; i<argc; i++) {
+		char buffer[80];
+		sprintf(buffer,"__arg%d",i);
+		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
 	printf("Calling method with sv %d (%s)\\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
@@ -82,6 +94,9 @@ browser_$_(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		FREETMPS;
 		LEAVE;
 	}
+	if(!JS_GetProperty(cx,obj,"__bret",&v)) {die("Brow return");}
+	*rval = v;
+	return JS_TRUE;
 }
 
 		';
@@ -98,30 +113,82 @@ $load_classes .= "
 		NULL, NULL);
 ";
 
-$field_funcs .= "
+$field_funcs .= qq~
 
 static JSObject *proto_SFNode;
-#define cons_SFNode NULL
+
+static JSBool
+cons_SFNode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	if(argc == 0) {
+		die("SFNode construction: need at least 1 arg");
+	} 
+	if(argc == 1) {
+		die("Sorry, can't construct a SFNode from VRML yet (XXX FIXME)");
+	} else if(argc == 2) {
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, argv[1]);
+		p = JS_GetStringBytes(str);
+		/* Hidden two-arg constructor: we construct it using
+		 * an id... */
+		printf("CONS_SFNODE: '%s'\n",p);
+		if(!JS_DefineProperty(cx,obj,"__id",argv[1],
+			NULL,NULL,JSPROP_PERMANENT)) {
+				die("SFNode defprop error");
+		}
+		return JS_TRUE;
+	} else {
+		die("SFNode construction: invalid no of args");
+	}
+}
+
 #define meth_SFNode NULL
 
 static JSBool
 setprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	dSP;
+	JSObject *globalObj = JS_GetGlobalObject(cx);
+	Browser_s *brow;
+	jsval pv;
+	int count;
+	jsval v = OBJECT_TO_JSVAL(obj);
+	JS_GetProperty(cx, globalObj, "Browser", &pv);
+	if(!JSVAL_IS_OBJECT(pv)) {die("Browser not object?!?");}
+	brow = JS_GetPrivate(cx, JSVAL_TO_OBJECT(pv));
+	JS_SetProperty(cx, globalObj, "__node", &v);
+	JS_SetProperty(cx, globalObj, "__prop", &id);
+	JS_SetProperty(cx, globalObj, "__val", vp);
+	printf("SFNode setprop \n");
+		ENTER;
+		SAVETMPS;
+		PUSHMARK(sp);
+		XPUSHs(brow->js_sv);
+		PUTBACK;
+		count = perl_call_method("node_setprop", G_SCALAR);
+		if(count) {
+			printf("Got return %f\\n",POPn);
+		}
+		PUTBACK;
+		FREETMPS;
+		LEAVE;
 	return JS_TRUE;
 }
 
 static JSBool
 getprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	printf("SFNode getprop \n");
 	return JS_TRUE;
 }
 
 static JSClass cls_SFNode = {
 	\"SFNode\", JSCLASS_HAS_PRIVATE,
-    JS_PropertyStub,  JS_PropertyStub,  getprop_SFNode, setprop_SFNode,
+    JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub, /* getprop_SFNode,*/ setprop_SFNode,
     JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   JS_FinalizeStub
 };
-";
+~;
 
 
 #########################################################
@@ -163,7 +230,14 @@ addprop_$f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF setprop '%s'\\n",p);
+	printf("JS MF %d addprop '%s'\\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'\n",p);
+	}
 	if(!JSVAL_IS_INT(id)){ 
 		die("MF prop not int");
 	}
@@ -184,6 +258,18 @@ static JSBool
 setprop_$f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	jsval myv;
+	JSString *str;
+	char *p;
+	str = JS_ValueToString(cx, id);
+	p = JS_GetStringBytes(str);
+	printf("JS MF %d setprop '%s'\\n",obj,p);
+	{
+		JSString *str;
+		char *p;
+		str = JS_ValueToString(cx, *vp);
+		p = JS_GetStringBytes(str);
+		printf("JS MF APVAL '%s'\n",p);
+	}
 	if(JSVAL_IS_INT(id)) {
 		myv = INT_TO_JSVAL(1);
 		JS_SetProperty(cx,obj,"__touched_flag",&myv);
@@ -266,7 +352,7 @@ assign_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSFunctionSpec (meth_$f)[] = {
 /* $methlist, */
 {"assign", assign_$f, 0},
-/* {"toString", tostr_$f, 0}, */
+/* {"toString", tostr_$f, 0},  */
 {0}
 };
 
@@ -642,7 +728,9 @@ set_touchable(JSContext *cx, JSObject *obj, jsval id, jsval *vp) {
 	return JS_TRUE;
 }
 
+
 MODULE=VRML::JS	PACKAGE=VRML::JS
+PROTOTYPES: ENABLE
 
 void 
 init()

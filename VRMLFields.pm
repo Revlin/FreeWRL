@@ -43,12 +43,12 @@ sub es {
 # By encapsulating things well enough, we'll be able to completely
 # change the interface later, e.g. to fit together with javascript etc.
 sub ctype ($) {die "VRML::Field::ctype - abstract function called"}
-sub calloc ($$) {return ""}
-sub cassign ($$) {return "$_[1] = $_[2];"}
+sub calloc ($$) {""}
+sub cassign ($$) {"$_[1] = $_[2];"}
 sub cfree ($) {if($_[0]->calloc) {return "free($_[1]);"} return ""}
 sub cget {if(!defined $_[2]) {return "$_[1]"}
 	else {die "If CGet with indices, abstract must be overridden"} }
-sub cstruct () {return ""}
+sub cstruct () {""}
 sub cfunc {die("Must overload cfunc")}
 sub jsimpleget {return {}}
 
@@ -61,10 +61,12 @@ sub parse {
 	return $1;
 }
 
+sub as_string {$_[1]}
+
 sub print {print $_[1]}
 
-sub ctype {return "float $_[1]"}
-sub cfunc {return "$_[1] = SvNV($_[2]);\n"}
+sub ctype {"float $_[1]"}
+sub cfunc {"$_[1] = SvNV($_[2]);\n"}
 
 sub jdata {"float v;"}
 sub jalloc {""}
@@ -103,6 +105,7 @@ sub parse {
 }
 
 sub print {print " $_[1] "}
+sub as_string {$_[1]}
 
 sub ctype {return "int $_[1]"}
 sub cfunc {return "$_[1] = SvIV($_[2]);\n"}
@@ -118,6 +121,7 @@ sub parse {
 }
 
 sub print {print join ' ',@{$_[1]}}
+sub as_string {join ' ',@{$_[1]}}
 
 sub cstruct {return "struct SFColor {
 	float c[3]; };"}
@@ -295,6 +299,7 @@ sub parse {
 }
 
 sub print {print join ' ',@{$_[1]}}
+sub as_string {join ' ',@{$_[1]}}
 
 sub cstruct {return "struct SFRotation {
  	float r[4]; };"}
@@ -351,7 +356,7 @@ sub jscons {
 }
 
 sub js_default {
-	return "new SFRotation(0,0,0)"
+	return "new SFRotation(0,0,1,0)"
 }
 
 
@@ -369,6 +374,7 @@ sub cget {return "($_[1])"}
 sub cfunc {return "$_[1] = SvIV($_[2]);\n"}
 
 sub print {print ($_[1] ? TRUE : FALSE)}
+sub as_string {($_[1] ? TRUE : FALSE)}
 
 # The java interface
 sub jdata {"boolean v;"}
@@ -402,7 +408,7 @@ sub parse {
 		or VRML::Error::parsefail($_[2],"improper SFString");
 	my $str = $1;
 	$str =~ s/\\(.)/$1/g;
-	print "GOT STRING '$str'\n";
+	# print "GOT STRING '$str'\n";
 	return $str;
 }
 
@@ -430,7 +436,8 @@ sub parse {
 		$a =~ s/^\s*//;
 		$a =~ s/\s*$//;
 		# XXX Errors ???
-		my @a = split ' ',$a;
+		my @a = split /\s+|\s*,\s*/,$a;
+		pop @a if $a[-1] =~ /^\s+$/;
 		# while($_[2] !~ /\G\s*,?\s*\]\s*/gsc) {
 		# 	$_[2] =~ /\G\s*,\s*/gsc; # Eat comma if it is there...
 		# 	my $v =  $stype->parse($p,$_[2],$_[3]);
@@ -469,7 +476,8 @@ sub parse {
 		$a =~ s/^\s*//;
 		$a =~ s/\s*$//;
 		# XXX Errors ???
-		my @a = split ' ',$a;
+		my @a = split /\s+|\s*,\s*/,$a;
+		pop @a if $a[-1] =~ /^\s+$/;
 		# while($_[2] !~ /\G\s*,?\s*\]\s*/gsc) {
 		# 	$_[2] =~ /\G\s*,\s*/gsc; # Eat comma if it is there...
 		# 	my $v =  $stype->parse($p,$_[2],$_[3]);
@@ -599,6 +607,12 @@ sub print {
 	print " ]\n";
 }
 
+sub as_string {
+	my $r = $_[0];
+	$r =~ s/::MF/::SF/;
+	" [ ".(join ' ',map {$r->as_string($_)} @{$_[1]})." ] "
+}
+
 sub js_default {
 	my($type) = @_;
 	# $type =~ s/::MF/::SF/;
@@ -617,5 +631,11 @@ sub cfunc {
 }
 sub cget {if(!defined $_[2]) {return "$_[1]"}
 	else {die "SFNode index!??!"} }
+
+sub as_string {
+	$_[1]->as_string();
+}
+
+sub js_default { 'new SFNode("","NULL")' }
 
 # javascript implemented in place because of special nature.

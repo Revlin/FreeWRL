@@ -3,11 +3,12 @@
 # See the GNU General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
-require 'GLBackEnd.pm';
-require 'Parser.pm';
-require 'Scene.pm';
-require 'Events.pm';
-require './Config.pm';
+require 'VRML/GLBackEnd.pm';
+require 'VRML/Parser.pm';
+require 'VRML/Scene.pm';
+require 'VRML/Events.pm';
+require 'VRML/Config.pm';
+require 'VRML/URL.pm';
 
 package VRML::Browser;
 use strict vars;
@@ -34,12 +35,13 @@ sub clear_scene {
 sub load_file {
 	my($this,$file) = @_;
 	$this->{URL} = $file;
-	my $t;
-	{local $/; undef $/;
-	open F, $file or die("Cannot open file '$file'");
-	$t = <F>;
-	close F;
-	}
+	# my $t;
+	# {local $/; undef $/;
+	# open F, $file or die("Cannot open file '$file'");
+	# $t = <F>;
+	# close F;
+	# }
+	my $t = VRML::URL::get_absolute($file);
 	$this->load_string($t,$file);
 }
 
@@ -55,18 +57,36 @@ sub load_string {
 	$this->{Scene}->setup_routing($this->{EV},$this->{BE});
 	$this->{EV}->print;
 	# print Dumper($this->{EV});
-	
 }
+
+sub get_scene {
+	my($this) = @_;
+	$this->{Scene} or ($this->{Scene} = VRML::Scene->new(
+		$this->{EV}, "USER"));
+}
+
+sub get_backend { return $_[0]{BE} }
 
 sub eventloop {
 	my($this) = @_;
-	$this->{Scene}->init_routing($this->{EV},$this->{BE});
-	while(1) {
-		my $time = get_timestamp();
-		$this->{BE}->update_scene($time);
-		$this->{EV}->propagate_events($time,$this->{BE},
-			$this->{Scene});
+	$this->prepare();
+	while(!$this->{BE}->quitpressed) {
+		$this->tick();
 	}
+}
+
+sub prepare {
+	my($this) = @_;
+	$this->{Scene}->make_backend($this->{BE});
+	$this->{Scene}->init_routing($this->{EV},$this->{BE});
+}
+
+sub tick {
+	my($this) = @_;
+	my $time = get_timestamp();
+	$this->{BE}->update_scene($time);
+	$this->{EV}->propagate_events($time,$this->{BE},
+		$this->{Scene});
 }
 
 my $FPS = 0;
@@ -125,7 +145,9 @@ sub setDescription { print "Set description: ",
 	(join '',reverse split '',$_[1]),"\n" } # Read the spec: 4.12.10.8 ;)
 
 # Warning: due to the lack of soft references, all unreferenced nodes
-# leak horribly. Perl 5.005 (to be out soon) will provide soft references
+# leak horribly. Perl 5.005 (to be out soon) will probably
+# provide soft references. If not, we are going to make a temporary
+# solution. For now, we leak.
 sub createVrmlFromString { 
 	my ($this,$string) = @_;
 	my $scene = VRML::Scene->new($this->{EV},"FROM A STRING, DUH");
@@ -177,6 +199,10 @@ sub release {
 
 sub get {
 	my($handle) = @_;
+	return NULL if $handle eq "NULL";
+	if(!exists $S{$handle}) {
+		die("Nonexistent VRML Node Handle!");
+	}
 	return $S{$handle}[0];
 }
 

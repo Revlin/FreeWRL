@@ -8,13 +8,13 @@
 
 package VRML::GLBackEnd;
 use VRML::OpenGL;
-use blib;
 use VRML::VRMLFunc;
+VRML::VRMLFunc::set_divs(10,10);
 if($VRML::verbose::rend) {
 	VRML::VRMLFunc::render_verbose(1);
 }
-require 'VRMLCU.pm';
-require 'Viewer.pm';
+require 'VRML/VRMLCU.pm';
+require 'VRML/Viewer.pm';
 use strict vars;
 # ISA?
 
@@ -94,6 +94,19 @@ sub new {
 	return $this;
 }
 
+sub quitpressed {
+	return delete $_[0]{QuitPressed};
+}
+
+sub set_best {
+	glShadeModel(&GL_SMOOTH);
+	VRML::VRMLFunc::set_divs(20,20);
+}
+sub set_fast {
+	glShadeModel(&GL_FLAT);
+	VRML::VRMLFunc::set_divs(8,8);
+}
+
 sub update_scene {
 	my($this,$time) = @_;
 
@@ -115,6 +128,16 @@ sub update_scene {
 
 sub set_root { $_[0]{Root} = $_[1] }
 sub set_viewpoint { $_[0]{Viewpoint} = $_[1] }
+
+sub bind_viewpoint {
+	my($this,$node,$bind_info) = @_;
+	$this->{Viewer}->bind_viewpoint($node,$bind_info);
+}
+
+sub unbind_viewpoint {
+	my($this, $node) = @_;
+	return $this->{Viewer}->unbind_viewpoint($node);
+}
 
 sub event {
 	my $w;
@@ -178,7 +201,7 @@ sub event {
 		} elsif((lc $args[0]) eq "d") {
 			$this->{Viewer} = VRML::Viewer::Fly->new;
 		} elsif((lc $args[0]) eq "q") {
-			exit
+			$this->{QuitPressed} = 1;
 		} elsif(!$this->{Viewer}->use_keys) {
 			if((lc $args[0]) eq "k") {
 				$this->{Viewer}->handle("PRESS", 1, 0.5, 0.5);
@@ -228,7 +251,7 @@ sub resize { # Called by resizehandler.
 
 sub new_node {
 	my($this,$type,$fields) = @_;
-	print "NEW_NODE $type\n";
+	# print "NEW_NODE $type\n";
 	my $node = {
 		Type => $type,
 		CNode => VRML::CU::alloc_struct_be($type),
@@ -268,6 +291,7 @@ sub setup_projection {
 		glMatrixMode(&GL_PROJECTION);
 		glViewport(0,0,$this->{W},$this->{H});
 		glLoadIdentity();
+	# print "SVP: $this->{W} $this->{H}\n";
 		if($pick) { # We are picking for mouse events ..
 			my $vp = pack("i4",0,0,0,0);
 			glGetIntegerv(&GL_VIEWPORT, $vp);
@@ -280,16 +304,17 @@ sub setup_projection {
 			  if $VRML::verbose::glsens;
 			glupPickMatrix($x, $vp[3]-$y, 3, 3, @vp);
 		}
-		gluPerspective(60.0, $this->{W}/$this->{H},	
+		gluPerspective(40.0, $this->{W}/$this->{H},	
 			0.1, 200000);
 		glHint(&GL_PERSPECTIVE_CORRECTION_HINT,&GL_NICEST);
 		glMatrixMode(&GL_MODELVIEW);
 		glLoadIdentity();
-		glShadeModel(GL_SMOOTH);
+		# glShadeModel(GL_SMOOTH);
 }
 
 sub setup_viewpoint {
 	my($this,$node) = @_;
+	# print "Rendering for viewpoint '$this' '$this->{Viewpoint}' '$this->{Viewpoint}{CNode}'\n";
 	my $viewpoint = $this->{Viewpoint}{CNode};
 		$this->{Viewer}->togl(); # Make viewpoint
 	     # Store stack depth
@@ -299,8 +324,46 @@ sub setup_viewpoint {
 	     # Go through the scene, rendering all transforms
 	     # in reverse until we hit the viewpoint
 	     # die "NOVP" if !$viewpoint;
+		glMatrixMode(&GL_MODELVIEW);
 	         VRML::VRMLFunc::render_hier($node,
 		 		1, 1, 0, 0, 0, $viewpoint);
+		my $i2 = pack ("i",0);
+		glGetIntegerv(&GL_MODELVIEW_STACK_DEPTH,$i2);
+		my $depnow = unpack("i",$i2);
+#		print "DEP: $dep $depnow\n";
+		if($depnow > $dep) {
+			my $mod = pack ("d16",0,0,0,0,0,0,0,0,0,0,0,0);
+			glGetDoublev(&GL_MODELVIEW_MATRIX, $mod);
+			while($depnow-- > $dep) {
+				# print "POP!\n";
+				glPopMatrix();
+			}
+			glLoadIdentity();
+			glMultMatrixd($mod);
+		}
+}
+
+sub snapshot {
+	my($this) = @_;
+	my($w,$h) = @{$this}{qw/W H/};
+	my $n = 3*$w*$h;
+	my $str = pack("C$n");
+	glPixelStorei(&GL_UNPACK_ALIGNMENT,1);
+	glPixelStorei(&GL_PACK_ALIGNMENT,1);
+	glReadPixels(0,0,$w,$h,&GL_RGB,&GL_UNSIGNED_BYTE,
+		$str);
+	return [$w,$h,$str];
+}
+
+sub pushview {
+	my($this, $loc, $ori) = @_;
+	push @{$this->{AView}}, $this->{Viewer};
+	$this->{Viewer} = VRML::Viewer::None->new($loc,$ori);
+}
+
+sub popview {
+	my($this) = @_;
+	$this->{Viewer} = pop @{$this->{AView}};
 }
 
 # Given root node of scene, render it all
@@ -309,6 +372,7 @@ sub render {
 	my($node,$viewpoint) = @{$this}{Root, Viewpoint};
 	$node = $node->{CNode};
 	$viewpoint = $viewpoint->{CNode};
+	if($VRML::verbose::be) {print "Render: root $node\n";}
 	glDisable(&GL_LIGHT0); # /* Put them all off first */
 	glDisable(&GL_LIGHT1);
 	glDisable(&GL_LIGHT2);

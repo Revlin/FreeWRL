@@ -24,12 +24,18 @@ PROTO FullRound [
 		eventIn SFFloat set_fraction
 		eventOut SFRotation value_changed IS value_changed
 		field SFVec3f axis IS axis
-		url "perl_tjl_xxx1:
+		url ["javascript:
+		   function set_fraction(val,time) {
+		   	value_changed = new SFRotation(
+			 axis.x,axis.y,axis.z,val
+			);
+		   }
+		" "perl_tjl_xxx1:
 		   set_fraction => sub {
 		   	$t->{value_changed} =
 			 [@{$t->{axis}}, $t->{set_fraction}];
 		   }
-		"
+		"]
 	}
 	ROUTE TIMER.fraction_changed TO ORI.set_fraction
 	ROUTE ORI.value_changed TO SCRI.set_fraction

@@ -92,20 +92,20 @@ Cylinder => '
 		if($f(bottom)) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,1,0);
-			for(i=div-1; i>=0; i--) {
+			for(i=0; i<div; i++) {
 				a = i * 6.29 / div;
 				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),-h,r*cos(a));
+				glVertex3f(r*sin(a),h,r*cos(a));
 			}
 			glEnd();
 		} 
 		if($f(top)) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,-1,0);
-			for(i=0; i<div; i++) {
+			for(i=div-1; i>=0; i--) {
 				a = i * 6.29 / div;
 				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),h,r*cos(a));
+				glVertex3f(r*sin(a),-h,r*cos(a));
 			}
 			glEnd();
 		}
@@ -147,14 +147,10 @@ Cone => '
 		float df = div;
 		float h = $f(height)/2;
 		float r = $f(bottomRadius); 
-		float a,a1,a2;
+		float a,a1;
 		int i;
 		$start_list();
 		if(h <= 0 && r <= 0) {return;}
-		/* XXX
-		glPushAttrib(GL_LIGHTING);
-		glShadeModel(GL_FLAT);
-		*/
 		if($f(bottom)) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,-1,0);
@@ -165,22 +161,14 @@ Cone => '
 			}
 			glEnd();
 		}
-		/*
-		glShadeModel(GL_SMOOTH);
-		*/
 		if($f(side)) {
 			double ml = sqrt(h*h + r * r);
 			double mlh = h / ml;
 			double mlr = r / ml;
-				/* if(!nomode) {
-				glPushAttrib(GL_LIGHTING);
-				# glShadeModel(GL_SMOOTH);
-				} */
+			glBegin(GL_QUADS);
 			for(i=0; i<div; i++) {
 				a = i * 6.29 / div;
 				a1 = (i+1) * 6.29 / div;
-				a2 = (a+a1)/2;
-				glBegin(GL_POLYGON);
 				glNormal3f(mlh*sin(a),mlr,mlh*cos(a));
 				TC((i+1)/df,0);
 				glVertex3f(0,h,0);
@@ -191,35 +179,10 @@ Cone => '
 				glVertex3f(r*sin(a1),-h,r*cos(a1));
 				TC((i+1)/df,1);
 				glVertex3f(0,h,0);
-				glEnd();
-				#ifdef FOOBAR
-				glBegin(GL_POLYGON);
-				glNormal3f(mlh*sin(a),mlr,mlh*cos(a));
-				glVertex3f(0,h,0);
-				glVertex3f(0.5*r*sin(a),0,0.5*r*cos(a));
-				glNormal3f(mlh*sin(a1),mlr,mlh*cos(a1));
-				glVertex3f(0.5*r*sin(a1),0,0.5*r*cos(a1));
-				glVertex3f(0,h,0);
-				glEnd();
-				glBegin(GL_POLYGON);
-				glNormal3f(mlh*sin(a),mlr,mlh*cos(a));
-				glVertex3f(0.5*r*sin(a),0,0.5*r*cos(a));
-				glVertex3f(r*sin(a),-h,r*cos(a));
-				glNormal3f(mlh*sin(a1),mlr,mlh*cos(a1));
-				glVertex3f(r*sin(a1),-h,r*cos(a1));
-				glVertex3f(0.5*r*sin(a1),0,0.5*r*cos(a1));
-				glEnd();
-				#endif
+
 			}
-				/*
-				if(!nomode) {
-				glPopAttrib();
-				}
-				*/
+			glEnd();
 		}
-		/*
-		glPopAttrib();
-		*/
 		
 		$end_list();
 ',
@@ -550,9 +513,10 @@ Background => '
 
 
 	if(!$f(isBound)) {return;}
-	$start_list();
+	/* Cannot start_list() because of moving center */
 
 	glPushAttrib(GL_LIGHTING_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
+	glShadeModel(GL_SMOOTH);
 	glPushMatrix();
 
 	glGetDoublev(GL_MODELVIEW_MATRIX, mod);
@@ -573,10 +537,10 @@ Background => '
 
 	/* Undo the translation and scale effects */
 	glScalef(sx,sy,sz);
-	if(verbose) printf("TS: %f %f %f,      %f %f %f\n",x,y,z,sx,sy,sz);
+	 if(verbose)  printf("TS: %f %f %f,      %f %f %f\n",x,y,z,sx,sy,sz);
 	glDisable(GL_LIGHTING);
 
-	glScalef(100,100,100);
+	glScalef(200,200,200);
 
 	glBegin(GL_QUADS);
 	for(v=0; v<$f_n(skyColor); v++) {
@@ -680,7 +644,6 @@ Background => '
 	).'
 	glPopMatrix();
 	glPopAttrib();
-	$end_list();
 ',
 
 );
@@ -794,8 +757,10 @@ Billboard => '
 
 Viewpoint => (join '','
 	if(render_vp) {
-		if(verbose) printf("RENDVIEWP: %d %d\n",this_,what_vp); 
-		if(this_ == what_vp) {
+		GLint vp[10];
+		double a1;
+		double angle;
+		if(!$f(isBound)) {return;}
 		render_anything = 0; /* Stop rendering any more */
 		glTranslatef(',(join ',',map {"-(".getf(Viewpoint,position,$_).")"} 
 			0..2),'
@@ -803,13 +768,22 @@ Viewpoint => (join '','
 		glRotatef(-(',getf(Viewpoint,orientation,3),')/3.1415926536*180,',
 			(join ',',map {getf(Viewpoint,orientation,$_)} 0..2),'
 		);
-	/*
-#		glMatrixMode(&GL_PROJECTION);
-#		glLoadIdentity();
-#		gluPerspective($f->{fieldOfView}/3.1415926536*180,1,0.1,10000);
-#		glMatrixMode(&GL_MODELVIEW);
-	 */
-	 	}
+		glGetIntegerv(GL_VIEWPORT, vp);
+		if(vp[2] > vp[3]) {
+			a1=0;
+			angle = $f(fieldOfView)/3.1415926536*180;
+		} else {
+			a1 = $f(fieldOfView);
+			a1 = atan2(sin(a1),vp[2]/((float)vp[3]) * cos(a1));
+			angle = a1/3.1415926536*180;
+		}
+		if(verbose) printf("Vp: %d %d %d %d %f %f\n", vp[0], vp[1], vp[2], vp[3],
+			a1, angle);
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(angle,vp[2]/(float)vp[3],0.1,200000);
+		glMatrixMode(GL_MODELVIEW);
 	}
 '),
 
