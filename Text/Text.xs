@@ -278,17 +278,14 @@ OUTPUT:
 	RETVAL
 
 void
-set_verbose(i)
-	int i
+open_font(name)
+char *name
 CODE:
-	verbose = i;
-
-BOOT: 
-	{int err;
-	I_OPENGL;
+	int err;
 	if(err = TT_Init_FreeType(&engine))
 	  die("TT 1err %d\n",err);
-	myfontp = get_font("fonts/baklava.ttf");
+	/* myfontp = get_font("fonts/baklava.ttf"); */
+	myfontp = get_font(name);
 
 	triang = gluNewTess();
 	/* gluTessCallback(triang, GLU_BEGIN, glBegin);
@@ -299,6 +296,16 @@ BOOT:
 	gluTessCallback(triang, GLU_VERTEX, tjl_ver);
 	gluTessCallback(triang, GLU_END, tjl_end);
 	gluTessCallback(triang, GLU_ERROR, tjl_err);
+
+void
+set_verbose(i)
+	int i
+CODE:
+	verbose = i;
+
+BOOT: 
+	{
+	I_OPENGL;
 	}
 
 

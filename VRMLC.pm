@@ -1,6 +1,7 @@
 # Copyright (C) 1998 Tuomas J. Lukka
+# Portions Copyright (C) 1998 Bernhard Reiter
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 # The C routines to render various nodes quickly
@@ -43,6 +44,24 @@ require 'VRMLRend.pm';
 #  intersects with the geometry of the primitive.
 #
 #
+
+# Y axis rotation around an unit vector:
+# alpha = angle between Y and vec, theta = rotation angle
+#  1. in X plane ->
+#   Y = Y - sin(alpha) * (1-cos(theta))
+#   X = sin(alpha) * sin(theta)
+#
+#  
+# How to find out the orientation from two vectors (we are allowed
+# to assume no negative scales)
+#  1. Y -> Y' -> around any vector on the plane midway between the 
+#                two vectors
+#     Z -> Z' -> around any vector ""
+#
+# -> intersection.
+#
+# The plane is the midway normal between the two vectors
+# (if the two vectors are the same, it is the vector).
 
 %RendRayC = (
 Box => '
@@ -368,18 +387,31 @@ ElevationGrid => '
 		float a[3],b[3];
 		int *cindex; 
 		float *coord;
-		int ntri = 2 * (nx-1) * (nz-1);
+		int *colindex;
+		int ntri = (nx && nz ? 2 * (nx-1) * (nz-1) : 0);
 		int triind;
 		int nf = $f_n(height);
+		int cpv = $f(colorPerVertex);
+		struct SFColor *colors; int ncolors=0;
 		struct VRML_PolyRep *rep_ = this_->_intern;
+		$fv_null(color, colors, get3, &ncolors);
 		rep_->ntri = ntri;
 		printf("Gen elevgrid %d %d %d\n", ntri, nx, nz);
 		if(nf != nx * nz) {
 			die("Elevationgrid: too many / too few: %d %d %d\n",
 				nf, nx, nz);
 		}
+		if(ncolors) {
+			if(!cpv && ncolors < (nx-1) * (nz-1)) {
+				die("Elevationgrid: too few colors");
+			}
+			if(cpv && ncolors < nx*nz) {
+				die("Elevationgrid: 2too few colors");
+			}
+		}
 		cindex = rep_->cindex = malloc(sizeof(*(rep_->cindex))*3*(ntri));
 		coord = rep_->coord = malloc(sizeof(*(rep_->coord))*nx*nz*3);
+		colindex = rep_->colindex = malloc(sizeof(*(rep_->colindex))*3*(ntri));
 		/* Flat */
 		rep_->normal = malloc(sizeof(*(rep_->normal))*3*ntri);
 		rep_->norindex = malloc(sizeof(*(rep_->norindex))*3*ntri);
@@ -399,6 +431,15 @@ ElevationGrid => '
 		  cindex[triind*3+0] = x+z*nx;
 		  cindex[triind*3+1] = x+(z+1)*nx;
 		  cindex[triind*3+2] = (x+1)+z*nx;
+		  if(cpv) {
+			  colindex[triind*3+0] = x+z*nx;
+			  colindex[triind*3+1] = x+(z+1)*nx;
+			  colindex[triind*3+2] = (x+1)+z*nx;
+		  } else {
+			  colindex[triind*3+0] = x+z*(nx-1);
+			  colindex[triind*3+1] = x+z*(nx-1);
+			  colindex[triind*3+2] = x+z*(nx-1);
+		  }
 		rep_->norindex[triind*3+0] = triind;
 		rep_->norindex[triind*3+1] = triind;
 		rep_->norindex[triind*3+2] = triind;
@@ -407,6 +448,15 @@ ElevationGrid => '
 		  cindex[triind*3+0] = x+(z+1)*nx;
 		  cindex[triind*3+1] = (x+1)+(z+1)*nx;
 		  cindex[triind*3+2] = (x+1)+z*nx;
+		  if(cpv) {
+			  colindex[triind*3+0] = x+(z+1)*nx;
+			  colindex[triind*3+1] = (x+1)+(z+1)*nx;
+			  colindex[triind*3+2] = (x+1)+z*nx;
+		  } else {
+			  colindex[triind*3+0] = x+z*(nx-1);
+			  colindex[triind*3+1] = x+z*(nx-1);
+			  colindex[triind*3+2] = x+z*(nx-1);
+		  }
 		rep_->norindex[triind*3+0] = triind;
 		rep_->norindex[triind*3+1] = triind;
 		rep_->norindex[triind*3+2] = triind;
@@ -416,174 +466,7 @@ ElevationGrid => '
 		calc_poly_normals_flat(rep_);
 	',
 
-# Extrusion => 2 triangles per each extrusion step (like elevgrid..)
-# XXX Do begin&end caps
-Extrusion => '
-		int nspi = $f_n(spine);
-		int nsec = $f_n(crossSection);
-		int nori = $f_n(orientation);
-		int nsca = $f_n(scale);
-		int ntri = 2 * (nspi-1) * (nsec-1);
-		int spi,sec;
-		int triind;
-		int closed = 0;
-		float spxlen,spylen,spzlen;
-		int *cindex;
-		float *coord;
-		struct pt spm1,spc,spp1,spcp,spy,spz,spoz,spx;
-		struct VRML_PolyRep *rep_ = this_->_intern;
-		struct SFColor *spine = $f(spine);
-		rep_->ntri = ntri;
-		cindex = rep_->cindex = malloc(sizeof(*(rep_->cindex))*3*(ntri));
-		coord = rep_->coord = malloc(sizeof(*(rep_->coord))*nspi*nsec*3);
-		/* Flat */
-		rep_->normal = malloc(sizeof(*(rep_->normal))*3*ntri);
-		rep_->norindex = malloc(sizeof(*(rep_->norindex))*3*ntri);
-		/* Coordinates: find first non-collinear */
-		if(spine[0].c[0] == spine[nspi-1].c[0] &&
-		   spine[0].c[1] == spine[nspi-1].c[1] &&
-		   spine[0].c[2] == spine[nspi-1].c[2]) 
-		   	closed = 1;
-		/* Special-case, always find entire-collinear */
-		if(nspi < 3) {
-			die("Collinear spine :( :( :(");
-		}
-		/* Find first non-zero cross product */
-		for(spi = 0; spi<nspi; spi++) {
-			if(spi==0) {
-				if(closed) {
-					VEC_FROM_CDIFF(spine[1],spine[nspi-2], spy);
-					VEC_FROM_CDIFF(spine[1],spine[0], spp1);
-					VEC_FROM_CDIFF(spine[nspi-2],spine[0], spm1);
-				} else {
-					VEC_FROM_CDIFF(spine[1],spine[0], spy);
-					VEC_FROM_CDIFF(spine[0],spine[1], spm1);
-					VEC_FROM_CDIFF(spine[2],spine[1], spp1);
-				}
-				VECCP(spp1,spm1,spz);
-				if(APPROX(VECSQ(spz),0)) {
-					double ptlen,cplen,rangle;
-
-					/* Ok, this is where it gets tough...
-					 * the first two vecs are collinear */
-				 	int j;
-					for(j=1; j<nspi-1; j++) {
-						VEC_FROM_CDIFF(spine[j-1],spine[j], spm1);
-						VEC_FROM_CDIFF(spine[j+1],spine[j], spp1);
-						VECCP(spp1,spm1,spz);
-						if(!APPROX(VECSQ(spz),0)) 
-						  goto got_nz;
-					}
-					/* Even worse: the whole spine is
-					 * linear. Why do they keep doing that!? 
-					 */	
-					/* Find y -> spp1 */
-					spylen = 1/sqrt(VECSQ(spy)); VECSCALE(spy, spylen);
-					spzlen = 1/sqrt(VECSQ(spm1)); VECSCALE(spm1, spzlen);
-					/* Now, the rotation from (0 1 0) to
-					 * spy is the key -- XXX Check
-					 * whether we do it right.. */
-					VECCP(spy,spz,spp1);
-					ptlen = VECPT(spy,spz);
-					cplen = sqrt(VECSQ(spp1));
-					if(APPROX(cplen,0)) {
-						spz.x = 0; spz.y = 0;
-						spz.z = 1; goto got_nz;
-					}
-					VECSCALE(spp1, 1/cplen);
-					rangle = atan2(ptlen,cplen);
-					spz.x = 
-					spz.y = 
-					spz.z = spp1.z + 
-						(1-spp1.z) * 1; /* cosZZ */
-						
-					
-					die("Collinear spine");
-					got_nz:; /* Its all right */
-				}
-			} else if(spi==nspi-1) {
-				if(closed) {
-					VEC_FROM_CDIFF(spine[1],spine[nspi-2], spy);
-					VEC_FROM_CDIFF(spine[1],spine[0], spp1);
-					VEC_FROM_CDIFF(spine[nspi-2],spine[0], spm1);
-				} else {
-					VEC_FROM_CDIFF(spine[nspi-1],spine[nspi-2], spy);
-					VEC_FROM_CDIFF(spine[nspi-3],spine[nspi-2], spm1);
-					VEC_FROM_CDIFF(spine[nspi-1],spine[nspi-2], spp1);
-				}
-				VECCP(spp1,spm1,spz);
-			} else {
-				VEC_FROM_CDIFF(spine[spi+1],spine[spi-1], spy);
-				VEC_FROM_CDIFF(spine[spi-1],spine[spi], spm1);
-				VEC_FROM_CDIFF(spine[spi+1],spine[spi], spp1);
-				VECCP(spp1,spm1,spz);
-			}
-			if(APPROX(VECSQ(spz),0)) {
-				spz = spoz;
-			}
-			VECCP(spy,spz,spx);
-			spylen = 1/sqrt(VECSQ(spy)); VECSCALE(spy, spylen);
-			spzlen = 1/sqrt(VECSQ(spz)); VECSCALE(spz, spzlen);
-			spxlen = 1/sqrt(VECSQ(spx)); VECSCALE(spx, spxlen);
-			/* Now we have spy and spz in every case */
-			for(sec = 0; sec<nsec; sec++) {
-				struct pt point;
-				float ptx = $f(crossSection,sec).c[0];
-				float ptz = $f(crossSection,sec).c[1];
-				if(nsca) {
-					int sca = (nsca==1 ? 0 : spi);
-					ptx *= $f(scale,sca).c[0];
-					ptz *= $f(scale,sca).c[1];
-				}
-				if(nori) {
-					int ori = (nori==1 ? 0 : spi);
-					/* XXX */
-					point.x = ptx;
-					point.y = 0; 
-					point.z = ptz;
-				} else {
-					point.x = ptx;
-					point.y = 0; 
-					point.z = ptz;
-				}
-			   coord[(sec+spi*nsec)*3+0] = 
-			    spx.x * point.x + spy.x * point.y + spz.x * point.z
-			    + $f(spine,spi).c[0];
-			   coord[(sec+spi*nsec)*3+1] = 
-			    spx.y * point.x + spy.y * point.y + spz.y * point.z
-			    + $f(spine,spi).c[1];
-			   coord[(sec+spi*nsec)*3+2] = 
-			    spx.z * point.x + spy.z * point.y + spz.z * point.z
-			    + $f(spine,spi).c[2];
-			}
-			spoz = spz;
-		}
-		triind = 0;
-		{
-		int x,z; int nx=nsec; int nz=nspi;
-		for(x=0; x<nx-1; x++) {
-		 for(z=0; z<nz-1; z++) {
-		  /* 1: */
-		  cindex[triind*3+0] = x+z*nx;
-		  cindex[triind*3+1] = x+(z+1)*nx;
-		  cindex[triind*3+2] = (x+1)+z*nx;
-		rep_->norindex[triind*3+0] = triind;
-		rep_->norindex[triind*3+1] = triind;
-		rep_->norindex[triind*3+2] = triind;
-		  triind ++;
-		  /* 2: */
-		  cindex[triind*3+0] = x+(z+1)*nx;
-		  cindex[triind*3+1] = (x+1)+(z+1)*nx;
-		  cindex[triind*3+2] = (x+1)+z*nx;
-		rep_->norindex[triind*3+0] = triind;
-		rep_->norindex[triind*3+1] = triind;
-		rep_->norindex[triind*3+2] = triind;
-		  triind ++; 
-		 }
-		}
-		}
-		calc_poly_normals_flat(rep_);
-',
+Extrusion => (do "VRMLExtrusion.pm"),
 IndexedFaceSet => '
 	int i;
 	int cin = $f_n(coordIndex);
@@ -698,6 +581,13 @@ Normal => '
 '
 );
 
+%Get2C = (
+TextureCoordinate => '
+	*n = $f_n(point);
+	return $f(point);
+',
+);
+
 ######################################################################
 ######################################################################
 ######################################################################
@@ -708,7 +598,7 @@ Normal => '
 
 
 {
-	my %AllNodes = (%RendC, %PrepC, %FinC, %ChildC, %Get3C, %LightC);
+	my %AllNodes = (%RendC, %RendRayC, %PrepC, %FinC, %ChildC, %Get3C, %Get2C, %LightC);
 	@NodeTypes = keys %AllNodes;
 }
 
@@ -791,8 +681,18 @@ sub gen_struct {
 	my @f = keys %{$node->{FieldTypes}};
 	my $nf = scalar @f;
 	# /* Store actual point etc. later */
-	my $s = "struct VRML_$name {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; \n";
+       my $s = "struct VRML_$name {\n" .
+               " /***/ struct VRML_Virt *v;\n"         .
+               " /*s*/ int _sens; \n"                  .
+               " /*t*/ int _hit; \n"                   .
+               " /*a*/ int _change; \n"                .
+               " /*n*/ int _dlchange; \n"              .
+               " /*d*/ GLuint _dlist; \n"              .
+               " /*a*/ int _dl2change; \n"             .
+               " /*r*/ GLuint _dl2ist; \n"             .
+               " /*d*/ void *_intern; \n"              .
+               " /***/\n";
+	
 	my $o = "
 void *
 get_${name}_offsets(p)
@@ -874,7 +774,7 @@ sub get_rendfunc {
 	my($n) = @_;
 	print "RENDF $n ";
 	# XXX
-	my @f = qw/Prep Rend Child Fin RendRay GenPolyRep Light Get3/;
+	my @f = qw/Prep Rend Child Fin RendRay GenPolyRep Light Get3 Get2/;
 	my $f;
 	my $v = "
 static struct VRML_Virt virt_${n} = { ".
@@ -885,6 +785,63 @@ static struct VRML_Virt virt_${n} = { ".
 		next if !defined $c;
 		print "$_ (",length($c),") ";
 		# Substitute field gets
+		$c =~ s~\$tex2d\(([^)]*)\)~
+		  {
+			int rx,sx,ry,sy;
+			unsigned char *ptr = SvPV(\$f(__data$1),na);
+			if(\$f(__depth$1) && \$f(__x$1) && \$f(__y$1)) {
+				unsigned char *dest = ptr;
+				rx = 1; sx = \$f(__x$1);
+				while(sx) {sx /= 2; rx *= 2;}
+				if(rx/2 == \$f(__x$1)) {rx /= 2;}
+				ry = 1; sy = \$f(__y$1);
+				while(sy) {sy /= 2; ry *= 2;}
+				if(ry/2 == \$f(__y$1)) {ry /= 2;}
+
+				if(rx != \$f(__x$1) || ry != \$f(__y$1)) {
+					/* We have to scale */
+					dest = malloc(\$f(__depth$1) * rx * ry);
+					printf("Scaling %d %d to %d %d\n",
+						\$f(__x$1), \$f(__y$1) ,
+						rx, ry);
+					gluScaleImage(
+					     (\$f(__depth$1)==1 ? GL_LUMINANCE : GL_RGB),
+					     \$f(__x$1), \$f(__y$1),
+					     GL_UNSIGNED_BYTE,
+					     ptr,
+					     rx, ry,
+					     GL_UNSIGNED_BYTE,
+					     dest
+					);
+				}
+
+
+				printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d\n",
+					dest, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5],
+					dest[6], dest[7], dest[8], dest[9]);
+
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+				printf("Doing imagetext %d %d %d\n",\$f(__depth$1),\$f(__x$1),\$f(__y$1));
+				glDisable(GL_LIGHTING);
+				glEnable(GL_TEXTURE_2D);
+				glColor3f(1,1,1);
+					
+				glTexImage2D(GL_TEXTURE_2D,
+					     0, 
+					     \$f(__depth$1),  
+					     rx, ry,
+					     0,
+					     (\$f(__depth$1)==1 ? GL_LUMINANCE : GL_RGB),
+					     GL_UNSIGNED_BYTE,
+					     dest
+				);
+				if(ptr != dest) free(dest);
+			}
+		     }
+			~g;
 		$c =~ s/\$f\(([^)]*)\)/getf($n,split ',',$1)/ge;
 		$c =~ s/\$f_n\(([^)]*)\)/getfn($n,split ',',$1)/ge;
 		$c =~ s/\$fv\(([^)]*)\)/fvirt($n,split ',',$1)/ge;
@@ -919,11 +876,13 @@ static struct VRML_Virt virt_${n} = { ".
 			glEndList()
 			/g;
 		if($_ eq "Get3") {
-			$f .= "struct SFColor *${n}_$_(void *nod_,int *n)";
+			$f .= "\n\nstruct SFColor *${n}_$_(void *nod_,int *n)";
+		} elsif($_ eq "Get2") {
+			$f .= "\n\nstruct SFVec2f *${n}_$_(void *nod_,int *n)";
 		} else {
-			$f .= "void ${n}_$_(void *nod_)";
+			$f .= "\n\nvoid ${n}_$_(void *nod_)";
 		}
-		$f .= "{ /* GENERATED FROM HASH ${$_}C, MEMBER $n */
+		$f .= "{ /* GENERATED FROM HASH ${_}C, MEMBER $n */
 			struct VRML_$n *this_ = (struct VRML_$n *)nod_;
 			{$c}
 			}";
@@ -942,9 +901,10 @@ static struct VRML_Virt virt_${n} = { ".
 
 sub gen {
 	for(@VRML::Fields) {
-		push @str, ("VRML::Field::$_")->cstruct;
+		push @str, ("VRML::Field::$_")->cstruct . "\n";
 		push @xsfn, get_offsf($_);
 	}
+        push @str, "\n/* and now the structs for the nodetypes */ \n";
 	for(@NodeTypes) {
 		my $no = $VRML::Nodes{$_}; 
 		my($str, $offs, $perl) = gen_struct($_, $no);
@@ -975,6 +935,30 @@ sub gen {
 #define offset_of(p_type,field) ((unsigned int)(&(((p_type)NULL)->field)-NULL))
 
 #define TC(a,b) glTexCoord2f(a,b)
+
+#ifdef M_PI
+#define PI M_PI
+#else
+#define PI 3.141592653589793
+#endif
+
+/* Faster trig macros (thanks for Robin Williams) */
+
+#define DECL_TRIG1 float t_aa, t_ab, t_sa, t_ca, t_sa1, t_ca1;
+#define INIT_TRIG1(div) t_aa = sin(PI/(div)); t_aa *= 2*t_aa; t_ab = sin(2*PI/(div));
+#define START_TRIG1 t_sa = 0; t_ca = 1;
+#define UP_TRIG1 t_sa1 = t_sa; t_sa -= t_sa*t_aa - t_ca * t_ab; t_ca -= t_ca * t_aa + t_sa1 * t_ab;
+#define SIN1 t_sa
+#define COS1 t_ca
+
+
+#define DECL_TRIG2 float t2_aa, t2_ab, t2_sa, t2_ca, t2_sa1, t2_ca1;
+#define INIT_TRIG2(div) t2_aa = sin(PI/(div)); t2_aa *= 2*t2_aa; t2_ab = sin(2*PI/(div));
+#define START_TRIG2 t2_sa = 0; t2_ca = 1;
+#define UP_TRIG2 t2_sa1 = t2_sa; t2_sa -= t2_sa*t2_aa - t2_ca * t2_ab; t2_ca -= t2_ca * t2_aa + t2_sa1 * t2_ab;
+#define SIN2 t2_sa
+#define COS2 t2_ca
+
 
 D_OPENGL;
 
@@ -1007,6 +991,7 @@ struct VRML_Virt {
 	/* And get float coordinates : Coordinate, Color */
 	/* XXX Relies on MFColor repr.. */
 	struct SFColor *(*get3)(void *, int *); /* Number in int */
+	struct SFVec2f *(*get2)(void *, int *); /* Number in int */
 	char *name;
 };
 
@@ -1038,6 +1023,7 @@ int render_light;
 int render_sensitive;
 
 int horiz_div; int vert_div;
+int vp_dist = 200000;
 
 int cur_hits=0;
 
@@ -1045,9 +1031,9 @@ int cur_hits=0;
 
 struct pt {GLdouble x,y,z;};
 
-struct pt r1 = {0,0,-1},r2 = {0,0,0};
-struct pt t_r1,t_r2; /* transformed ray */
-void *hypersensitive; int hyperhit;
+struct pt r1 = {0,0,-1},r2 = {0,0,0},r3 = {0,1,0};
+struct pt t_r1,t_r2,t_r3; /* transformed ray */
+void *hypersensitive = 0; int hyperhit = 0;
 struct pt hyper_r1,hyper_r2; /* Transformed ray for the hypersensitive node */
 
 GLint viewport[4] = {-1,-1,2,2};
@@ -1064,11 +1050,19 @@ struct currayhit {
 void *node; /* What node hit at that distance? */
 GLdouble modelMatrix[16]; /* What the matrices were at that node */
 GLdouble projMatrix[16];
-} rh,rph;
+} rh,rph,rhhyper;
  /* used to test new hits */
 
 /* defines for raycasting: */
 #define APPROX(a,b) (fabs(a-b)<0.00000001)
+#define NORMAL_VECTOR_LENGTH_TOLERANCE 0.00001
+/* (test if the vector part of a rotation is normalized) */
+#define IS_ROTATION_VEC_NOT_NORMAL(rot)        ( \
+       fabs(1-sqrt(rot.r[0]*rot.r[0]+rot.r[1]*rot.r[1]+rot.r[2]*rot.r[2])) \
+               >NORMAL_VECTOR_LENGTH_TOLERANCE \
+)
+
+/* defines for raycasting: */
 #define XEQ (APPROX(t_r1.x,t_r2.x))
 #define YEQ (APPROX(t_r1.y,t_r2.y))
 #define ZEQ (APPROX(t_r1.z,t_r2.z))
@@ -1092,6 +1086,106 @@ GLdouble projMatrix[16];
 #define VEC_FROM_CDIFF(a,b,r) {(r).x = (a).c[0]-(b).c[0];(r).y = (a).c[1]-(b).c[1];(r).z = (a).c[2]-(b).c[2];}
 #define VECCP(a,b,c) {(c).x = (a).y*(b).z-(b).y*(a).z; (c).y = -((a).x*(b).z-(b).x*(a).z); (c).z = (a).x*(b).y-(b).x*(a).y;}
 #define VECSCALE(a,c) {(a).x *= c; (a).y *= c; (a).z *= c;}
+
+/* rotate a vector along one axis				*/
+#define VECROTATE_X(c,angle) { \
+	/*(c).x =  (c).x	*/ \
+	  (c).y = 		  cos(angle) * (c).y 	- sin(angle) * (c).z; \
+	  (c).z = 		  sin(angle) * (c).y 	+ cos(angle) * (c).z; \
+	}
+#define VECROTATE_Y(c,angle) { \
+	  (c).x = cos(angle)*(c).x +			+ sin(angle) * (c).z; \
+	/*(c).y = 				(c).y 	*/ \
+	  (c).z = -sin(angle)*(c).x 			+ cos(angle) * (c).z; \
+	}
+#define VECROTATE_Z(c,angle) { \
+	  (c).x = cos(angle)*(c).x - sin(angle) * (c).y;	\
+	  (c).y = sin(angle)*(c).x + cos(angle) * (c).y; 	\
+	/*(c).z = s						 (c).z; */ \
+	}
+
+#define MATRIX_ROTATION_X(angle,m) {\
+	m[0][0]=1; m[0][1]=0; m[0][2]=0; \
+	m[1][0]=0; m[1][1]=cos(angle); m[1][2]=- sin(angle); \
+	m[2][0]=0; m[2][1]=sin(angle); m[2][2]=cos(angle); \
+}
+#define MATRIX_ROTATION_Y(angle,m) {\
+	m[0][0]=cos(angle); m[0][1]=0; m[0][2]=sin(angle); \
+	m[1][0]=0; m[1][1]=1; m[1][2]=0; \
+	m[2][0]=-sin(angle); m[2][1]=0; m[2][2]=cos(angle); \
+}
+#define MATRIX_ROTATION_Z(angle,m) {\
+	m[0][0]=cos(angle); m[0][1]=- sin(angle); m[0][2]=0; \
+	m[1][0]=sin(angle); m[1][1]=cos(angle); m[1][2]=0; \
+	m[2][0]=0; m[2][1]=0; m[2][2]=1; \
+}
+
+/* next matrix calculation comes from comp.graphics.algorithms FAQ	*/
+/* the axis vector has to be normalized					*/
+#define MATRIX_FROM_ROTATION(ro,m) { \
+	struct { double x,y,z,w ; } __q; \
+        double sinHalfTheta = sin(0.5*(ro.r[3]));\
+        double xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;\
+        __q.x = (ro.r[0])*sinHalfTheta;\
+        __q.y = (ro.r[1])*sinHalfTheta;\
+        __q.z = (ro.r[2])*sinHalfTheta;\
+        __q.w = cos(0.5*(ro.r[3]));\
+        xs = 2*__q.x;  ys = 2*__q.y;  zs = 2*__q.z;\
+        wx = __q.w*xs; wy = __q.w*ys; wz = __q.w*zs;\
+        xx = __q.x*xs; xy = __q.x*ys; xz = __q.x*zs;\
+        yy = __q.y*ys; yz = __q.y*zs; zz = __q.z*zs;\
+        m[0][0] = 1 - (yy + zz); m[0][1] = xy - wz;      m[0][2] = xz + wy;\
+        m[1][0] = xy + wz;       m[1][1] = 1 - (xx + zz);m[1][2] = yz - wx;\
+        m[2][0] = xz - wy;       m[2][1] = yz + wx;      m[2][2] = 1-(xx + yy);\
+}
+
+/* matrix multiplication */
+#define VECMM(m,c) { \
+	double ___x=(c).x,___y=(c).y,___z=(c).z; \
+	(c).x= m[0][0]*___x + m[0][1]*___y + m[0][2]*___z; \
+	(c).y= m[1][0]*___x + m[1][1]*___y + m[1][2]*___z; \
+	(c).z= m[2][0]*___x + m[2][1]*___y + m[2][2]*___z; \
+}
+
+	
+/* next define rotates vector c with rotation vector r and angle */
+/*  after section 5.8 of the VRML`97 spec			 */
+
+#define VECROTATE(rx,ry,rz,angle,nc) { \
+	double ___x=(nc).x,___y=(nc).y,___z=(nc).z; \
+	double ___c=cos(angle),  ___s=sin(angle), ___t=1-___c; \
+	(nc).x=   (___t*((rx)*(rx))+___c)     *___x    \
+	        + (___t*(rx)*(ry)  -___s*(rz))*___y    \
+	        + (___t*(rx)*(rz)  +___s*(ry))*___z ;  \
+	(nc).y=   (___t*(rx)*(ry)  +___s*(rz))*___x    \
+	        + (___t*((ry)*(ry))+___c)     *___y    \
+	        + (___t*(ry)*(rz)  -___s*(rx))*___z ;  \
+	(nc).z=   (___t*(rx)*(rz)  -___s*(ry))*___x    \
+	        + (___t*(ry)*(rz)  +___s*(rx))*___y    \
+	        + (___t*((rz)*(rz))+___c)     *___z ;  \
+	}
+
+
+/*
+#define VECROTATE(rx,ry,rz,angle,c) { \
+	double ___c=cos(angle),  ___s=sin(angle), ___t=1-___c; \
+	(c).x=   (___t*((rx)*(rx))+___c)     *(c).x    \
+	       + (___t*(rx)*(ry)  +___s*(rz))*(c).y    \
+	       + (___t*(rx)*(rz)  -___s*(ry))*(c).z ;  \
+	(c).y=   (___t*(rx)*(ry)  -___s*(rz))*(c).x    \
+	       + (___t*((ry)*(ry))+___c)     *(c).y    \
+	       + (___t*(ry)*(rz)  +___s*(rx))*(c).z ;  \
+	(c).z=   (___t*(rx)*(rz)  +___s*(ry))*(c).x    \
+	       + (___t*(ry)*(rz)  -___s*(rx))*(c).y    \
+	       + (___t*((rz)*(rz))+ ___c)    *(c).z ;  \
+	}
+
+*/
+/* next define abbreviates VECROTATE with use of the SFRotation struct	*/
+#define VECRROTATE(ro,c) VECROTATE((ro).r[0],(ro).r[1],(ro).r[2],(ro).r[3],c)	
+
+
+
 #define HIT rayhit
 
 /* Sub, rather than big macro... */
@@ -1115,6 +1209,7 @@ float tx,float ty, char *descr)  {
 		&hp.x, &hp.y, &hp.z);
 	hpdist = rat;
 	rh=rph;
+	rhhyper=rph;
 }
 
 /* Call this when modelview and projection modified */
@@ -1127,6 +1222,8 @@ void upd_ray() {
 		&t_r1.x,&t_r1.y,&t_r1.z);
 	gluUnProject(r2.x,r2.y,r2.z,modelMatrix,projMatrix,viewport,
 		&t_r2.x,&t_r2.y,&t_r2.z);
+	gluUnProject(r3.x,r3.y,r3.z,modelMatrix,projMatrix,viewport,
+		&t_r3.x,&t_r3.y,&t_r3.z);
 /*	printf("Upd_ray: (%f %f %f)->(%f %f %f) == (%f %f %f)->(%f %f %f)\n",
 		r1.x,r1.y,r1.z,r2.x,r2.y,r2.z,
 		t_r1.x,t_r1.y,t_r1.z,t_r2.x,t_r2.y,t_r2.z);
@@ -1189,11 +1286,11 @@ void render_polyrep(void *node,
 /*	printf("Render polyrep %d '%s' (%d %d): %d\n",node,v->name, 
 		p->_change, r->_change, r->ntri);
  */
-	glBegin(GL_TRIANGLES);
 	hasc = (ncolors || r->color);
 	if(hasc) {
 		glEnable(GL_COLOR_MATERIAL);
 	}
+	glBegin(GL_TRIANGLES);
 	for(i=0; i<r->ntri*3; i++) {
 		int nori = i;
 		int coli = i;
@@ -1225,10 +1322,10 @@ void render_polyrep(void *node,
 			glVertex3fv(r->coord+3*ind);
 		}
 	}
+	glEnd();
 	if(hasc) {
 		glDisable(GL_COLOR_MATERIAL);
 	}
-	glEnd();
 }
 
 /*********************************************************************
@@ -1433,19 +1530,16 @@ void render_node(void *node) {
 	if(!node) {return;}
 	v = *(struct VRML_Virt **)node;
 	p = node;
-	if(verbose) printf("Render_node_v %d\n",v);
-	if(verbose) printf("Render_node_v_d \"%s\"\n",v->name);
-	if(verbose) printf("Render_node_v_prep %d\n",v->prep);
-	if(verbose) printf("Render_node_v_rend %d\n",v->rend);
-	if(verbose) printf("Render_node_v_children %d\n",v->children);
-	if(verbose) printf("Render_node_v_fin %d\n",v->fin);
+	if(verbose) printf("Render_node_v %d (%s) %d %d %d %d RAY: %d HYP: %d\n",v,
+		v->name, v->prep, v->rend, v->children, v->fin, v->rendray,
+		hypersensitive);
+	if(verbose) printf("Render_state any %d geom %d light %d sens %d\n",
+		render_anything, render_geom, render_light, render_sensitive);
 	if(render_anything && v->prep) {v->prep(node);
-		if(render_sensitive && v == &virt_Transform) { upd_ray(); }
+		if(render_sensitive && !hypersensitive) { upd_ray(); }
 	}
-	if(render_anything && render_geom && v->rend) {v->rend(node);}
+	if(render_anything && render_geom && !render_sensitive && v->rend) {v->rend(node);}
 	if(render_anything && render_light && v->light) {v->light(node);}
-	if(render_anything && render_geom && render_sensitive &&
-		v->rendray) {v->rendray(node);}
 	/* Future optimization: when doing VP/Lights, do only 
 	 * that child... further in future: could just calculate
 	 * transforms myself..
@@ -1455,10 +1549,7 @@ void render_node(void *node) {
 	   p->_sens) {
 	   	srg = render_geom;
 		render_geom = 1;
-		cur_hits += glRenderMode(GL_SELECT);
 		if(verbose) printf("CH1 %d: %d\n",node, cur_hits, p->_hit);
-		glInitNames();
-		glPushName(1);
 		sch = cur_hits;
 		cur_hits = 0;
 		/* HP */
@@ -1467,6 +1558,8 @@ void render_node(void *node) {
 		glGetDoublev(GL_MODELVIEW_MATRIX, rph.modelMatrix);
 		glGetDoublev(GL_PROJECTION_MATRIX, rph.projMatrix);
 	}
+	if(render_anything && render_geom && render_sensitive &&
+		!hypersensitive && v->rendray) {v->rendray(node);}
 	if(hypersensitive == node) {
 		hyper_r1 = t_r1;
 		hyper_r2 = t_r2;
@@ -1476,11 +1569,6 @@ void render_node(void *node) {
 	if(render_anything &&
 	   render_sensitive &&
 	   p->_sens) {
-	   	cur_hits += glRenderMode(GL_SELECT);
-		if(verbose) printf("CH2 %d: %d\n",node, cur_hits);
-		glInitNames();
-		glPushName(1);
-		/* p->_hit += cur_hits; */
 		render_geom = srg;
 		cur_hits = sch;
 		if(verbose) printf("CH3: %d %d\n",cur_hits, p->_hit);
@@ -1548,6 +1636,8 @@ get_hyperhit(x1,y1,z1,x2,y2,z2)
 	double y2
 	double z2
 CODE:
+	GLdouble projMatrix[16];
+	/*
 	if(hyperhit) {
 		x1 = hyper_r1.x;
 		y1 = hyper_r1.y;
@@ -1557,6 +1647,13 @@ CODE:
 		z2 = hyper_r2.z;
 		RETVAL=1;
 	} else RETVAL = 0;
+	*/
+	glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+	gluUnProject(r1.x, r1.y, r1.z, rhhyper.modelMatrix,
+		projMatrix, viewport, &x1, &y1, &z1);
+	gluUnProject(r2.x, r2.y, r2.z, rhhyper.modelMatrix,
+		projMatrix, viewport, &x2, &y2, &z2);
+	RETVAL=1;
 OUTPUT:
 	RETVAL
 	x1
@@ -1661,6 +1758,38 @@ OUTPUT:
 	tx
 	ty
 
+void 
+get_proximitysensor_vecs(node,hit,x1,y1,z1,x2,y2,z2,q2)
+	void *node
+	int hit
+	double x1
+	double y1
+	double z1
+	double x2
+	double y2
+	double z2
+	double q2
+CODE:
+	struct VRML_ProximitySensor *px = node;
+	hit = px->__hit;
+	px->__hit = 0;
+	x1 = px->__t1.c[0];
+	y1 = px->__t1.c[1];
+	z1 = px->__t1.c[2];
+	x2 = px->__t2.r[0];
+	y2 = px->__t2.r[1];
+	z2 = px->__t2.r[2];
+	q2 = px->__t2.r[3];
+OUTPUT:
+	hit
+	x1
+	y1
+	z1
+	x2
+	y2
+	z2
+	q2
+
 void
 set_divs(horiz,vert)
 int horiz
@@ -1668,6 +1797,12 @@ int vert
 CODE:
 	horiz_div = horiz;
 	vert_div = vert;
+
+void
+set_vpdist(dist)
+int dist
+CODE:
+	vp_dist = dist;
 
 ENDHERE
 ;

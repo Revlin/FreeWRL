@@ -1,6 +1,6 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 To install, you need Perl 5.004_04 or later as well as an OpenGL-
@@ -17,8 +17,15 @@ Downloads:
 	libJPEG		ftp://ftp.uu.net:/graphics/jpeg/
  	 (note you need a fairly recent version)
 
+	libpng1.0.0	http://www.cdrom.com/pub/png/
+ 	 (or later and the libraries it requires, e.g. libz (aka zlib))
+
 	gnu make, if you don't have it yet
 			any GNU archive
+
+	Additionally, if you want to embed FreeWRL into Netscape,
+	get XSwallow
+			http://skynet.csn.ul.ie/~caolan/docs/XSwallow.html
 
 NOTE: when compiling these libraries on systems where there are
 several different binary formats (notably IRIX), make sure you compile
@@ -127,7 +134,9 @@ This is strictly a development version and as such, you need to run
 it in the distribution directory ;)
 
 
+Q. How do I use FreeWRL with XSwallow?
 
+A. See The freewrl manpage (which is in freewrl.PL in POD format)
 
 
 

@@ -1,6 +1,6 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 #
 # This file hadles URLs for FreeWRL -
@@ -14,7 +14,7 @@ use vars qw/$has_lwp/;
 
 # See if we have libwww-perl
 
-unless($ENV{FREEWRL_NO_LWP})  {
+unless($VRML::ENV{FREEWRL_NO_LWP})  {
 
 	eval 'require LWP::Simple; require URI::URL;';
 	if($@) {
@@ -23,6 +23,42 @@ unless($ENV{FREEWRL_NO_LWP})  {
 	} else {
 		$has_lwp = 1;
 	}
+
+}
+
+##############################################################
+#
+# We make it possible to save stuff 
+
+my %saved;
+
+{
+my $ind = 0;
+
+
+sub save_file {
+	my $s;
+	if($s = $VRML::ENV{FREEWRL_SAVE}) {
+		system("cp $_[1] $s/s$ind");
+		system(qq{echo "$_[0] -> $s/s$ind" >>$s/dir});
+		$ind ++;
+	}
+	$saved{"$_[0]:$_[2]"} = $_[1];
+	return $_[1];
+}
+
+sub save_text {
+	my $s;
+	if($s = $VRML::ENV{FREEWRL_SAVE}) {
+		open FOO, ">$s/s$ind";
+		print FOO $_[1];
+		close FOO;
+		system(qq{echo "$_[0] -> $s/s$ind" >>$s/dir});
+		$ind ++;
+	}
+	$saved{"$_[0]:$_[2]"} = $_[1];
+	return $_[1];
+}
 
 }
 
@@ -41,7 +77,7 @@ sub is_gzip {
 
 sub ungzip_file {
 	my($file) = @_;
-	if($file !~ /^[\w~\.,\/]+$/) {
+	if($file !~ /^[-\w~\.,\/]+$/) {
 	 warn("Suspicious file name '$file' -- not gunzipping");
 	 return $file;
 	}
@@ -49,7 +85,7 @@ sub ungzip_file {
 	my $a;
 	read URLFOO, $a, 10;
 	if(is_gzip($a)) {
-		print "Seems to be gzipped - ungzipping\n";
+		print "Seems to be gzipped - ungzipping\n" if $VRML::verbose::url;
 		my $f = temp_file();
 		system("gunzip <$file >$f") == 0
 		 or die("Gunzip failed: $?");
@@ -75,30 +111,44 @@ sub ungzip_text {
 	return $_[0];
 }
 
+sub get_really {
+	my ($url) = @_;
+	$url = URI::URL::url($url,"file:".getcwd()."/")->abs->as_string;
+	print "VRML::URI really '$url'\n" if $VRML::verbose::url;
+	return $url;
+}
+
 sub get_absolute {
 	my($url,$as_file) = @_;
-	print "VRML::URI::get_absolute('$url', $as_file)\n";
+	if($saved{"$url:$as_file"}) {
+		return $saved{"$url:$as_file"}
+	}
+	print "VRML::URI::get_absolute('$url', $as_file)\n" if $VRML::verbose::url;
 	if($has_lwp) {
 		use POSIX qw/getcwd/;
-		$url = URI::URL::url($url,"file:".getcwd()."/")->abs->as_string;
-		print "VRML::URI really '$url'\n";
+		$url = get_really($url);
 		if(!$as_file) {
 			my $r = LWP::Simple::get($url);
-			print "VRML::URI: GOT ".length($r)." bytes\n";
-			return ungzip_text($r);
+			if(!defined $r) {die("URL not obtained: '$url'... something is wrong\n")}
+			print "VRML::URI: GOT ".length($r)." bytes\n" if $VRML::verbose::url;
+			return save_text($url,ungzip_text($r), $as_file);
 		} else {
-			my($name) = temp_file();
-			LWP::Simple::getstore($url,$name);
-			return ungzip_file($name);
+			if($url =~ /^file:(.*)$/) {
+				return save_file($url,ungzip_file($1), $as_file);
+			} else {
+				my($name) = temp_file();
+				LWP::Simple::getstore($url,$name);
+				return save_file($url,ungzip_file($name), $as_file);
+			}
 		}
 	} else {
 		if(-e $url) {
 			$url = ungzip_file($url);
-			if($as_file) {return $url}
+			if($as_file) {return save_file($url,$url, $as_file)}
 			open FOOFILE, "<$url";
 			my $str = join '',<FOOFILE>;
 			close FOOFILE;
-			return $str;
+			return save_text($url,$str, $as_file);
 		} else {
 			die("Cannot find file '$url' -- if it is a web
 address, you need to install libwww-perl \n");
@@ -108,7 +158,8 @@ address, you need to install libwww-perl \n");
 
 sub get_relative {
 	my($base,$extra,$as_file) = @_;
-	print "VRML::URI::get_relative('$base', '$extra', $as_file)\n";
+	$base = get_really($base);
+	print "VRML::URI::get_relative('$base', '$extra', $as_file)\n" if $VRML::verbose::url;
 	my $url;
 	if($has_lwp) {
 		$url = URI::URL::url($extra,$base)->abs->as_string;
@@ -116,7 +167,8 @@ sub get_relative {
 		$url = $base;
 		$url =~ s/[^\/]+$/$extra/ or die("Can't do relativization");
 	}
-	return get_absolute($url,$as_file);
+	my $txt = get_absolute($url,$as_file);
+	return (wantarray ? ($txt, $url) : $txt);
 }
 
 # Taken from perlfaq5
@@ -153,7 +205,7 @@ sub unlinktmp {
 }
 END {
 	for(keys %temps) {
-		print "unlinking '$_' (NOT)\n";
+		print "unlinking '$_' (NOT)\n" if $VRML::verbose::url;
 		# unlink $_;
 	}
 }

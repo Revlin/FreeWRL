@@ -1,6 +1,7 @@
 /* Modified from the libjpeg example 
  * Modifications Copyright(C) 1998 Tuomas J. Lukka
- * NO WARRANTY. See the license (the file COPYING in the VRML::Browser
+ * DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
+ * See the license (the file COPYING in the FreeWRL
  * distribution) for details.
  */
 

@@ -1,5 +1,8 @@
 #VRML V2.0 utf8
-#
+# Copyright (C) 1998 Tuomas J. Lukka
+# DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
+# See the GNU Library General Public License (file COPYING in the distribution)
+# for conditions of use and redistribution.
 
 # Browser object in Perl: test 
 
@@ -10,13 +13,19 @@ Shape {
 
 DEF S Script {
 	eventOut MFString str
-	url "perl_tjl_xxx1:
+	url [
+	"javascript:
+	 function initialize(time) {
+	 	str = new MFString(\"Name\", Browser.getName());
+	 }
+	 "
+	"perl_tjl_xxx1:
 	  initialize => sub {
 	  	print 'S Init
 ';
 	  	$t->{str} = [Name, $Browser->getName];
 	  }
-	"
+	"]
 }
 
 

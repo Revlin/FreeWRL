@@ -1,3 +1,9 @@
+#VRML V2.0 utf8
+# Copyright (C) 1998 Tuomas J. Lukka
+# DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
+# See the GNU Library General Public License (file COPYING in the distribution)
+# for conditions of use and redistribution.
+
 # Move the mouse on the shapes, see the little blue thing move
 #
 # XXX IndexedFaceSet, Extrusion, ElevationGrid!!!
@@ -80,6 +86,20 @@ Transform { translation 0 5.0 0 children [
 			point [-1 -1 0 1 -1 0 -1 1 0]
 		}
 		coordIndex [ 0 1 2 -1]
+		solid FALSE 
+	} }
+]}
+Transform { translation 0 6.0 0 children [
+	Testtouch { node ElevationGrid { 
+		height [
+			0 0 0
+			0 0.5 0
+			0 0 0
+		]
+		xDimension 3
+		zDimension 3
+		xSpacing 0.5
+		zSpacing 0.5
 		solid FALSE 
 	} }
 ]}

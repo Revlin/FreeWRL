@@ -19,4 +19,4 @@ public ConstSFBool(String s) throws Exception {
 	else {throw new Exception("Invalid boolean '"+s+"'");}
 
 	}public boolean getValue() {return v;}
-public String toString() {if(v) return "1"; else return "0";}public Object clone() {ConstSFBool _x = new ConstSFBool(v); return _x;}}
+public String toString() {return (v? "1": "0");}public Object clone() {ConstSFBool _x = new ConstSFBool(v); return _x;}}

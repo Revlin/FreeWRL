@@ -1,17 +1,25 @@
+# Copyright (C) 1998 Tuomas J. Lukka
+# DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
+# See the GNU Library General Public License (file COPYING in the distribution)
+# for conditions of use and redistribution.
+
 # Implement VRMLPERL-JAVA communication.
 
 package VRML::JavaCom::OHandle;
 sub new {my($type,$handle) = @_; bless {Handle => $handle},$type;}
 sub print {my $this = shift;
-	print "TO JAVA:\n---\n";
-	print @_; print "---\n";$this->{Handle}->print(@_);}
+	if($VRML::verbose::java) {
+		print "TO JAVA:\n---\n";
+		print @_; print "---\n";
+	}
+	$this->{Handle}->print(@_);}
 sub flush {$_[0]{Handle}->flush}
 
 package VRML::JavaCom::IHandle;
 sub new {my($type,$handle) = @_; bless {Handle => $handle},$type;}
 sub getline {
 	my $l = $_[0]{Handle}->getline;
-	print "FROM JAVA:\n---\n$l---\n";
+	print "FROM JAVA:\n---\n$l---\n" if $VRML::verbose::java;
 	return $l;
 }
 
@@ -31,7 +39,7 @@ sub new {
 sub connect {
 	my($this) = @_;
 # XXX java VM name
-	# my @cmd = split ' ','java_g -v TjlScript';
+	# my @cmd = split ' ','java_g TjlScript';
 	# $pid = system 1, @cmd;
 	unless ($pid = fork()) {
 		exec 'java_g -v TjlScript';
@@ -110,12 +118,12 @@ sub receive {
 	my @a;
 	$i = $this->{I};
 	while(1) {
-		print "WAITING FOR JAVA EVENT...\n";
+		print "WAITING FOR JAVA EVENT...\n" if $VRML::verbose::java;
 		my $cmd = $i->getline; 
 		die("EOF on java filehandle") 
 			if !defined $cmd;
 		chomp $cmd;
-		print "JAVA EVENT '$cmd'\n";
+		print "JAVA EVENT '$cmd'\n" if $VRML::verbose::java;
 		if($cmd eq "FINISHED") {
 			my $ri = $i->getline; chomp $ri;
 			if($ri ne $id) {

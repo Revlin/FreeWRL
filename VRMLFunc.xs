@@ -18,6 +18,30 @@
 
 #define TC(a,b) glTexCoord2f(a,b)
 
+#ifdef M_PI
+#define PI M_PI
+#else
+#define PI 3.141592653589793
+#endif
+
+/* Faster trig macros (thanks for Robin Williams) */
+
+#define DECL_TRIG1 float t_aa, t_ab, t_sa, t_ca, t_sa1, t_ca1;
+#define INIT_TRIG1(div) t_aa = sin(PI/(div)); t_aa *= 2*t_aa; t_ab = sin(2*PI/(div));
+#define START_TRIG1 t_sa = 0; t_ca = 1;
+#define UP_TRIG1 t_sa1 = t_sa; t_sa -= t_sa*t_aa - t_ca * t_ab; t_ca -= t_ca * t_aa + t_sa1 * t_ab;
+#define SIN1 t_sa
+#define COS1 t_ca
+
+
+#define DECL_TRIG2 float t2_aa, t2_ab, t2_sa, t2_ca, t2_sa1, t2_ca1;
+#define INIT_TRIG2(div) t2_aa = sin(PI/(div)); t2_aa *= 2*t2_aa; t2_ab = sin(2*PI/(div));
+#define START_TRIG2 t2_sa = 0; t2_ca = 1;
+#define UP_TRIG2 t2_sa1 = t2_sa; t2_sa -= t2_sa*t2_aa - t2_ca * t2_ab; t2_ca -= t2_ca * t2_aa + t2_sa1 * t2_ab;
+#define SIN2 t2_sa
+#define COS2 t2_ca
+
+
 D_OPENGL;
 
 
@@ -49,6 +73,7 @@ struct VRML_Virt {
 	/* And get float coordinates : Coordinate, Color */
 	/* XXX Relies on MFColor repr.. */
 	struct SFColor *(*get3)(void *, int *); /* Number in int */
+	struct SFVec2f *(*get2)(void *, int *); /* Number in int */
 	char *name;
 };
 
@@ -67,11 +92,282 @@ struct VRML_PolyRep { /* Currently a bit wasteful, because copying */
 	float *normal; /* triples or null */
 };
 
-struct Multi_Float { int n; float  *p; };struct SFRotation {
- 	float r[4]; };struct Multi_Rotation { int n; struct SFRotation  *p; };struct Multi_Vec3f { int n; struct SFColor  *p; };struct Multi_Int32 { int n; int  *p; };struct Multi_Node { int n; void * *p; };struct SFColor {
-	float c[3]; };struct Multi_Color { int n; struct SFColor  *p; };struct Multi_String { int n; SV * *p; };struct SFVec2f {
-	float c[2]; };struct Multi_Vec2f { int n; struct SFVec2f  *p; };struct VRML_Background {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+
+struct Multi_Float { int n; float  *p; };
+struct SFRotation {
+ 	float r[4]; };
+struct Multi_Rotation { int n; struct SFRotation  *p; };
+
+struct Multi_Vec3f { int n; struct SFColor  *p; };
+
+
+struct Multi_Int32 { int n; int  *p; };
+
+struct Multi_Node { int n; void * *p; };
+struct SFColor {
+	float c[3]; };
+struct Multi_Color { int n; struct SFColor  *p; };
+
+
+struct Multi_String { int n; SV * *p; };
+struct SFVec2f {
+	float c[2]; };
+struct Multi_Vec2f { int n; struct SFVec2f  *p; };
+
+/* and now the structs for the nodetypes */ 
+struct VRML_PointLight {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	float radius;
+	struct SFColor location;
+	struct SFColor direction;
+	struct SFColor attenuation;
+	int on;
+	struct SFColor color;
+	float ambientIntensity;
+	float intensity;
+};
+struct VRML_DirectionalLight {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct SFColor direction;
+	int on;
+	float ambientIntensity;
+	struct SFColor color;
+	float intensity;
+};
+struct VRML_Sphere {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	float radius;
+};
+struct VRML_Coordinate {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct Multi_Vec3f point;
+};
+struct VRML_FontStyle {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	SV *style;
+	struct Multi_String family;
+	SV *language;
+	float spacing;
+	int horizontal;
+	int topToBottom;
+	float size;
+	int leftToRight;
+	struct Multi_String justify;
+};
+struct VRML_Normal {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct Multi_Vec3f vector;
+};
+struct VRML_Box {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct SFColor size;
+};
+struct VRML_Billboard {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct Multi_Node children;
+	struct SFColor axisOfRotation;
+	struct SFColor bboxCenter;
+	struct SFColor bboxSize;
+};
+struct VRML_ElevationGrid {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	int zDimension;
+	int colorPerVertex;
+	struct Multi_Float height;
+	void *normal;
+	float creaseAngle;
+	int solid;
+	float xSpacing;
+	int xDimension;
+	int normalPerVertex;
+	void *color;
+	float zSpacing;
+};
+struct VRML_Extrusion {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	int convex;
+	struct Multi_Vec2f scale;
+	int beginCap;
+	float creaseAngle;
+	int solid;
+	int endCap;
+	struct Multi_Rotation orientation;
+	int ccw;
+	struct Multi_Vec2f crossSection;
+	struct Multi_Vec3f spine;
+};
+struct VRML_Switch {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct Multi_Node choice;
+	int whichChoice;
+};
+struct VRML_ImageTexture {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	SV *__data;
+	struct Multi_String url;
+	int __depth;
+	int repeatS;
+	int repeatT;
+	int __x;
+	int __y;
+};
+struct VRML_TextureCoordinate {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct Multi_Vec2f point;
+};
+struct VRML_IndexedFaceSet {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct Multi_Int32 texCoordIndex;
+	struct Multi_Int32 normalIndex;
+	int convex;
+	int colorPerVertex;
+	void *coord;
+	struct Multi_Int32 colorIndex;
+	void *texCoord;
+	void *normal;
+	float creaseAngle;
+	int solid;
+	int ccw;
+	struct Multi_Int32 coordIndex;
+	void *color;
+};
+struct VRML_Background {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	int __y_left;
 	SV *__data_left;
 	int __depth_back;
@@ -110,8 +406,50 @@ struct Multi_Float { int n; float  *p; };struct SFRotation {
 	int __x_front;
 	int __y_front;
 };
-struct VRML_Viewpoint {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_Text {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	void *fontStyle;
+	int __rendersub;
+	struct Multi_Float length;
+	float maxExtent;
+	struct Multi_String string;
+};
+struct VRML_Cone {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	float height;
+	float bottomRadius;
+	int side;
+	int bottom;
+};
+struct VRML_Viewpoint {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	float fieldOfView;
 	SV *description;
 	int isBound;
@@ -121,84 +459,71 @@ struct VRML_Viewpoint {struct VRML_Virt *v;int _sens;int _hit;
 	int jump;
 	struct SFRotation orientation;
 };
-struct VRML_Cone {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	float height;
-	float bottomRadius;
-	int side;
-	int bottom;
+struct VRML_TextureTransform {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	float rotation;
+	struct SFVec2f scale;
+	struct SFVec2f center;
+	struct SFVec2f translation;
 };
-struct VRML_Text {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	void *fontStyle;
-	int __rendersub;
-	struct Multi_Float length;
-	float maxExtent;
-	struct Multi_String string;
+struct VRML_Group {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct Multi_Node children;
+	struct SFColor bboxCenter;
+	struct SFColor bboxSize;
 };
-struct VRML_DirectionalLight {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	struct SFColor direction;
-	int on;
-	float ambientIntensity;
-	struct SFColor color;
-	float intensity;
-};
-struct VRML_Sphere {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	float radius;
-};
-struct VRML_Coordinate {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	struct Multi_Vec3f point;
-};
-struct VRML_FontStyle {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	SV *style;
-	struct Multi_String family;
-	SV *language;
-	float spacing;
-	int horizontal;
-	int topToBottom;
-	float size;
-	int leftToRight;
-	struct Multi_String justify;
-};
-struct VRML_Normal {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	struct Multi_Vec3f vector;
-};
-struct VRML_Box {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_ProximitySensor {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct SFColor center;
+	int __hit;
+	struct SFColor __t1;
+	struct SFRotation __t2;
+	struct SFRotation orientation_changed;
+	int isActive;
+	float exitTime;
 	struct SFColor size;
+	int enabled;
+	float enterTime;
+	struct SFColor position_changed;
 };
-struct VRML_Billboard {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	struct Multi_Node children;
-	struct SFColor axisOfRotation;
-	struct SFColor bboxCenter;
-	struct SFColor bboxSize;
-};
-struct VRML_Group {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	struct Multi_Node children;
-	struct SFColor bboxCenter;
-	struct SFColor bboxSize;
-};
-struct VRML_ElevationGrid {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	int zDimension;
-	void *normal;
-	struct Multi_Float height;
-	float creaseAngle;
-	int solid;
-	float xSpacing;
-	int xDimension;
-	float zSpacing;
-	void *color;
-};
-struct VRML_Material {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_Material {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	float transparency;
 	struct SFColor emissiveColor;
 	float shininess;
@@ -206,67 +531,94 @@ struct VRML_Material {struct VRML_Virt *v;int _sens;int _hit;
 	struct SFColor specularColor;
 	float ambientIntensity;
 };
-struct VRML_Appearance {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_Appearance {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	void *texture;
+	void *textureTransform;
 	void *material;
 };
-struct VRML_Extrusion {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	int convex;
-	struct Multi_Vec2f scale;
-	int beginCap;
-	float creaseAngle;
-	int solid;
-	int endCap;
-	struct Multi_Rotation orientation;
-	int ccw;
-	struct Multi_Vec2f crossSection;
-	struct Multi_Vec3f spine;
-};
-struct VRML_Shape {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_Shape {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	void *appearance;
 	void *geometry;
 };
-struct VRML_Switch {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	struct Multi_Node choice;
-	int whichChoice;
-};
-struct VRML_ImageTexture {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	SV *__data;
-	struct Multi_String url;
-	int __depth;
-	int repeatS;
-	int repeatT;
-	int __x;
-	int __y;
-};
-struct VRML_IndexedLineSet {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_IndexedLineSet {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	int colorPerVertex;
 	void *coord;
 	void *color;
 	struct Multi_Int32 colorIndex;
 	struct Multi_Int32 coordIndex;
 };
-struct VRML_PointSet {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_PointSet {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	void *color;
 	void *coord;
 };
-struct VRML_Cylinder {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_Cylinder {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	float radius;
 	float height;
 	int top;
 	int side;
 	int bottom;
 };
-struct VRML_Anchor {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_Anchor {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	struct Multi_Node children;
 	struct Multi_String parameter;
 	struct Multi_String url;
@@ -274,24 +626,17 @@ struct VRML_Anchor {struct VRML_Virt *v;int _sens;int _hit;
 	struct SFColor bboxCenter;
 	struct SFColor bboxSize;
 };
-struct VRML_IndexedFaceSet {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	struct Multi_Int32 texCoordIndex;
-	struct Multi_Int32 normalIndex;
-	int convex;
-	int colorPerVertex;
-	void *coord;
-	struct Multi_Int32 colorIndex;
-	void *texCoord;
-	void *normal;
-	float creaseAngle;
-	int solid;
-	int ccw;
-	struct Multi_Int32 coordIndex;
-	void *color;
-};
-struct VRML_Transform {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_Transform {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	struct SFRotation rotation;
 	struct SFColor center;
 	struct SFRotation scaleOrientation;
@@ -301,15 +646,55 @@ struct VRML_Transform {struct VRML_Virt *v;int _sens;int _hit;
 	struct SFColor bboxCenter;
 	struct SFColor translation;
 };
-struct VRML_Color {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
-	struct Multi_Color color;
+struct VRML_SpotLight {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct SFColor direction;
+	float beamWidth;
+	float ambientIntensity;
+	float intensity;
+	float radius;
+	struct SFColor location;
+	struct SFColor attenuation;
+	int on;
+	float cutOffAngle;
+	struct SFColor color;
 };
-struct VRML_LOD {struct VRML_Virt *v;int _sens;int _hit; 
-		int _change; int _dlchange; GLuint _dlist; int _dl2change; GLuint _dl2ist; void *_intern; 
+struct VRML_LOD {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
 	struct Multi_Node level;
 	struct SFColor center;
 	struct Multi_Float range;
+};
+struct VRML_Color {
+ /***/ struct VRML_Virt *v;
+ /*s*/ int _sens; 
+ /*t*/ int _hit; 
+ /*a*/ int _change; 
+ /*n*/ int _dlchange; 
+ /*d*/ GLuint _dlist; 
+ /*a*/ int _dl2change; 
+ /*r*/ GLuint _dl2ist; 
+ /*d*/ void *_intern; 
+ /***/
+	struct Multi_Color color;
 };
 
 
@@ -322,6 +707,7 @@ int render_light;
 int render_sensitive;
 
 int horiz_div; int vert_div;
+int vp_dist = 200000;
 
 int cur_hits=0;
 
@@ -329,9 +715,9 @@ int cur_hits=0;
 
 struct pt {GLdouble x,y,z;};
 
-struct pt r1 = {0,0,-1},r2 = {0,0,0};
-struct pt t_r1,t_r2; /* transformed ray */
-void *hypersensitive; int hyperhit;
+struct pt r1 = {0,0,-1},r2 = {0,0,0},r3 = {0,1,0};
+struct pt t_r1,t_r2,t_r3; /* transformed ray */
+void *hypersensitive = 0; int hyperhit = 0;
 struct pt hyper_r1,hyper_r2; /* Transformed ray for the hypersensitive node */
 
 GLint viewport[4] = {-1,-1,2,2};
@@ -348,11 +734,19 @@ struct currayhit {
 void *node; /* What node hit at that distance? */
 GLdouble modelMatrix[16]; /* What the matrices were at that node */
 GLdouble projMatrix[16];
-} rh,rph;
+} rh,rph,rhhyper;
  /* used to test new hits */
 
 /* defines for raycasting: */
 #define APPROX(a,b) (fabs(a-b)<0.00000001)
+#define NORMAL_VECTOR_LENGTH_TOLERANCE 0.00001
+/* (test if the vector part of a rotation is normalized) */
+#define IS_ROTATION_VEC_NOT_NORMAL(rot)        ( \
+       fabs(1-sqrt(rot.r[0]*rot.r[0]+rot.r[1]*rot.r[1]+rot.r[2]*rot.r[2])) \
+               >NORMAL_VECTOR_LENGTH_TOLERANCE \
+)
+
+/* defines for raycasting: */
 #define XEQ (APPROX(t_r1.x,t_r2.x))
 #define YEQ (APPROX(t_r1.y,t_r2.y))
 #define ZEQ (APPROX(t_r1.z,t_r2.z))
@@ -376,6 +770,106 @@ GLdouble projMatrix[16];
 #define VEC_FROM_CDIFF(a,b,r) {(r).x = (a).c[0]-(b).c[0];(r).y = (a).c[1]-(b).c[1];(r).z = (a).c[2]-(b).c[2];}
 #define VECCP(a,b,c) {(c).x = (a).y*(b).z-(b).y*(a).z; (c).y = -((a).x*(b).z-(b).x*(a).z); (c).z = (a).x*(b).y-(b).x*(a).y;}
 #define VECSCALE(a,c) {(a).x *= c; (a).y *= c; (a).z *= c;}
+
+/* rotate a vector along one axis				*/
+#define VECROTATE_X(c,angle) { \
+	/*(c).x =  (c).x	*/ \
+	  (c).y = 		  cos(angle) * (c).y 	- sin(angle) * (c).z; \
+	  (c).z = 		  sin(angle) * (c).y 	+ cos(angle) * (c).z; \
+	}
+#define VECROTATE_Y(c,angle) { \
+	  (c).x = cos(angle)*(c).x +			+ sin(angle) * (c).z; \
+	/*(c).y = 				(c).y 	*/ \
+	  (c).z = -sin(angle)*(c).x 			+ cos(angle) * (c).z; \
+	}
+#define VECROTATE_Z(c,angle) { \
+	  (c).x = cos(angle)*(c).x - sin(angle) * (c).y;	\
+	  (c).y = sin(angle)*(c).x + cos(angle) * (c).y; 	\
+	/*(c).z = s						 (c).z; */ \
+	}
+
+#define MATRIX_ROTATION_X(angle,m) {\
+	m[0][0]=1; m[0][1]=0; m[0][2]=0; \
+	m[1][0]=0; m[1][1]=cos(angle); m[1][2]=- sin(angle); \
+	m[2][0]=0; m[2][1]=sin(angle); m[2][2]=cos(angle); \
+}
+#define MATRIX_ROTATION_Y(angle,m) {\
+	m[0][0]=cos(angle); m[0][1]=0; m[0][2]=sin(angle); \
+	m[1][0]=0; m[1][1]=1; m[1][2]=0; \
+	m[2][0]=-sin(angle); m[2][1]=0; m[2][2]=cos(angle); \
+}
+#define MATRIX_ROTATION_Z(angle,m) {\
+	m[0][0]=cos(angle); m[0][1]=- sin(angle); m[0][2]=0; \
+	m[1][0]=sin(angle); m[1][1]=cos(angle); m[1][2]=0; \
+	m[2][0]=0; m[2][1]=0; m[2][2]=1; \
+}
+
+/* next matrix calculation comes from comp.graphics.algorithms FAQ	*/
+/* the axis vector has to be normalized					*/
+#define MATRIX_FROM_ROTATION(ro,m) { \
+	struct { double x,y,z,w ; } __q; \
+        double sinHalfTheta = sin(0.5*(ro.r[3]));\
+        double xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;\
+        __q.x = (ro.r[0])*sinHalfTheta;\
+        __q.y = (ro.r[1])*sinHalfTheta;\
+        __q.z = (ro.r[2])*sinHalfTheta;\
+        __q.w = cos(0.5*(ro.r[3]));\
+        xs = 2*__q.x;  ys = 2*__q.y;  zs = 2*__q.z;\
+        wx = __q.w*xs; wy = __q.w*ys; wz = __q.w*zs;\
+        xx = __q.x*xs; xy = __q.x*ys; xz = __q.x*zs;\
+        yy = __q.y*ys; yz = __q.y*zs; zz = __q.z*zs;\
+        m[0][0] = 1 - (yy + zz); m[0][1] = xy - wz;      m[0][2] = xz + wy;\
+        m[1][0] = xy + wz;       m[1][1] = 1 - (xx + zz);m[1][2] = yz - wx;\
+        m[2][0] = xz - wy;       m[2][1] = yz + wx;      m[2][2] = 1-(xx + yy);\
+}
+
+/* matrix multiplication */
+#define VECMM(m,c) { \
+	double ___x=(c).x,___y=(c).y,___z=(c).z; \
+	(c).x= m[0][0]*___x + m[0][1]*___y + m[0][2]*___z; \
+	(c).y= m[1][0]*___x + m[1][1]*___y + m[1][2]*___z; \
+	(c).z= m[2][0]*___x + m[2][1]*___y + m[2][2]*___z; \
+}
+
+	
+/* next define rotates vector c with rotation vector r and angle */
+/*  after section 5.8 of the VRML`97 spec			 */
+
+#define VECROTATE(rx,ry,rz,angle,nc) { \
+	double ___x=(nc).x,___y=(nc).y,___z=(nc).z; \
+	double ___c=cos(angle),  ___s=sin(angle), ___t=1-___c; \
+	(nc).x=   (___t*((rx)*(rx))+___c)     *___x    \
+	        + (___t*(rx)*(ry)  -___s*(rz))*___y    \
+	        + (___t*(rx)*(rz)  +___s*(ry))*___z ;  \
+	(nc).y=   (___t*(rx)*(ry)  +___s*(rz))*___x    \
+	        + (___t*((ry)*(ry))+___c)     *___y    \
+	        + (___t*(ry)*(rz)  -___s*(rx))*___z ;  \
+	(nc).z=   (___t*(rx)*(rz)  -___s*(ry))*___x    \
+	        + (___t*(ry)*(rz)  +___s*(rx))*___y    \
+	        + (___t*((rz)*(rz))+___c)     *___z ;  \
+	}
+
+
+/*
+#define VECROTATE(rx,ry,rz,angle,c) { \
+	double ___c=cos(angle),  ___s=sin(angle), ___t=1-___c; \
+	(c).x=   (___t*((rx)*(rx))+___c)     *(c).x    \
+	       + (___t*(rx)*(ry)  +___s*(rz))*(c).y    \
+	       + (___t*(rx)*(rz)  -___s*(ry))*(c).z ;  \
+	(c).y=   (___t*(rx)*(ry)  -___s*(rz))*(c).x    \
+	       + (___t*((ry)*(ry))+___c)     *(c).y    \
+	       + (___t*(ry)*(rz)  +___s*(rx))*(c).z ;  \
+	(c).z=   (___t*(rx)*(rz)  +___s*(ry))*(c).x    \
+	       + (___t*(ry)*(rz)  -___s*(rx))*(c).y    \
+	       + (___t*((rz)*(rz))+ ___c)    *(c).z ;  \
+	}
+
+*/
+/* next define abbreviates VECROTATE with use of the SFRotation struct	*/
+#define VECRROTATE(ro,c) VECROTATE((ro).r[0],(ro).r[1],(ro).r[2],(ro).r[3],c)	
+
+
+
 #define HIT rayhit
 
 /* Sub, rather than big macro... */
@@ -399,6 +893,7 @@ float tx,float ty, char *descr)  {
 		&hp.x, &hp.y, &hp.z);
 	hpdist = rat;
 	rh=rph;
+	rhhyper=rph;
 }
 
 /* Call this when modelview and projection modified */
@@ -411,6 +906,8 @@ void upd_ray() {
 		&t_r1.x,&t_r1.y,&t_r1.z);
 	gluUnProject(r2.x,r2.y,r2.z,modelMatrix,projMatrix,viewport,
 		&t_r2.x,&t_r2.y,&t_r2.z);
+	gluUnProject(r3.x,r3.y,r3.z,modelMatrix,projMatrix,viewport,
+		&t_r3.x,&t_r3.y,&t_r3.z);
 /*	printf("Upd_ray: (%f %f %f)->(%f %f %f) == (%f %f %f)->(%f %f %f)\n",
 		r1.x,r1.y,r1.z,r2.x,r2.y,r2.z,
 		t_r1.x,t_r1.y,t_r1.z,t_r2.x,t_r2.y,t_r2.z);
@@ -433,509 +930,54 @@ void render_ray_polyrep(void *node,
 /*********************************************************************
  * Code here is generated from the hashes in VRMLC.pm and VRMLRend.pm
  */
-	void Background_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER Background */
-			struct VRML_Background *this_ = (struct VRML_Background *)nod_;
-			{
-	GLdouble mod[16];
-	GLdouble proj[16];
-	GLdouble unit[16] = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
-	struct pt vec[4]; struct pt vec2[4]; struct pt vec3[4];
-	int i,j; int ind=0;
-	GLdouble x,y,z;
-	GLdouble x1,y1,z1;
-	GLdouble sx, sy, sz;
-	struct SFColor *c1,*c2;
-	int hdiv = horiz_div;
-	int h,v;
-	double va1, va2, ha1, ha2;
-
-
-	if(!((this_->isBound))) {return;}
-	/* Cannot start_list() because of moving center */
-
-	glPushAttrib(GL_LIGHTING_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
-	glShadeModel(GL_SMOOTH);
-	glPushMatrix();
-
-	glGetDoublev(GL_MODELVIEW_MATRIX, mod);
-	glGetDoublev(GL_PROJECTION_MATRIX, proj);
-	/* Get origin */
-	gluUnProject(0,0,0,mod,proj,viewport,&x,&y,&z);
-	glTranslatef(x,y,z);
-
-
-	gluUnProject(0,0,0,mod,unit,viewport,&x,&y,&z);
-	/* Get scale */
-	gluProject(x+1,y,z,mod,unit,viewport,&x1,&y1,&z1);
-	sx = 1/sqrt( x1*x1 + y1*y1 + z1*z1*4 );
-	gluProject(x,y+1,z,mod,unit,viewport,&x1,&y1,&z1);
-	sy = 1/sqrt( x1*x1 + y1*y1 + z1*z1*4 );
-	gluProject(x,y,z+1,mod,unit,viewport,&x1,&y1,&z1);
-	sz = 1/sqrt( x1*x1 + y1*y1 + z1*z1*4 );
-
-	/* Undo the translation and scale effects */
-	glScalef(sx,sy,sz);
-	 if(verbose)  printf("TS: %f %f %f,      %f %f %f\n",x,y,z,sx,sy,sz);
-	glDisable(GL_LIGHTING);
-
-	glScalef(200,200,200);
-
-	glBegin(GL_QUADS);
-	for(v=0; v<((this_->skyColor).n); v++) {
-		if(v==0) {
-			va1 = 0;
-		} else {
-			va1 = ((this_->skyAngle).p[v-1]);
-		}
-		c1 = &(((this_->skyColor).p[v]));
-		if(v==((this_->skyColor).n)-1) {
-			c2 = &(((this_->skyColor).p[v]));
-			va2 = 3.142;
-		} else {
-			c2 = &(((this_->skyColor).p[v+1]));
-			va2 = ((this_->skyAngle).p[v]);
-		}
-		for(h=0; h<hdiv; h++) {
-			ha1 = h * 6.29 / hdiv;
-			ha2 = (h+1) * 6.29 / hdiv;
-			/* glNormal3f(sin(van) * cos(han), sin(van) * sin(han), cos(van)); */
-			glColor3f(c2->c[0], c2->c[1], c2->c[2]);
-			glVertex3f(sin(va2) * cos(ha1), cos(va2), sin(va2) * sin(ha1));
-			glVertex3f(sin(va2) * cos(ha2), cos(va2), sin(va2) * sin(ha2));
-			glColor3f(c1->c[0], c1->c[1], c1->c[2]);
-			glVertex3f(sin(va1) * cos(ha2), cos(va1), sin(va1) * sin(ha2));
-			glVertex3f(sin(va1) * cos(ha1), cos(va1), sin(va1) * sin(ha1));
-		}
-	}
-	glBegin(GL_QUADS);
-	for(v=0; v<((this_->groundColor).n); v++) {
-		if(v==0) {
-			va1 = 0;
-		} else {
-			va1 = ((this_->groundAngle).p[v-1]);
-		}
-		c1 = &(((this_->groundColor).p[v]));
-		if(v==((this_->groundColor).n)-1) {
-			c2 = &(((this_->groundColor).p[v]));
-			va2 = 1.56;
-		} else {
-			c2 = &(((this_->skyColor).p[v+1]));
-			va2 = ((this_->skyAngle).p[v]);
-		}
-		for(h=0; h<hdiv; h++) {
-			ha1 = h * 6.29 / hdiv;
-			ha2 = (h+1) * 6.29 / hdiv;
-			/* glNormal3f(sin(van) * cos(han), sin(van) * sin(han), cos(van)); */
-			glColor3f(c2->c[0], c2->c[1], c2->c[2]);
-			glVertex3f(sin(va2) * cos(ha1), cos(va2), sin(va2) * sin(ha1));
-			glVertex3f(sin(va2) * cos(ha2), cos(va2), sin(va2) * sin(ha2));
-			glColor3f(c1->c[0], c1->c[1], c1->c[2]);
-			glVertex3f(sin(va1) * cos(ha2), cos(va1), sin(va1) * sin(ha2));
-			glVertex3f(sin(va1) * cos(ha1), cos(va1), sin(va1) * sin(ha1));
-		}
-	}
-	glEnd();
 	
-		{
-		float x=0.5,y=0.5,z=0.5;
-		unsigned int len;
-		unsigned char *ptr = SvPV((this_->__data_front),len);
-		if(ptr && len) {
 
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-		glDisable(GL_LIGHTING);
-		glEnable(GL_TEXTURE_2D);
-		glColor3f(1,1,1);
-			
-		glTexImage2D(GL_TEXTURE_2D,
-			     0, 
-			     (this_->__depth_front),  
-			     (this_->__x_front), (this_->__y_front),
-			     0,
-			     ((this_->__depth_front)==1 ? GL_LUMINANCE : GL_RGB),
-			     GL_UNSIGNED_BYTE,
-			     ptr
-		);
-		glBegin(GL_QUADS);
-		glNormal3f(0,0,1);
-		TC(1,1);
-		glVertex3f(x,y,z);
-		TC(0,1);
-		glVertex3f(-x,y,z);
-		TC(0,0);
-		glVertex3f(-x,-y,z);
-		TC(1,0);
-		glVertex3f(x,-y,z);
-		glEnd();
-		}
-		}
-		{
-		float x=0.5,y=0.5,z=0.5;
-		unsigned int len;
-		unsigned char *ptr = SvPV((this_->__data_back),len);
-		if(ptr && len) {
-
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-		glDisable(GL_LIGHTING);
-		glEnable(GL_TEXTURE_2D);
-		glColor3f(1,1,1);
-			
-		glTexImage2D(GL_TEXTURE_2D,
-			     0, 
-			     (this_->__depth_back),  
-			     (this_->__x_back), (this_->__y_back),
-			     0,
-			     ((this_->__depth_back)==1 ? GL_LUMINANCE : GL_RGB),
-			     GL_UNSIGNED_BYTE,
-			     ptr
-		);
-		glBegin(GL_QUADS);
-		glNormal3f(0,0,-(1));
-		TC(1,1);
-		glVertex3f(x,y,-(z));
-		TC(0,1);
-		glVertex3f(-x,y,-(z));
-		TC(0,0);
-		glVertex3f(-x,-y,-(z));
-		TC(1,0);
-		glVertex3f(x,-y,-(z));
-		glEnd();
-		}
-		}
-		{
-		float x=0.5,y=0.5,z=0.5;
-		unsigned int len;
-		unsigned char *ptr = SvPV((this_->__data_top),len);
-		if(ptr && len) {
-
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-		glDisable(GL_LIGHTING);
-		glEnable(GL_TEXTURE_2D);
-		glColor3f(1,1,1);
-			
-		glTexImage2D(GL_TEXTURE_2D,
-			     0, 
-			     (this_->__depth_top),  
-			     (this_->__x_top), (this_->__y_top),
-			     0,
-			     ((this_->__depth_top)==1 ? GL_LUMINANCE : GL_RGB),
-			     GL_UNSIGNED_BYTE,
-			     ptr
-		);
-		glBegin(GL_QUADS);
-		glNormal3f(0,1,0);
-		TC(1,1);
-		glVertex3f(x,z,y);
-		TC(0,1);
-		glVertex3f(-x,z,y);
-		TC(0,0);
-		glVertex3f(-x,z,-y);
-		TC(1,0);
-		glVertex3f(x,z,-y);
-		glEnd();
-		}
-		}
-		{
-		float x=0.5,y=0.5,z=0.5;
-		unsigned int len;
-		unsigned char *ptr = SvPV((this_->__data_bottom),len);
-		if(ptr && len) {
-
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-		glDisable(GL_LIGHTING);
-		glEnable(GL_TEXTURE_2D);
-		glColor3f(1,1,1);
-			
-		glTexImage2D(GL_TEXTURE_2D,
-			     0, 
-			     (this_->__depth_bottom),  
-			     (this_->__x_bottom), (this_->__y_bottom),
-			     0,
-			     ((this_->__depth_bottom)==1 ? GL_LUMINANCE : GL_RGB),
-			     GL_UNSIGNED_BYTE,
-			     ptr
-		);
-		glBegin(GL_QUADS);
-		glNormal3f(0,-(1),0);
-		TC(1,1);
-		glVertex3f(x,-(z),y);
-		TC(0,1);
-		glVertex3f(-x,-(z),y);
-		TC(0,0);
-		glVertex3f(-x,-(z),-y);
-		TC(1,0);
-		glVertex3f(x,-(z),-y);
-		glEnd();
-		}
-		}
-		{
-		float x=0.5,y=0.5,z=0.5;
-		unsigned int len;
-		unsigned char *ptr = SvPV((this_->__data_left),len);
-		if(ptr && len) {
-
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-		glDisable(GL_LIGHTING);
-		glEnable(GL_TEXTURE_2D);
-		glColor3f(1,1,1);
-			
-		glTexImage2D(GL_TEXTURE_2D,
-			     0, 
-			     (this_->__depth_left),  
-			     (this_->__x_left), (this_->__y_left),
-			     0,
-			     ((this_->__depth_left)==1 ? GL_LUMINANCE : GL_RGB),
-			     GL_UNSIGNED_BYTE,
-			     ptr
-		);
-		glBegin(GL_QUADS);
-		glNormal3f(1,0,0);
-		TC(1,1);
-		glVertex3f(z,y,x);
-		TC(0,1);
-		glVertex3f(z,y,-x);
-		TC(0,0);
-		glVertex3f(z,-y,-x);
-		TC(1,0);
-		glVertex3f(z,-y,x);
-		glEnd();
-		}
-		}
-		{
-		float x=0.5,y=0.5,z=0.5;
-		unsigned int len;
-		unsigned char *ptr = SvPV((this_->__data_right),len);
-		if(ptr && len) {
-
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-		glDisable(GL_LIGHTING);
-		glEnable(GL_TEXTURE_2D);
-		glColor3f(1,1,1);
-			
-		glTexImage2D(GL_TEXTURE_2D,
-			     0, 
-			     (this_->__depth_right),  
-			     (this_->__x_right), (this_->__y_right),
-			     0,
-			     ((this_->__depth_right)==1 ? GL_LUMINANCE : GL_RGB),
-			     GL_UNSIGNED_BYTE,
-			     ptr
-		);
-		glBegin(GL_QUADS);
-		glNormal3f(-(1),0,0);
-		TC(1,1);
-		glVertex3f(-(z),y,x);
-		TC(0,1);
-		glVertex3f(-(z),y,-x);
-		TC(0,0);
-		glVertex3f(-(z),-y,-x);
-		TC(1,0);
-		glVertex3f(-(z),-y,x);
-		glEnd();
-		}
-		}
-	glPopMatrix();
-	glPopAttrib();
-}
-			}void Viewpoint_Prep(void *nod_){ /* GENERATED FROM HASH C, MEMBER Viewpoint */
-			struct VRML_Viewpoint *this_ = (struct VRML_Viewpoint *)nod_;
+void PointLight_Light(void *nod_){ /* GENERATED FROM HASH LightC, MEMBER PointLight */
+			struct VRML_PointLight *this_ = (struct VRML_PointLight *)nod_;
 			{
-	if(render_vp) {
-		GLint vp[10];
-		double a1;
-		double angle;
-		if(!((this_->isBound))) {return;}
-		render_anything = 0; /* Stop rendering any more */
-		glTranslatef(-(((this_->position).c[0])),-(((this_->position).c[1])),-(((this_->position).c[2]))
-		);
-		glRotatef(-(((this_->orientation).r[3]))/3.1415926536*180,((this_->orientation).r[0]),((this_->orientation).r[1]),((this_->orientation).r[2])
-		);
-		glGetIntegerv(GL_VIEWPORT, vp);
-		if(vp[2] > vp[3]) {
-			a1=0;
-			angle = (this_->fieldOfView)/3.1415926536*180;
-		} else {
-			a1 = (this_->fieldOfView);
-			a1 = atan2(sin(a1),vp[2]/((float)vp[3]) * cos(a1));
-			angle = a1/3.1415926536*180;
-		}
-		if(verbose) printf("Vp: %d %d %d %d %f %f\n", vp[0], vp[1], vp[2], vp[3],
-			a1, angle);
+		if(((this_->on))) {
+			int light = nextlight();
+			if(light >= 0) {
+				float vec[4];
+				glEnable(light);
+				vec[0] = ((this_->direction).c[0]);
+				vec[1] = ((this_->direction).c[1]);
+				vec[2] = ((this_->direction).c[2]);
+				vec[3] = 1;
+				glLightfv(light, GL_SPOT_DIRECTION, vec);
+				vec[0] = ((this_->location).c[0]);
+				vec[1] = ((this_->location).c[1]);
+				vec[2] = ((this_->location).c[2]);
+				vec[3] = 1;
+				glLightfv(light, GL_POSITION, vec);
 
-		glMatrixMode(GL_PROJECTION);
-		glPopMatrix(); /* This is so we do picking right */
-		/* glLoadIdentity(); */
-		gluPerspective(angle,vp[2]/(float)vp[3],0.1,200000);
-		glMatrixMode(GL_MODELVIEW);
-	}
-}
-			}void Cone_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER Cone */
-			struct VRML_Cone *this_ = (struct VRML_Cone *)nod_;
-			{
-		int div = horiz_div;
-		float df = div;
-		float h = (this_->height)/2;
-		float r = (this_->bottomRadius); 
-		float a,a1;
-		int i;
-		
-		        if(!this_->_dlist) {
-				this_->_dlist = glGenLists(1);
-			}
-			if(this_->_dlchange != this_->_change) {
-				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
-				this_->_dlchange = this_->_change;
-			} else {
-				glCallList(this_->_dlist); return;
-			};
-		if(h <= 0 && r <= 0) {return;}
-		if(((this_->bottom))) {
-			glBegin(GL_POLYGON);
-			glNormal3f(0,-1,0);
-			for(i=div-1; i>=0; i--) {
-				a = i * 6.29 / div;
-				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),-h,r*cos(a));
-			}
-			glEnd();
-		}
-		if(((this_->side))) {
-			double ml = sqrt(h*h + r * r);
-			double mlh = h / ml;
-			double mlr = r / ml;
-			glBegin(GL_QUADS);
-			for(i=0; i<div; i++) {
-				a = i * 6.29 / div;
-				a1 = (i+1) * 6.29 / div;
-				glNormal3f(mlh*sin(a),mlr,mlh*cos(a));
-				TC((i+1)/df,0);
-				glVertex3f(0,h,0);
-				TC(i/df,0);
-				glVertex3f(r*sin(a),-h,r*cos(a));
-				glNormal3f(mlh*sin(a1),mlr,mlh*cos(a1));
-				TC(i/df,1);
-				glVertex3f(r*sin(a1),-h,r*cos(a1));
-				TC((i+1)/df,1);
-				glVertex3f(0,h,0);
+				glLightf(light, GL_CONSTANT_ATTENUATION, 
+					((this_->attenuation).c[0]));
+				glLightf(light, GL_LINEAR_ATTENUATION, 
+					((this_->attenuation).c[1]));
+				glLightf(light, GL_QUADRATIC_ATTENUATION, 
+					((this_->attenuation).c[2]));
 
-			}
-			glEnd();
-		}
-		
-		
-			glEndList()
-			;
-}
-			}void Cone_RendRay(void *nod_){ /* GENERATED FROM HASH C, MEMBER Cone */
-			struct VRML_Cone *this_ = (struct VRML_Cone *)nod_;
-			{
-	float h = (this_->height)/2; /* pos and neg dir. */
-	float y = h;
-	float r = (this_->bottomRadius);
-	float dx = t_r2.x-t_r1.x; float dz = t_r2.z-t_r1.z;
-	float dy = t_r2.y-t_r1.y;
-	float a = dx*dx + dz*dz - (r*r*dy*dy/(2*h*2*h));
-	float b = 2*(dx*t_r1.x + dz*t_r1.z) +
-		2*r*r*dy/(2*h)*(0.5-t_r1.y/(2*h));
-	float tmp = (0.5-t_r1.y/(2*h));
-	float c = t_r1.x * t_r1.x + t_r1.z * t_r1.z 
-		- r*r*tmp*tmp;
-	float und;
-	b /= a; c /= a;
-	und = b*b - 4*c;
-	/* 
-	printf("CONSOL0: (%f %f %f) (%f %f %f)\n",
-		t_r1.x, t_r1.y, t_r1.z, t_r2.x, t_r2.y, t_r2.z);
-	printf("CONSOL: (%f %f %f) (%f) (%f %f) (%f)\n",
-		dx, dy, dz, a, b, c, und);
-	*/
-	if(und > 0) { /* HITS the infinite cylinder */
-		float sol1 = (-b+sqrt(und))/2;
-		float sol2 = (-b-sqrt(und))/2;
-		float cy,cx,cz;
-		float cy0;
-		cy = MRATY(sol1);
-		if(cy > -h && cy < h) {
-			cx = MRATX(sol1);
-			cz = MRATZ(sol1);
-			/* XXX Normal */
-			HIT(sol1, cx,cy,cz, cx/r,0,cz/r, -1,-1, "conside 1");
-		}
-		cy0 = cy;
-		cy = MRATY(sol2);
-		if(cy > -h && cy < h) {
-			cx = MRATX(sol2);
-			cz = MRATZ(sol2);
-			HIT(sol2, cx,cy,cz, cx/r,0,cz/r, -1,-1, "conside 2");
-		}
-		/*
-		printf("CONSOLV: (%f %f) (%f %f)\n", sol1, sol2,cy0,cy);
-		*/
-	}
-	if(!YEQ) {
-		float yrat0 = YRAT(-y);
-		if(TRAT(yrat0)) {
-			float cx = MRATX(yrat0);
-			float cz = MRATZ(yrat0);
-			if(r*r > cx*cx + cz*cz) {
-				HIT(yrat0, cx, -y, cz, 0, -1, 0, -1, -1, "conbot");
+
+				vec[0] = ((this_->color).c[0]) * (this_->intensity);
+				vec[1] = ((this_->color).c[1]) * (this_->intensity);
+				vec[2] = ((this_->color).c[2]) * (this_->intensity);
+				vec[3] = 1;
+				glLightfv(light, GL_DIFFUSE, vec);
+				glLightfv(light, GL_SPECULAR, vec);
+				vec[0] *= (this_->ambientIntensity);
+				vec[1] *= (this_->ambientIntensity);
+				vec[2] *= (this_->ambientIntensity);
+				glLightfv(light, GL_AMBIENT, vec);
+
+				/* XXX */
+				glLightf(light, GL_SPOT_CUTOFF, 180);
 			}
 		}
 	}
-}
-			}void Text_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER Text */
-			struct VRML_Text *this_ = (struct VRML_Text *)nod_;
-			{
-	void (*f)(int n, SV **p,int nl, float *l, float maxext, double spacing,double size);
-	double spacing = 1.0;
-	double size = 1.0; 
-	
-		        if(!this_->_dlist) {
-				this_->_dlist = glGenLists(1);
 			}
-			if(this_->_dlchange != this_->_change) {
-				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
-				this_->_dlchange = this_->_change;
-			} else {
-				glCallList(this_->_dlist); return;
-			};
-	/* We need both sides */
-	glPushAttrib(GL_ENABLE_BIT);
-	glDisable(GL_CULL_FACE);
-	f = (void *)(this_->__rendersub);
-	/* printf("Render text: %d \n", f); */
-	if((this_->fontStyle)) {
-		struct VRML_FontStyle *fsp = (this_->fontStyle);
-		spacing = fsp->spacing;
-		size = fsp->size;
-	}
-	if(f) {
-		f(((this_->string).n),((this_->string).p),((this_->length).n),((this_->length).p),(this_->maxExtent),spacing,size );
-	}
-	glPopAttrib();
-	
-			glEndList()
-			;
-}
-			}void DirectionalLight_Light(void *nod_){ /* GENERATED FROM HASH C, MEMBER DirectionalLight */
+
+void DirectionalLight_Light(void *nod_){ /* GENERATED FROM HASH LightC, MEMBER DirectionalLight */
 			struct VRML_DirectionalLight *this_ = (struct VRML_DirectionalLight *)nod_;
 			{
 		if(((this_->on))) {
@@ -961,7 +1003,9 @@ void render_ray_polyrep(void *node,
 			}
 		}
 	}
-			}void Sphere_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER Sphere */
+			}
+
+void Sphere_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER Sphere */
 			struct VRML_Sphere *this_ = (struct VRML_Sphere *)nod_;
 			{int vdiv = vert_div;
 		int hdiv = horiz_div;
@@ -969,6 +1013,10 @@ void render_ray_polyrep(void *node,
 	   float hf = horiz_div;
 		int v; int h;
 		float va1,va2,van,ha1,ha2,han;
+		DECL_TRIG1
+		DECL_TRIG2
+		INIT_TRIG1(vdiv) 
+		INIT_TRIG2(hdiv)
 		
 		        if(!this_->_dlist) {
 				this_->_dlist = glGenLists(1);
@@ -986,36 +1034,26 @@ void render_ray_polyrep(void *node,
 			} */
 		glScalef((this_->radius), (this_->radius), (this_->radius));
 		glBegin(GL_QUAD_STRIP);
+		START_TRIG1
 		for(v=0; v<vdiv; v++) {
-			va1 = v * 3.15 / vdiv;
-			va2 = (v+1) * 3.15 / vdiv;
-			van = (v+0.5) * 3.15 / vdiv;
+			float vsin1 = SIN1;
+			float vcos1 = COS1, vsin2,vcos2;
+			UP_TRIG1
+			vsin2 = SIN1;
+			vcos2 = COS1;
+			START_TRIG2
 			for(h=0; h<=hdiv; h++) {
-				ha1 = h * 6.29 / hdiv;
-				ha2 = (h+1) * 6.29 / hdiv;
-				han = (h+0.5) * 6.29 / hdiv;
+				float hsin1 = SIN2;
+				float hcos1 = COS2;
+				UP_TRIG2
 
-				glNormal3f(sin(va1) * cos(ha1), sin(va1) * sin(ha1), cos(va1));
-				TC(v/vf,h/hf);
-				glVertex3f(sin(va1) * cos(ha1), sin(va1) * sin(ha1), cos(va1));
+				glNormal3f(vsin2 * hcos1, vcos2, vsin2 * hsin1);
+				TC(h/hf,(v+1)/vf);
+				glVertex3f(vsin2 * hcos1, vcos2, vsin2 * hsin1);
 
-				glNormal3f(sin(va2) * cos(ha1), sin(va2) * sin(ha1), cos(va2));
-				TC((v+1)/vf,h/hf);
-				glVertex3f(sin(va2) * cos(ha1), sin(va2) * sin(ha1), cos(va2));
-			#ifdef FOO
-				glNormal3f(sin(va2) * cos(ha1), sin(va2) * sin(ha1), cos(va2));
-				TC((v+1)/vf,h/hf);
-				glVertex3f(sin(va2) * cos(ha1), sin(va2) * sin(ha1), cos(va2));
-				glNormal3f(sin(va2) * cos(ha2), sin(va2) * sin(ha2), cos(va2));
-				TC((v+1)/vf,(h+1)/hf);
-				glVertex3f(sin(va2) * cos(ha2), sin(va2) * sin(ha2), cos(va2));
-				glNormal3f(sin(va1) * cos(ha2), sin(va1) * sin(ha2), cos(va1));
-				TC(v/vf,(h+1)/hf);
-				glVertex3f(sin(va1) * cos(ha2), sin(va1) * sin(ha2), cos(va1));
-				glNormal3f(sin(va1) * cos(ha1), sin(va1) * sin(ha1), cos(va1));
-				TC(v/vf,h/hf);
-				glVertex3f(sin(va1) * cos(ha1), sin(va1) * sin(ha1), cos(va1));
-			#endif
+				glNormal3f(vsin1 * hcos1, vcos1, vsin1 * hsin1); 
+				TC(h/hf,v/vf);
+				glVertex3f(vsin1 * hcos1, vcos1, vsin1 * hsin1); 
 			}
 		}
 		glEnd();
@@ -1027,7 +1065,9 @@ void render_ray_polyrep(void *node,
 			glEndList()
 			;
 }
-			}void Sphere_RendRay(void *nod_){ /* GENERATED FROM HASH C, MEMBER Sphere */
+			}
+
+void Sphere_RendRay(void *nod_){ /* GENERATED FROM HASH RendRayC, MEMBER Sphere */
 			struct VRML_Sphere *this_ = (struct VRML_Sphere *)nod_;
 			{
 	float r = (this_->radius);
@@ -1073,22 +1113,30 @@ void render_ray_polyrep(void *node,
 		HIT(sol2, cx,cy,cz, cx/r,cy/r,cz/r, -1,-1, "sphere 1");
 	}
 }
-			}struct SFColor *Coordinate_Get3(void *nod_,int *n){ /* GENERATED FROM HASH C, MEMBER Coordinate */
+			}
+
+struct SFColor *Coordinate_Get3(void *nod_,int *n){ /* GENERATED FROM HASH Get3C, MEMBER Coordinate */
 			struct VRML_Coordinate *this_ = (struct VRML_Coordinate *)nod_;
 			{
 	*n = ((this_->point).n); 
 	return ((this_->point).p);
 }
-			}void FontStyle_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER FontStyle */
+			}
+
+void FontStyle_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER FontStyle */
 			struct VRML_FontStyle *this_ = (struct VRML_FontStyle *)nod_;
 			{}
-			}struct SFColor *Normal_Get3(void *nod_,int *n){ /* GENERATED FROM HASH C, MEMBER Normal */
+			}
+
+struct SFColor *Normal_Get3(void *nod_,int *n){ /* GENERATED FROM HASH Get3C, MEMBER Normal */
 			struct VRML_Normal *this_ = (struct VRML_Normal *)nod_;
 			{
 	*n = ((this_->vector).n);
 	return ((this_->vector).p);
 }
-			}void Box_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER Box */
+			}
+
+void Box_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER Box */
 			struct VRML_Box *this_ = (struct VRML_Box *)nod_;
 			{
 	 float x = ((this_->size).c[0])/2;
@@ -1172,7 +1220,9 @@ void render_ray_polyrep(void *node,
 			glEndList()
 			;
 	}
-			}void Box_RendRay(void *nod_){ /* GENERATED FROM HASH C, MEMBER Box */
+			}
+
+void Box_RendRay(void *nod_){ /* GENERATED FROM HASH RendRayC, MEMBER Box */
 			struct VRML_Box *this_ = (struct VRML_Box *)nod_;
 			{
 	float x = ((this_->size).c[0])/2;
@@ -1250,7 +1300,9 @@ void render_ray_polyrep(void *node,
 		}
 	}
 }
-			}void Billboard_Prep(void *nod_){ /* GENERATED FROM HASH C, MEMBER Billboard */
+			}
+
+void Billboard_Prep(void *nod_){ /* GENERATED FROM HASH PrepC, MEMBER Billboard */
 			struct VRML_Billboard *this_ = (struct VRML_Billboard *)nod_;
 			{
 	GLdouble mod[16];
@@ -1307,7 +1359,9 @@ void render_ray_polyrep(void *node,
 
 	}
 }
-			}void Billboard_Child(void *nod_){ /* GENERATED FROM HASH C, MEMBER Billboard */
+			}
+
+void Billboard_Child(void *nod_){ /* GENERATED FROM HASH ChildC, MEMBER Billboard */
 			struct VRML_Billboard *this_ = (struct VRML_Billboard *)nod_;
 			{
 		int nc = ((this_->children).n); 
@@ -1320,25 +1374,16 @@ void render_ray_polyrep(void *node,
 		}
 		if(verbose) {printf("RENDER GROUP END %d\n",this_);}
 	}
-			}void Billboard_Fin(void *nod_){ /* GENERATED FROM HASH C, MEMBER Billboard */
+			}
+
+void Billboard_Fin(void *nod_){ /* GENERATED FROM HASH FinC, MEMBER Billboard */
 			struct VRML_Billboard *this_ = (struct VRML_Billboard *)nod_;
 			{
 	glPopMatrix();
 }
-			}void Group_Child(void *nod_){ /* GENERATED FROM HASH C, MEMBER Group */
-			struct VRML_Group *this_ = (struct VRML_Group *)nod_;
-			{
-		int nc = ((this_->children).n); 
-		int i;
-		if(verbose) {printf("RENDER GROUP START %d (%d)\n",this_, nc);}
-		for(i=0; i<nc; i++) {
-			void *p = ((this_->children).p[i]);
-			if(verbose) {printf("RENDER GROUP %d CHILD %d\n",this_, p);}
-			render_node(p);
-		}
-		if(verbose) {printf("RENDER GROUP END %d\n",this_);}
-	}
-			}void ElevationGrid_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER ElevationGrid */
+			}
+
+void ElevationGrid_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER ElevationGrid */
 			struct VRML_ElevationGrid *this_ = (struct VRML_ElevationGrid *)nod_;
 			{
 		struct SFColor *colors; int ncolors=0;
@@ -1386,7 +1431,9 @@ void render_ray_polyrep(void *node,
 			glEndList()
 			;
 }
-			}void ElevationGrid_RendRay(void *nod_){ /* GENERATED FROM HASH C, MEMBER ElevationGrid */
+			}
+
+void ElevationGrid_RendRay(void *nod_){ /* GENERATED FROM HASH RendRayC, MEMBER ElevationGrid */
 			struct VRML_ElevationGrid *this_ = (struct VRML_ElevationGrid *)nod_;
 			{
 		if(!this_->_intern || 
@@ -1396,7 +1443,9 @@ void render_ray_polyrep(void *node,
 			0, NULL
 		);
 }
-			}void ElevationGrid_GenPolyRep(void *nod_){ /* GENERATED FROM HASH C, MEMBER ElevationGrid */
+			}
+
+void ElevationGrid_GenPolyRep(void *nod_){ /* GENERATED FROM HASH GenPolyRepC, MEMBER ElevationGrid */
 			struct VRML_ElevationGrid *this_ = (struct VRML_ElevationGrid *)nod_;
 			{
 		int x,z;
@@ -1408,18 +1457,37 @@ void render_ray_polyrep(void *node,
 		float a[3],b[3];
 		int *cindex; 
 		float *coord;
-		int ntri = 2 * (nx-1) * (nz-1);
+		int *colindex;
+		int ntri = (nx && nz ? 2 * (nx-1) * (nz-1) : 0);
 		int triind;
 		int nf = ((this_->height).n);
+		int cpv = ((this_->colorPerVertex));
+		struct SFColor *colors; int ncolors=0;
 		struct VRML_PolyRep *rep_ = this_->_intern;
+		if(this_->color) {
+		  if(!(*(struct VRML_Virt **)(this_->color))-> get3) {
+		  	die("NULL METHOD ElevationGrid color  get3");
+		  }
+		   colors =  ((*(struct VRML_Virt **)(this_->color))-> get3(this_->color,
+		     &ncolors)) ;
+		};
 		rep_->ntri = ntri;
 		printf("Gen elevgrid %d %d %d\n", ntri, nx, nz);
 		if(nf != nx * nz) {
 			die("Elevationgrid: too many / too few: %d %d %d\n",
 				nf, nx, nz);
 		}
+		if(ncolors) {
+			if(!cpv && ncolors < (nx-1) * (nz-1)) {
+				die("Elevationgrid: too few colors");
+			}
+			if(cpv && ncolors < nx*nz) {
+				die("Elevationgrid: 2too few colors");
+			}
+		}
 		cindex = rep_->cindex = malloc(sizeof(*(rep_->cindex))*3*(ntri));
 		coord = rep_->coord = malloc(sizeof(*(rep_->coord))*nx*nz*3);
+		colindex = rep_->colindex = malloc(sizeof(*(rep_->colindex))*3*(ntri));
 		/* Flat */
 		rep_->normal = malloc(sizeof(*(rep_->normal))*3*ntri);
 		rep_->norindex = malloc(sizeof(*(rep_->norindex))*3*ntri);
@@ -1439,6 +1507,15 @@ void render_ray_polyrep(void *node,
 		  cindex[triind*3+0] = x+z*nx;
 		  cindex[triind*3+1] = x+(z+1)*nx;
 		  cindex[triind*3+2] = (x+1)+z*nx;
+		  if(cpv) {
+			  colindex[triind*3+0] = x+z*nx;
+			  colindex[triind*3+1] = x+(z+1)*nx;
+			  colindex[triind*3+2] = (x+1)+z*nx;
+		  } else {
+			  colindex[triind*3+0] = x+z*(nx-1);
+			  colindex[triind*3+1] = x+z*(nx-1);
+			  colindex[triind*3+2] = x+z*(nx-1);
+		  }
 		rep_->norindex[triind*3+0] = triind;
 		rep_->norindex[triind*3+1] = triind;
 		rep_->norindex[triind*3+2] = triind;
@@ -1447,6 +1524,15 @@ void render_ray_polyrep(void *node,
 		  cindex[triind*3+0] = x+(z+1)*nx;
 		  cindex[triind*3+1] = (x+1)+(z+1)*nx;
 		  cindex[triind*3+2] = (x+1)+z*nx;
+		  if(cpv) {
+			  colindex[triind*3+0] = x+(z+1)*nx;
+			  colindex[triind*3+1] = (x+1)+(z+1)*nx;
+			  colindex[triind*3+2] = (x+1)+z*nx;
+		  } else {
+			  colindex[triind*3+0] = x+z*(nx-1);
+			  colindex[triind*3+1] = x+z*(nx-1);
+			  colindex[triind*3+2] = x+z*(nx-1);
+		  }
 		rep_->norindex[triind*3+0] = triind;
 		rep_->norindex[triind*3+1] = triind;
 		rep_->norindex[triind*3+2] = triind;
@@ -1455,53 +1541,9 @@ void render_ray_polyrep(void *node,
 		}
 		calc_poly_normals_flat(rep_);
 	}
-			}void Material_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER Material */
-			struct VRML_Material *this_ = (struct VRML_Material *)nod_;
-			{	float m[4]; int i;
-		
-		        if(!this_->_dlist) {
-				this_->_dlist = glGenLists(1);
 			}
-			if(this_->_dlchange != this_->_change) {
-				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
-				this_->_dlchange = this_->_change;
-			} else {
-				glCallList(this_->_dlist); return;
-			};
-		m[0] = ((this_->diffuseColor).c[0]);m[1] = ((this_->diffuseColor).c[1]);m[2] = ((this_->diffuseColor).c[2]);m[3] = 1;;
-		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, m);
-		for(i=0; i<3; i++) {
-			m[i] *= (this_->ambientIntensity);
-		}
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, m);
-		m[0] = ((this_->specularColor).c[0]);m[1] = ((this_->specularColor).c[1]);m[2] = ((this_->specularColor).c[2]);m[3] = 1;;
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, m);
 
-		m[0] = ((this_->emissiveColor).c[0]);m[1] = ((this_->emissiveColor).c[1]);m[2] = ((this_->emissiveColor).c[2]);m[3] = 1;;
-		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, m);
-
-		if(fabs((this_->shininess) - 0.2) > 0.001) {
-			printf("Set shininess: %f\n",(this_->shininess));
-			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 
-				128*(this_->shininess)*(this_->shininess));
-				/* 128-(128*(this_->shininess))); */
-				/* 1.0/((",getf(Material,shininess),"+1)/128.0)); */
-		}
-		
-			glEndList()
-			;
-		
-}
-			}void Appearance_Child(void *nod_){ /* GENERATED FROM HASH C, MEMBER Appearance */
-			struct VRML_Appearance *this_ = (struct VRML_Appearance *)nod_;
-			{
-		if((this_->material)) {render_node((this_->material));}
-		else {glColor3f(1.0,1.0,1.0);} /* XXX */
-		if((this_->texture)) {
-			render_node((this_->texture));
-		}
-	}
-			}void Extrusion_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER Extrusion */
+void Extrusion_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER Extrusion */
 			struct VRML_Extrusion *this_ = (struct VRML_Extrusion *)nod_;
 			{
 		
@@ -1533,7 +1575,9 @@ void render_ray_polyrep(void *node,
 			glEndList()
 			;
 }
-			}void Extrusion_RendRay(void *nod_){ /* GENERATED FROM HASH C, MEMBER Extrusion */
+			}
+
+void Extrusion_RendRay(void *nod_){ /* GENERATED FROM HASH RendRayC, MEMBER Extrusion */
 			struct VRML_Extrusion *this_ = (struct VRML_Extrusion *)nod_;
 			{
 		if(!this_->_intern || 
@@ -1543,190 +1587,566 @@ void render_ray_polyrep(void *node,
 			0, NULL
 		);
 }
-			}void Extrusion_GenPolyRep(void *nod_){ /* GENERATED FROM HASH C, MEMBER Extrusion */
+			}
+
+void Extrusion_GenPolyRep(void *nod_){ /* GENERATED FROM HASH GenPolyRepC, MEMBER Extrusion */
 			struct VRML_Extrusion *this_ = (struct VRML_Extrusion *)nod_;
 			{
-		int nspi = ((this_->spine).n);
-		int nsec = ((this_->crossSection).n);
-		int nori = ((this_->orientation).n);
-		int nsca = ((this_->scale).n);
-		int ntri = 2 * (nspi-1) * (nsec-1);
-		int spi,sec;
-		int triind;
-		int closed = 0;
-		float spxlen,spylen,spzlen;
-		int *cindex;
-		float *coord;
-		struct pt spm1,spc,spp1,spcp,spy,spz,spoz,spx;
-		struct VRML_PolyRep *rep_ = this_->_intern;
-		struct SFColor *spine = ((this_->spine).p);
-		rep_->ntri = ntri;
-		cindex = rep_->cindex = malloc(sizeof(*(rep_->cindex))*3*(ntri));
-		coord = rep_->coord = malloc(sizeof(*(rep_->coord))*nspi*nsec*3);
-		/* Flat */
-		rep_->normal = malloc(sizeof(*(rep_->normal))*3*ntri);
-		rep_->norindex = malloc(sizeof(*(rep_->norindex))*3*ntri);
-		/* Coordinates: find first non-collinear */
-		if(spine[0].c[0] == spine[nspi-1].c[0] &&
-		   spine[0].c[1] == spine[nspi-1].c[1] &&
-		   spine[0].c[2] == spine[nspi-1].c[2]) 
-		   	closed = 1;
-		/* Special-case, always find entire-collinear */
-		if(nspi < 3) {
-			die("Collinear spine :( :( :(");
-		}
-		/* Find first non-zero cross product */
-		for(spi = 0; spi<nspi; spi++) {
-			if(spi==0) {
-				if(closed) {
-					VEC_FROM_CDIFF(spine[1],spine[nspi-2], spy);
-					VEC_FROM_CDIFF(spine[1],spine[0], spp1);
-					VEC_FROM_CDIFF(spine[nspi-2],spine[0], spm1);
-				} else {
-					VEC_FROM_CDIFF(spine[1],spine[0], spy);
-					VEC_FROM_CDIFF(spine[0],spine[1], spm1);
-					VEC_FROM_CDIFF(spine[2],spine[1], spp1);
-				}
-				VECCP(spp1,spm1,spz);
-				if(APPROX(VECSQ(spz),0)) {
-					double ptlen,cplen,rangle;
+/*****begin of Member Extrusion	*/
+/* This code originates from the file VRMLExtrusion.pm */
+int nspi = ((this_->spine).n);			/* number of spine points	*/
+int nsec = ((this_->crossSection).n);		/* no. of points in the 2D curve*/
+int nori = ((this_->orientation).n);		/* no. of given orientators
+					   which rotate the calculated SCPs =
+					   spine-aligned cross-section planes*/ 
+int nsca = ((this_->scale).n);			/* no. of scale parameters	*/
+struct SFColor *spine =((this_->spine).p);	/* vector of spine vertices	*/
+struct SFVec2f *curve =((this_->crossSection).p);/* vector of 2D curve points	*/
+struct SFRotation *orientation=((this_->orientation).p);/*vector of SCP rotations*/
 
-					/* Ok, this is where it gets tough...
-					 * the first two vecs are collinear */
-				 	int j;
-					for(j=1; j<nspi-1; j++) {
-						VEC_FROM_CDIFF(spine[j-1],spine[j], spm1);
-						VEC_FROM_CDIFF(spine[j+1],spine[j], spp1);
-						VECCP(spp1,spm1,spz);
-						if(!APPROX(VECSQ(spz),0)) 
-						  goto got_nz;
-					}
-					/* Even worse: the whole spine is
-					 * linear. Why do they keep doing that!? 
-					 */	
-					/* Find y -> spp1 */
-					spylen = 1/sqrt(VECSQ(spy)); VECSCALE(spy, spylen);
-					spzlen = 1/sqrt(VECSQ(spm1)); VECSCALE(spm1, spzlen);
-					/* Now, the rotation from (0 1 0) to
-					 * spy is the key -- XXX Check
-					 * whether we do it right.. */
-					VECCP(spy,spz,spp1);
-					ptlen = VECPT(spy,spz);
-					cplen = sqrt(VECSQ(spp1));
-					if(APPROX(cplen,0)) {
-						spz.x = 0; spz.y = 0;
-						spz.z = 1; goto got_nz;
-					}
-					VECSCALE(spp1, 1/cplen);
-					rangle = atan2(ptlen,cplen);
-					spz.x = 
-					spz.y = 
-					spz.z = spp1.z + 
-						(1-spp1.z) * 1; /* cosZZ */
-						
-					
-					die("Collinear spine");
-					got_nz:; /* Its all right */
-				}
-			} else if(spi==nspi-1) {
-				if(closed) {
-					VEC_FROM_CDIFF(spine[1],spine[nspi-2], spy);
-					VEC_FROM_CDIFF(spine[1],spine[0], spp1);
-					VEC_FROM_CDIFF(spine[nspi-2],spine[0], spm1);
-				} else {
-					VEC_FROM_CDIFF(spine[nspi-1],spine[nspi-2], spy);
-					VEC_FROM_CDIFF(spine[nspi-3],spine[nspi-2], spm1);
-					VEC_FROM_CDIFF(spine[nspi-1],spine[nspi-2], spp1);
-				}
-				VECCP(spp1,spm1,spz);
-			} else {
-				VEC_FROM_CDIFF(spine[spi+1],spine[spi-1], spy);
-				VEC_FROM_CDIFF(spine[spi-1],spine[spi], spm1);
-				VEC_FROM_CDIFF(spine[spi+1],spine[spi], spp1);
-				VECCP(spp1,spm1,spz);
-			}
-			if(APPROX(VECSQ(spz),0)) {
-				spz = spoz;
-			}
-			VECCP(spy,spz,spx);
-			spylen = 1/sqrt(VECSQ(spy)); VECSCALE(spy, spylen);
-			spzlen = 1/sqrt(VECSQ(spz)); VECSCALE(spz, spzlen);
-			spxlen = 1/sqrt(VECSQ(spx)); VECSCALE(spx, spxlen);
-			/* Now we have spy and spz in every case */
-			for(sec = 0; sec<nsec; sec++) {
-				struct pt point;
-				float ptx = ((this_->crossSection).p[sec]).c[0];
-				float ptz = ((this_->crossSection).p[sec]).c[1];
-				if(nsca) {
-					int sca = (nsca==1 ? 0 : spi);
-					ptx *= ((this_->scale).p[sca]).c[0];
-					ptz *= ((this_->scale).p[sca]).c[1];
-				}
-				if(nori) {
-					int ori = (nori==1 ? 0 : spi);
-					/* XXX */
-					point.x = ptx;
-					point.y = 0; 
-					point.z = ptz;
-				} else {
-					point.x = ptx;
-					point.y = 0; 
-					point.z = ptz;
-				}
-			   coord[(sec+spi*nsec)*3+0] = 
-			    spx.x * point.x + spy.x * point.y + spz.x * point.z
-			    + ((this_->spine).p[spi]).c[0];
-			   coord[(sec+spi*nsec)*3+1] = 
-			    spx.y * point.x + spy.y * point.y + spz.y * point.z
-			    + ((this_->spine).p[spi]).c[1];
-			   coord[(sec+spi*nsec)*3+2] = 
-			    spx.z * point.x + spy.z * point.y + spz.z * point.z
-			    + ((this_->spine).p[spi]).c[2];
-			}
-			spoz = spz;
-		}
-		triind = 0;
-		{
-		int x,z; int nx=nsec; int nz=nspi;
-		for(x=0; x<nx-1; x++) {
-		 for(z=0; z<nz-1; z++) {
-		  /* 1: */
-		  cindex[triind*3+0] = x+z*nx;
-		  cindex[triind*3+1] = x+(z+1)*nx;
-		  cindex[triind*3+2] = (x+1)+z*nx;
-		rep_->norindex[triind*3+0] = triind;
-		rep_->norindex[triind*3+1] = triind;
-		rep_->norindex[triind*3+2] = triind;
-		  triind ++;
-		  /* 2: */
-		  cindex[triind*3+0] = x+(z+1)*nx;
-		  cindex[triind*3+1] = (x+1)+(z+1)*nx;
-		  cindex[triind*3+2] = (x+1)+z*nx;
-		rep_->norindex[triind*3+0] = triind;
-		rep_->norindex[triind*3+1] = triind;
-		rep_->norindex[triind*3+2] = triind;
-		  triind ++; 
-		 }
-		}
-		}
-		calc_poly_normals_flat(rep_);
-}
-			}void Shape_Child(void *nod_){ /* GENERATED FROM HASH C, MEMBER Shape */
-			struct VRML_Shape *this_ = (struct VRML_Shape *)nod_;
-			{
-		/* if(!(this_->appearance) || !(this_->geometry)) */
-		if(!(this_->geometry)) {
-			return;
-		}
-		glPushAttrib(GL_LIGHTING_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
-		/* glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE); */
-		if((this_->appearance)) {
-			render_node((this_->appearance));
-		}
-		render_node((this_->geometry));
-		glPopAttrib();
+struct VRML_PolyRep *rep_=this_->_intern;/*internal rep, we want to fill*/
+
+/* the next four variables will point at members of *rep		*/
+int   *cindex;				/* field containing indices into
+					   the coord vector. Three together
+					   indicate which points form a 
+					   triangle			*/
+float *coord;				/* contains vertices building the
+					   triangles as x y z values	*/
+int   *norindex;			/* indices into *normal		*/
+float *normal;				/* (filled in a different function)*/ 
+
+
+int ntri = 2 * (nspi-1) * (nsec-1);	/* no. of triangles to be used
+					   to represent all, but the caps */
+int nctri=0;				/* no. of triangles for both caps*/
+
+int ncolinear_at_begin=0;		/* no. of triangles which need
+					to be skipped, because curve-points
+					are in one line at start of curve*/
+int ncolinear_at_end=0;			/* no. of triangles which need
+					to be skipped, because curve-points
+					are in one line at end of curve*/
+
+int spi,sec,triind,pos_of_last_zvalue;	/* help variables 		*/
+int next_spi, prev_spi;
+int t;					/* another loop var		*/
+
+
+int closed = 0;				/* is spine  closed?		*/
+int curve_closed=0;			/* is the 2D curve closed?	*/
+int spine_is_one_vertix;		/* only one real spine vertix	*/
+
+float spxlen,spylen,spzlen;		/* help vars for scaling	*/
+
+					/* def:struct representing SCPs	*/
+struct SCP { 				/* spine-aligned cross-section plane*/
+	struct pt y;			/* y axis of SCP		*/
+	struct pt z;			/* z axis of SCP		*/
+	int prev,next;			/* index in SCP[]
+					prev/next different vertix for 
+					calculation of this SCP		*/
+	   };
+
+struct SCP *SCP;			/* dyn. vector rep. the SCPs	*/
+
+struct pt spm1,spc,spp1,spcp,spy,spz,spoz,spx;	/* help vertix vars	*/
+
+
+/* do we have a closed curve?						*/
+if(curve[0].c[0] == curve[nsec-1].c[0] &&
+   curve[0].c[1] == curve[nsec-1].c[1])
+	curve_closed=1;
+
+/* check if the spline is closed					*/
+
+if(spine[0].c[0] == spine[nspi-1].c[0] &&
+   spine[0].c[1] == spine[nspi-1].c[1] &&
+   spine[0].c[2] == spine[nspi-1].c[2]) 
+	closed = 1;
+ 
+ 
+
+/************************************************************************
+ * calc number of triangles per cap, if caps are enabled and possible	
+ */
+
+if(((this_->beginCap))||((this_->endCap))) {
+	if(curve_closed?nsec<4:nsec<3) {
+		die("Only two real vertices in crossSection. Caps not possible!");
 	}
-			}void Switch_Child(void *nod_){ /* GENERATED FROM HASH C, MEMBER Switch */
+
+	if(verbose && closed && curve_closed) {
+		printf("Spine and crossSection-curve are closed - how strange! ;-)\n");
+		/* maybe we want to fly in this tunnel? Or it is semi 
+		   transparent somehow? It is possible to create
+		   nice figures if you rotate the cap planes... */
+	}
+
+	if(!((this_->convex))) { /* not convex	*/
+		printf("[Extrusion crossSection polygon might be not convex!"
+			"let`s try it anyway!]\n");
+	/* XXX fix with help from some sort of tessilation		*/
+	}
+
+	if(curve_closed)	nctri=nsec-3;
+	else			nctri=nsec-2;	
+
+
+	/* check if there are colinear points at the beginning of the curve*/
+	sec=0;
+	while(sec+2<=nsec-1 && 
+		/* to find out if two vectors a and b are colinear, 
+		   try a.x*b.y=a.y*b.x					*/
+		APPROX(0,    (curve[sec+1].c[0]-curve[0].c[0])
+			    *(curve[sec+2].c[1]-curve[0].c[1])
+			  -  (curve[sec+1].c[1]-curve[0].c[1])
+			    *(curve[sec+2].c[0]-curve[0].c[0]))	
+	     ) ncolinear_at_begin++, sec++;
+
+	/* check if there are colinear points at the end of the curve
+		in line with the very first point, because we want to
+		draw the triangle to there.				*/
+	sec=curve_closed?(nsec-2):(nsec-1);
+	while(sec-2>=0 && 
+		APPROX(0,    (curve[sec  ].c[0]-curve[0].c[0])
+			    *(curve[sec-1].c[1]-curve[0].c[1])
+			  -  (curve[sec  ].c[1]-curve[0].c[1])
+			    *(curve[sec-1].c[0]-curve[0].c[0]))	
+	     ) ncolinear_at_end++,sec--;
+
+	nctri-= ncolinear_at_begin+ncolinear_at_end;
+	if(nctri<1) {
+		/* no triangle left :(	*/
+		die("All in crossSection points colinear. Caps not possible!");
+ 	}
+ 
+ 
+	/* so we have calculated nctri for one cap, but we might have two*/
+	nctri= ((((this_->beginCap)))?nctri:0) + ((((this_->endCap)))?nctri:0) ;
+}
+ 
+/************************************************************************
+ * prepare for filling *rep
+ */
+ 
+rep_->ntri = ntri + nctri;	/* Thats the no. of triangles representing
+				the whole Extrusion Shape.		*/
+ 
+/* get some memory							*/
+cindex  = rep_->cindex   = malloc(sizeof(*(rep_->cindex))*3*(rep_->ntri));
+coord   = rep_->coord    = malloc(sizeof(*(rep_->coord))*nspi*nsec*3);
+ 
+normal  = rep_->normal   = malloc(sizeof(*(rep_->normal))*3*(rep_->ntri));
+norindex= rep_->norindex = malloc(sizeof(*(rep_->norindex))*3*(rep_->ntri));
+ 
+/*memory for the SCPs. Only needed in this function. Freed later	*/
+SCP     = malloc(sizeof(struct SCP)*nspi);
+ 
+/* in C always check if you got the mem you wanted...  >;->		*/
+if(!(cindex && coord && normal && norindex && SCP )) {
+	die("Not enough memory for Extrusion node triangles... ;(");
+} 
+ 
+
+/************************************************************************
+ * calculate all SCPs 
+ */
+
+spine_is_one_vertix=0;
+
+/* fill the prev and next values in the SCP structs first
+ *
+ *	this is so complicated, because spine vertices can be the same
+ *	They should have exactly the same SCP, therefore only one of
+ *	an group of sucessive equal spine vertices (now called SESVs)
+ *	must be used for calculation.
+ *	For calculation the previous and next different spine vertix
+ *	must be known. We save that info in the prev and next fields of
+ *	the SCP struct. 
+ *	Note: We have start and end SESVs which will be treated differently
+ *	depending on whether the spine is closed or not
+ *
+ */
+ 
+for(spi=0; spi<nspi;spi++){
+	for(next_spi=spi+1;next_spi<nspi;next_spi++) {
+		VEC_FROM_CDIFF(spine[spi],spine[next_spi],spp1);
+		if(!APPROX(VECSQ(spp1),0))
+			break;
+	}
+	if(next_spi<nspi) SCP[next_spi].prev=next_spi-1;
+
+	if(verbose) printf("spi=%d next_spi=%d\n",spi,next_spi); /**/
+	prev_spi=spi-1;
+	SCP[spi].next=next_spi;
+	SCP[spi].prev=prev_spi;
+	
+	while(next_spi>spi+1) { /* fill gaps */
+		spi++;
+		SCP[spi].next=next_spi;
+		SCP[spi].prev=prev_spi;
+	}
+}
+/* now:	start-SEVS .prev fields contain -1				*/
+/* 	and end-SEVS .next fields contain nspi				*/
+
+
+if(SCP[0].next==nspi) {
+	spine_is_one_vertix=1;
+	printf("All spine vertices are the same!\n");
+
+	/* initialize all y and z values with zero, they will		*/
+	/* be treated as colinear case later then			*/
+	SCP[0].z.x=0; SCP[0].z.y=0; SCP[0].z.z=0;
+	SCP[0].y=SCP[0].z;
+	for(spi=1;spi<nspi;spi++) {
+		SCP[spi].y=SCP[0].y;
+		SCP[spi].z=SCP[0].z;
+	}
+}else{
+	if(verbose) {
+		for(spi=0;spi<nspi;spi++) {
+			printf("SCP[%d].next=%d, SCP[%d].prev=%d\n",
+				spi,SCP[spi].next,spi,SCP[spi].prev);
+		}
+	}
+	
+	/* find spine vertix different to the first spine vertix	*/
+	spi=0; 		
+	while(SCP[spi].prev==-1) spi++;
+
+	/* find last spine vertix different to the last 		*/
+	t=nspi-1; 
+	while(SCP[t].next==nspi) t--;
+
+	/* for all but the first + last really different spine vertix	*/
+	for(; spi<=t; spi++) {
+		/* calc y 	*/
+		VEC_FROM_CDIFF(spine[SCP[spi].next],spine[SCP[spi].prev],SCP[spi].y);
+		/* calc z	*/
+		VEC_FROM_CDIFF(spine[SCP[spi].next],spine[spi],spp1);
+		VEC_FROM_CDIFF(spine[SCP[spi].prev],spine[spi],spm1);
+ 		VECCP(spp1,spm1,SCP[spi].z);
+ 	}
+ 
+ 	if(closed) {
+ 		/* calc y for first SCP				*/
+		VEC_FROM_CDIFF(spine[SCP[0].next],spine[SCP[nspi-1].prev],SCP[0].y); 
+ 		/* the last is the same as the first */	
+ 		SCP[nspi-1].y=SCP[0].y;	
+        
+		/* calc z */
+		VEC_FROM_CDIFF(spine[SCP[0].next],spine[0],spp1);
+		VEC_FROM_CDIFF(spine[SCP[nspi-1].prev],spine[0],spm1);
+		VECCP(spp1,spm1,SCP[0].z);
+		/* the last is the same as the first */	
+		SCP[nspi-1].z=SCP[0].z;	
+		
+ 	} else {
+ 		/* calc y for first SCP				*/
+		VEC_FROM_CDIFF(spine[SCP[0].next],spine[0],SCP[0].y);
+
+ 		/* calc y for the last SCP			*/
+		VEC_FROM_CDIFF(spine[nspi-1],spine[SCP[nspi-1].prev],SCP[nspi-1].y);
+ 
+		/* z for the start SESVs is the same as for the next SCP */
+		SCP[0].z=SCP[SCP[0].next].z; 
+ 		/* z for the last SCP is the same as for the one before the last*/
+		SCP[nspi-1].z=SCP[SCP[nspi-1].prev].z; 
+		
+	} /* else */
+	
+	/* fill the other start SESVs SCPs*/
+	spi=1; 
+	while(SCP[spi].prev==-1) {
+		SCP[spi].y=SCP[0].y;
+		SCP[spi].z=SCP[0].z;
+		spi++;
+	}
+	/* fill the other end SESVs SCPs*/
+	t=nspi-2; 
+	while(SCP[t].next==nspi) {
+		SCP[t].y=SCP[nspi-1].y;
+		SCP[t].z=SCP[nspi-1].z;
+		t--;
+	}
+
+} /* else */
+
+
+/* We have to deal with colinear cases, what means z=0			*/
+pos_of_last_zvalue=-1;		/* where a zvalue is found */
+for(spi=0;spi<nspi;spi++) {
+	if(pos_of_last_zvalue>=0) { /* already found one?		*/
+		if(APPROX(VECSQ(SCP[spi].z),0)) 
+			SCP[spi].z= SCP[pos_of_last_zvalue].z;
+
+		pos_of_last_zvalue=spi;	
+	} else 
+		if(!APPROX(VECSQ(SCP[spi].z),0)) {
+			/* we got the first, fill the previous		*/
+			if(verbose) printf("Found z-Value!\n");
+			for(t=spi-1; t>-1; t--)
+				SCP[t].z=SCP[spi].z;
+ 			pos_of_last_zvalue=spi;	
+		}
+}
+ 
+if(verbose) printf("pos_of_last_zvalue=%d\n",pos_of_last_zvalue);
+ 
+ 
+/* z axis flipping, if VECPT(SCP[i].z,SCP[i-1].z)<0 			*/
+/* we can do it here, because it is not needed in the all-colinear case	*/
+for(spi=(closed?2:1);spi<nspi;spi++) {
+	if(VECPT(SCP[spi].z,SCP[spi-1].z)<0) {
+		VECSCALE(SCP[spi].z,-1);
+		if(verbose) 
+		    printf("Extrusion.GenPloyRep: Flipped axis spi=%d\n",spi);
+	}
+} /* for */
+
+/* One case is missing: whole spine is colinear				*/
+if(pos_of_last_zvalue==-1) {
+	printf("Extrusion.GenPloyRep:Whole spine is colinear!\n");
+
+	/* this is the default, if we don`t need to rotate		*/
+	spy.x=0; spy.y=1; spy.z=0;	
+	spz.x=0; spz.y=0; spz.z=1;
+
+	if(!spine_is_one_vertix) {
+		/* need to find the rotation from SCP[spi].y to (0 1 0)*/
+		/* and rotate (0 0 1) and (0 1 0) to be the new y and z	*/
+		/* values for all SCPs					*/
+		/* I will choose roation about the x and z axis		*/
+		float alpha,gamma;	/* angles for the rotation	*/
+		
+		/* search a non trivial vector along the spine */
+		for(spi=1;spi<nspi;spi++) {
+			VEC_FROM_CDIFF(spine[spi],spine[0],spp1);
+			if(!APPROX(VECSQ(spp1),0))
+ 				break;
+ 		}
+ 			
+		/* normalize the non trivial vector */	
+		spylen=1/sqrt(VECSQ(spp1)); VECSCALE(spp1,spylen);
+		if(verbose)
+			printf("Reference vector along spine=[%lf,%lf,%lf]\n",
+				spp1.x,spp1.y,spp1.z);
+
+
+		if(!(APPROX(spp1.x,0) && APPROX(spp1.z,0))) {
+			/* at least one of x or z is not zero		*/
+
+			/* get the angle for the x axis rotation	*/
+			alpha=asin(spp1.z);
+
+			/* get the angle for the z axis rotation	*/
+			if(APPROX(cos(alpha),0))
+				gamma=0;
+			else {
+				gamma=acos(spp1.y / cos(alpha) );
+				if(fabs(sin(gamma)-(-spp1.x/cos(alpha))
+					)>fabs(sin(gamma)))
+					gamma=-gamma;
+			}
+
+			/* do the rotation (zero values are already worked in)*/
+ 			if(verbose)
+				printf("alpha=%f gamma=%f\n",alpha,gamma);
+			spy.x=cos(alpha)*(-sin(gamma));
+			spy.y=cos(alpha)*cos(gamma);
+			spy.z=sin(alpha);
+
+			spz.x=sin(alpha)*sin(gamma);
+			spz.y=(-sin(alpha))*cos(gamma);
+			spz.z=cos(alpha);
+		} /* if(!spine_is_one_vertix */
+	} /* else */
+ 
+	/* apply new y and z values to all SCPs	*/
+	for(spi=0;spi<nspi;spi++) {
+		SCP[spi].y=spy;
+		SCP[spi].z=spz;
+	}
+ 
+} /* if all colinear */
+ 
+if(verbose) {
+	for(spi=0;spi<nspi;spi++) {
+		printf("SCP[%d].y=[%lf,%lf,%lf], SCP[%d].z=[%lf,%lf,%lf]\n",
+			spi,SCP[spi].y.x,SCP[spi].y.y,SCP[spi].y.z,
+			spi,SCP[spi].z.x,SCP[spi].z.y,SCP[spi].z.z);
+	}
+}
+ 
+
+/************************************************************************
+ * calculate the coords 
+ */
+
+/* test for number of scale and orientation parameters			*/
+if(nsca>1 && nsca <nspi)
+	printf("Extrusion.GenPolyRep: Warning!\n"
+	"\tNumber of scaling parameters do not match the number of spines!\n"
+	"\tWill revert to using only the first scale value.\n");
+
+if(nori>1 && nori <nspi)
+	printf("Extrusion.GenPolyRep: Warning!\n"
+	"\tNumber of orientation parameters "
+		"do not match the number of spines!\n"
+	"\tWill revert to using only the first orientation value.\n");
+
+
+for(spi = 0; spi<nspi; spi++) {
+	double m[3][3];		/* space for the roation matrix	*/
+	spy=SCP[spi].y; spz=SCP[spi].z;
+	VECCP(spy,spz,spx);
+	spylen = 1/sqrt(VECSQ(spy)); VECSCALE(spy, spylen);
+	spzlen = 1/sqrt(VECSQ(spz)); VECSCALE(spz, spzlen);
+	spxlen = 1/sqrt(VECSQ(spx)); VECSCALE(spx, spxlen);
+
+	/* rotate spx spy and spz			*/
+	if(nori) {
+		int ori = (nori==nspi ? spi : 0);
+		
+		if(IS_ROTATION_VEC_NOT_NORMAL(orientation[ori]))
+			printf("Extrusion.GenPolyRep: Warning!\n"
+			  "\tRotationvector #%d not normal!\n"
+			  "\tWon`t correct it, because it is bad VRML`97.\n",
+			  ori+1); 
+ 			
+		/* first variante:*/ 
+		MATRIX_FROM_ROTATION(orientation[ori],m);
+		VECMM(m,spx);
+		VECMM(m,spy);
+		VECMM(m,spz);
+		/* */
+
+		/* alternate code (second variant): */ 
+		/*
+		VECRROTATE(orientation[ori],spx);
+		VECRROTATE(orientation[ori],spy);
+		VECRROTATE(orientation[ori],spz);
+		/* */
+	} 
+ 
+	for(sec = 0; sec<nsec; sec++) {
+		struct pt point;
+		float ptx = curve[sec].c[0];
+		float ptz = curve[sec].c[1];
+		if(nsca) {
+			int sca = (nsca==nspi ? spi : 0);
+			ptx *= ((this_->scale).p[sca]).c[0];
+			ptz *= ((this_->scale).p[sca]).c[1];
+ 		}
+		point.x = ptx;
+		point.y = 0; 
+		point.z = ptz;
+
+	   coord[(sec+spi*nsec)*3+0] = 
+	    spx.x * point.x + spy.x * point.y + spz.x * point.z
+	    + ((this_->spine).p[spi]).c[0];
+	   coord[(sec+spi*nsec)*3+1] = 
+	    spx.y * point.x + spy.y * point.y + spz.y * point.z
+	    + ((this_->spine).p[spi]).c[1];
+	   coord[(sec+spi*nsec)*3+2] = 
+	    spx.z * point.x + spy.z * point.y + spz.z * point.z
+	    + ((this_->spine).p[spi]).c[2];
+
+	} /* for(sec */
+} /* for(spi */
+ 
+ 
+ 
+/* freeing SCP coordinates. not needed anymore.				*/
+if(SCP) free(SCP);
+ 
+/************************************************************************
+ * setting the values of *cindex to the right coords
+ */
+ 
+triind = 0;
+{
+int x,z;
+for(x=0; x<nsec-1; x++) {
+ for(z=0; z<nspi-1; z++) {
+  /* first triangle */
+  cindex[triind*3+0] = x+z*nsec;
+  cindex[triind*3+1] = x+(z+1)*nsec;
+  cindex[triind*3+2] = (x+1)+z*nsec;
+  norindex[triind*3+0] = triind;
+  norindex[triind*3+1] = triind;
+  norindex[triind*3+2] = triind;
+  triind ++;
+  /* second triangle*/
+  cindex[triind*3+0] = x+(z+1)*nsec;
+  cindex[triind*3+1] = (x+1)+(z+1)*nsec;
+  cindex[triind*3+2] = (x+1)+z*nsec;
+  norindex[triind*3+0] = triind;
+  norindex[triind*3+1] = triind;
+  norindex[triind*3+2] = triind;
+  triind ++; 
+ }
+}
+ 
+/* for the caps */
+if(((this_->beginCap))) {
+	/* XXX if(verbose)*/ printf("Extrusion.GenPloyRep:We have a beginCap!\n"); 
+	for(x=0+ncolinear_at_begin; x<nsec-3-ncolinear_at_end; x++) {
+		cindex[triind*3+0] = 0;
+		cindex[triind*3+1] = x+2;
+		cindex[triind*3+2] = x+1;
+		norindex[triind*3+0] = triind;
+		norindex[triind*3+1] = triind;
+		norindex[triind*3+2] = triind;
+		triind ++;
+	}
+	if(!curve_closed) {	/* non closed need one triangle more	*/
+		cindex[triind*3+0] = 0;
+		cindex[triind*3+1] = x+2;
+		cindex[triind*3+2] = x+1;
+		norindex[triind*3+0] = triind;
+		norindex[triind*3+1] = triind;
+		norindex[triind*3+2] = triind;
+		triind ++;
+ 	}
+}
+ 
+if(((this_->endCap))) {
+	/* XXX if(verbose)*/ printf("Extrusion.GenPloyRep:We have an endCap!\n"); 
+	for(x=0+ncolinear_at_begin; x<nsec-3-ncolinear_at_end; x++) {
+		cindex[triind*3+0] = 0  +(nspi-1)*nsec;
+		cindex[triind*3+1] = x+2+(nspi-1)*nsec;
+		cindex[triind*3+2] = x+1+(nspi-1)*nsec;
+		norindex[triind*3+0] = triind;
+		norindex[triind*3+1] = triind;
+		norindex[triind*3+2] = triind;
+		triind ++;
+	}
+	if(!curve_closed) {	/* non closed need one triangle more	*/
+		cindex[triind*3+0] = 0  +(nspi-1)*nsec;
+		cindex[triind*3+1] = x+2+(nspi-1)*nsec;
+		cindex[triind*3+2] = x+1+(nspi-1)*nsec;
+		norindex[triind*3+0] = triind;
+		norindex[triind*3+1] = triind;
+		norindex[triind*3+2] = triind;
+		triind ++;
+ 	}
+}
+/* XXX if(verbose)*/
+	printf("Extrusion.GenPloyRep: triind=%d  ntri=%d nctri=%d "
+	"ncolinear_at_begin=%d ncolinear_at_end=%d\n",
+	triind,ntri,nctri,ncolinear_at_begin,ncolinear_at_end);
+ 
+} /* end of block */
+ 
+calc_poly_normals_flat(rep_);
+/*****end of Member Extrusion	*/
+}
+			}
+
+void Switch_Child(void *nod_){ /* GENERATED FROM HASH ChildC, MEMBER Switch */
 			struct VRML_Switch *this_ = (struct VRML_Switch *)nod_;
 			{
 		int wc = (this_->whichChoice);
@@ -1735,11 +2155,11 @@ void render_ray_polyrep(void *node,
 			render_node(p);
 		}
 	}
-			}void ImageTexture_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER ImageTexture */
+			}
+
+void ImageTexture_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER ImageTexture */
 			struct VRML_ImageTexture *this_ = (struct VRML_ImageTexture *)nod_;
 			{
-	/* ASSUMING 2^n * 2^n XXX Check */
-	unsigned char *ptr = SvPV((this_->__data),na);
 	
 		        if(!this_->_dlist) {
 				this_->_dlist = glGenLists(1);
@@ -1750,324 +2170,82 @@ void render_ray_polyrep(void *node,
 			} else {
 				glCallList(this_->_dlist); return;
 			};
-	printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d\n",
-		ptr, ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5],
-		ptr[6], ptr[7], ptr[8], ptr[9]);
+	
+		  {
+			int rx,sx,ry,sy;
+			unsigned char *ptr = SvPV((this_->__data),na);
+			if((this_->__depth) && (this_->__x) && (this_->__y)) {
+				unsigned char *dest = ptr;
+				rx = 1; sx = (this_->__x);
+				while(sx) {sx /= 2; rx *= 2;}
+				if(rx/2 == (this_->__x)) {rx /= 2;}
+				ry = 1; sy = (this_->__y);
+				while(sy) {sy /= 2; ry *= 2;}
+				if(ry/2 == (this_->__y)) {ry /= 2;}
 
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-	printf("Doing imagetext %d %d %d\n",(this_->__depth),(this_->__x),(this_->__y));
-	glDisable(GL_LIGHTING);
-	glEnable(GL_TEXTURE_2D);
-	glColor3f(1,1,1);
-        	
-	glTexImage2D(GL_TEXTURE_2D,
-		     0, 
-		     (this_->__depth),  
-		     (this_->__x), (this_->__y),
-		     0,
-		     ((this_->__depth)==1 ? GL_LUMINANCE : GL_RGB),
-		     GL_UNSIGNED_BYTE,
-		     ptr
-	);
-	
-			glEndList()
-			;
-}
-			}void IndexedLineSet_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER IndexedLineSet */
-			struct VRML_IndexedLineSet *this_ = (struct VRML_IndexedLineSet *)nod_;
-			{
-		int i;
-		int cin = ((this_->coordIndex).n);
-		int colin = ((this_->colorIndex).n);
-		int cpv = ((this_->colorPerVertex));
-		int plno = 0;
-		int ind1,ind2;
-		int ind;
-		int c;
-		struct SFColor *points; int npoints;
-		struct SFColor *colors; int ncolors=0;
-		
-		        if(!this_->_dlist) {
-				this_->_dlist = glGenLists(1);
-			}
-			if(this_->_dlchange != this_->_change) {
-				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
-				this_->_dlchange = this_->_change;
-			} else {
-				glCallList(this_->_dlist); return;
-			};
-		if(this_->coord) {
-		  if(!(*(struct VRML_Virt **)(this_->coord))-> get3) {
-		  	die("NULL METHOD IndexedLineSet coord  get3");
-		  }
-		   points =  ((*(struct VRML_Virt **)(this_->coord))-> get3(this_->coord,
-		     &npoints)) ;}
- 	  else { (die("NULL FIELD IndexedLineSet coord "));};
-		if(this_->color) {
-		  if(!(*(struct VRML_Virt **)(this_->color))-> get3) {
-		  	die("NULL METHOD IndexedLineSet color  get3");
-		  }
-		   colors =  ((*(struct VRML_Virt **)(this_->color))-> get3(this_->color,
-		     &ncolors)) ;
-		};
-		glDisable(GL_LIGHTING);
-		if(ncolors && !cpv) {
-			glColor3f(colors[plno].c[0],
-				  colors[plno].c[1],
-				  colors[plno].c[2]);
-		}
-		if(!ncolors) {glColor3f(1,1,1);} /* XXX WRONG */
-		glBegin(GL_LINE_STRIP);
-		for(i=0; i<cin; i++) {
-			ind = ((this_->coordIndex).p[i]);
-			/* printf("Line: %d %d\n",i,ind); */
-			if(ind==-1) {
-				glEnd();
-				plno++;
-				if(ncolors && !cpv) {
-					c = plno;
-					if((!colin && plno < ncolors) ||
-					   (colin && plno < colin)) {
-						if(colin) {
-							c = ((this_->colorIndex).p[c]);
-						}
-						glColor3f(colors[c].c[0],
-							  colors[c].c[1],
-							  colors[c].c[2]);
-					}
+				if(rx != (this_->__x) || ry != (this_->__y)) {
+					/* We have to scale */
+					dest = malloc((this_->__depth) * rx * ry);
+					printf("Scaling %d %d to %d %d
+",
+						(this_->__x), (this_->__y) ,
+						rx, ry);
+					gluScaleImage(
+					     ((this_->__depth)==1 ? GL_LUMINANCE : GL_RGB),
+					     (this_->__x), (this_->__y),
+					     GL_UNSIGNED_BYTE,
+					     ptr,
+					     rx, ry,
+					     GL_UNSIGNED_BYTE,
+					     dest
+					);
 				}
-				glBegin(GL_LINE_STRIP);
-			} else {
-				if(ncolors && cpv) {
-					c = i;
-					if(colin) {
-						c = ((this_->colorIndex).p[c]);
-					}
-					glColor3f(colors[c].c[0],
-						  colors[c].c[1],
-						  colors[c].c[2]);
-				}
-				/* printf("Line: vertex %f %f %f\n",
-					points[ind].c[0],
-					points[ind].c[1],
-					points[ind].c[2]
+
+
+				printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d
+",
+					dest, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5],
+					dest[6], dest[7], dest[8], dest[9]);
+
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+				printf("Doing imagetext %d %d %d
+",(this_->__depth),(this_->__x),(this_->__y));
+				glDisable(GL_LIGHTING);
+				glEnable(GL_TEXTURE_2D);
+				glColor3f(1,1,1);
+					
+				glTexImage2D(GL_TEXTURE_2D,
+					     0, 
+					     (this_->__depth),  
+					     rx, ry,
+					     0,
+					     ((this_->__depth)==1 ? GL_LUMINANCE : GL_RGB),
+					     GL_UNSIGNED_BYTE,
+					     dest
 				);
-				*/
-				glVertex3f(
-					points[ind].c[0],
-					points[ind].c[1],
-					points[ind].c[2]
-				);
+				if(ptr != dest) free(dest);
 			}
-		}
-		glEnd();
-		glEnable(GL_LIGHTING);
-		
-			glEndList()
+		     }
 			;
-}
-			}void PointSet_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER PointSet */
-			struct VRML_PointSet *this_ = (struct VRML_PointSet *)nod_;
-			{
-	int i; 
-	struct SFColor *points; int npoints=0;
-	struct SFColor *colors; int ncolors=0;
-	
-		        if(!this_->_dlist) {
-				this_->_dlist = glGenLists(1);
-			}
-			if(this_->_dlchange != this_->_change) {
-				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
-				this_->_dlchange = this_->_change;
-			} else {
-				glCallList(this_->_dlist); return;
-			};
-	if(this_->coord) {
-		  if(!(*(struct VRML_Virt **)(this_->coord))-> get3) {
-		  	die("NULL METHOD PointSet coord  get3");
-		  }
-		   points =  ((*(struct VRML_Virt **)(this_->coord))-> get3(this_->coord,
-		     &npoints)) ;}
- 	  else { (die("NULL FIELD PointSet coord "));};
-	if(this_->color) {
-		  if(!(*(struct VRML_Virt **)(this_->color))-> get3) {
-		  	die("NULL METHOD PointSet color  get3");
-		  }
-		   colors =  ((*(struct VRML_Virt **)(this_->color))-> get3(this_->color,
-		     &ncolors)) ;
-		};
-	if(ncolors && ncolors != npoints) {
-		die("Not same number of colors and points");
-	}
-	glDisable(GL_LIGHTING);
-	if(!ncolors) {glColor3f(1,1,1);} /* XXX WRONG */
-	glBegin(GL_POINTS);
-	if(verbose) printf("PointSet: %d %d\n", npoints, ncolors);
-	for(i=0; i<npoints; i++) {
-		if(ncolors) {
-			if(verbose) printf("Color: %f %f %f\n",
-				  colors[i].c[0],
-				  colors[i].c[1],
-				  colors[i].c[2]);
-			glColor3f(colors[i].c[0],
-				  colors[i].c[1],
-				  colors[i].c[2]);
-		}
-		glVertex3f(
-			points[i].c[0],
-			points[i].c[1],
-			points[i].c[2]
-		);
-	}
-	glEnd();
-	glEnable(GL_LIGHTING);
+
 	
 			glEndList()
 			;
 }
-			}void Cylinder_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER Cylinder */
-			struct VRML_Cylinder *this_ = (struct VRML_Cylinder *)nod_;
+			}
+
+struct SFVec2f *TextureCoordinate_Get2(void *nod_,int *n){ /* GENERATED FROM HASH Get2C, MEMBER TextureCoordinate */
+			struct VRML_TextureCoordinate *this_ = (struct VRML_TextureCoordinate *)nod_;
 			{
-		int div = horiz_div;
-		float df = div;
-		float h = (this_->height)/2;
-		float r = (this_->radius);
-		float a,a1,a2;
-		int i;
-		
-		        if(!this_->_dlist) {
-				this_->_dlist = glGenLists(1);
-			}
-			if(this_->_dlchange != this_->_change) {
-				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
-				this_->_dlchange = this_->_change;
-			} else {
-				glCallList(this_->_dlist); return;
-			};
-		if(((this_->bottom))) {
-			glBegin(GL_POLYGON);
-			glNormal3f(0,1,0);
-			for(i=0; i<div; i++) {
-				a = i * 6.29 / div;
-				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),h,r*cos(a));
-			}
-			glEnd();
-		} 
-		if(((this_->top))) {
-			glBegin(GL_POLYGON);
-			glNormal3f(0,-1,0);
-			for(i=div-1; i>=0; i--) {
-				a = i * 6.29 / div;
-				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),-h,r*cos(a));
-			}
-			glEnd();
-		}
-		if(((this_->side))) {
-				/* if(!nomode) {
-				glPushAttrib(GL_LIGHTING);
-				# glShadeModel(GL_SMOOTH);
-				} */
-			glBegin(GL_QUADS);
-			for(i=0; i<div; i++) {
-				a = i * 6.29 / div;
-				a1 = (i+1) * 6.29 / div;
-				a2 = (a+a1)/2;
-				glNormal3f(sin(a),0,cos(a));
-				TC(i/df,0);
-				glVertex3f(r*sin(a),-h,r*cos(a));
-				glNormal3f(sin(a1),0,cos(a1));
-				TC((i+1)/df,0);
-				glVertex3f(r*sin(a1),-h,r*cos(a1));
-				/* glNormal3f(sin(a1),0,cos(a1));  (same) */
-				TC((i+1)/df,1);
-				glVertex3f(r*sin(a1),h,r*cos(a1));
-				glNormal3f(sin(a),0,cos(a));
-				TC(i/df,1);
-				glVertex3f(r*sin(a),h,r*cos(a));
-			}
-			glEnd();
-				/*
-				if(!nomode) {
-				glPopAttrib();
-				}
-				*/
-		}
-		
-			glEndList()
-			;
+	*n = ((this_->point).n);
+	return ((this_->point).p);
 }
-			}void Cylinder_RendRay(void *nod_){ /* GENERATED FROM HASH C, MEMBER Cylinder */
-			struct VRML_Cylinder *this_ = (struct VRML_Cylinder *)nod_;
-			{
-	float h = (this_->height)/2; /* pos and neg dir. */
-	float r = (this_->radius);
-	float y = h;
-	/* Caps */
-	if(!YEQ) {
-		float yrat0 = YRAT(y);
-		float yrat1 = YRAT(-y);
-		if(TRAT(yrat0)) {
-			float cx = MRATX(yrat0);
-			float cz = MRATZ(yrat0);
-			if(r*r > cx*cx+cz*cz) {
-				HIT(yrat0, cx,y,cz, 0,1,0, -1,-1, "cylcap 0");
 			}
-		}
-		if(TRAT(yrat1)) {
-			float cx = MRATX(yrat1);
-			float cz = MRATZ(yrat1);
-			if(r*r > cx*cx+cz*cz) {
-				HIT(yrat1, cx,-y,cz, 0,-1,0, -1,-1, "cylcap 1");
-			}
-		}
-	}
-	/* Body -- do same as for sphere, except no y axis in distance */
-	if((!XEQ) && (!ZEQ)) {
-		float dx = t_r2.x-t_r1.x; float dz = t_r2.z-t_r1.z;
-		float a = dx*dx + dz*dz;
-		float b = 2*(dx * t_r1.x + dz * t_r1.z);
-		float c = t_r1.x * t_r1.x + t_r1.z * t_r1.z - r*r;
-		float und;
-		b /= a; c /= a;
-		und = b*b - 4*c;
-		if(und > 0) { /* HITS the infinite cylinder */
-			float sol1 = (-b+sqrt(und))/2;
-			float sol2 = (-b-sqrt(und))/2;
-			float cy,cx,cz;
-			cy = MRATY(sol1);
-			if(cy > -h && cy < h) {
-				cx = MRATX(sol1);
-				cz = MRATZ(sol1);
-				HIT(sol1, cx,cy,cz, cx/r,0,cz/r, -1,-1, "cylside 1");
-			}
-			cy = MRATY(sol2);
-			if(cy > -h && cy < h) {
-				cx = MRATX(sol2);
-				cz = MRATZ(sol2);
-				HIT(sol2, cx,cy,cz, cx/r,0,cz/r, -1,-1, "cylside 2");
-			}
-		}
-	}
-}
-			}void Anchor_Child(void *nod_){ /* GENERATED FROM HASH C, MEMBER Anchor */
-			struct VRML_Anchor *this_ = (struct VRML_Anchor *)nod_;
-			{
-		int nc = ((this_->children).n); 
-		int i;
-		if(verbose) {printf("RENDER GROUP START %d (%d)\n",this_, nc);}
-		for(i=0; i<nc; i++) {
-			void *p = ((this_->children).p[i]);
-			if(verbose) {printf("RENDER GROUP %d CHILD %d\n",this_, p);}
-			render_node(p);
-		}
-		if(verbose) {printf("RENDER GROUP END %d\n",this_);}
-	}
-			}void IndexedFaceSet_Rend(void *nod_){ /* GENERATED FROM HASH C, MEMBER IndexedFaceSet */
+
+void IndexedFaceSet_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER IndexedFaceSet */
 			struct VRML_IndexedFaceSet *this_ = (struct VRML_IndexedFaceSet *)nod_;
 			{
 		struct SFColor *points; int npoints;
@@ -2123,7 +2301,9 @@ void render_ray_polyrep(void *node,
 			glEndList()
 			;
 }
-			}void IndexedFaceSet_RendRay(void *nod_){ /* GENERATED FROM HASH C, MEMBER IndexedFaceSet */
+			}
+
+void IndexedFaceSet_RendRay(void *nod_){ /* GENERATED FROM HASH RendRayC, MEMBER IndexedFaceSet */
 			struct VRML_IndexedFaceSet *this_ = (struct VRML_IndexedFaceSet *)nod_;
 			{
 		struct SFColor *points; int npoints;
@@ -2141,7 +2321,9 @@ void render_ray_polyrep(void *node,
 			npoints, points
 		);
 }
-			}void IndexedFaceSet_GenPolyRep(void *nod_){ /* GENERATED FROM HASH C, MEMBER IndexedFaceSet */
+			}
+
+void IndexedFaceSet_GenPolyRep(void *nod_){ /* GENERATED FROM HASH GenPolyRepC, MEMBER IndexedFaceSet */
 			struct VRML_IndexedFaceSet *this_ = (struct VRML_IndexedFaceSet *)nod_;
 			{
 	int i;
@@ -2244,7 +2426,1356 @@ void render_ray_polyrep(void *node,
 		}
 	}
 }
-			}void Transform_Prep(void *nod_){ /* GENERATED FROM HASH C, MEMBER Transform */
+			}
+
+void Background_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER Background */
+			struct VRML_Background *this_ = (struct VRML_Background *)nod_;
+			{
+	GLdouble mod[16];
+	GLdouble proj[16];
+	GLdouble unit[16] = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+	struct pt vec[4]; struct pt vec2[4]; struct pt vec3[4];
+	int i,j; int ind=0;
+	GLdouble x,y,z;
+	GLdouble x1,y1,z1;
+	GLdouble sx, sy, sz;
+	struct SFColor *c1,*c2;
+	int hdiv = horiz_div;
+	int h,v;
+	double va1, va2, ha1, ha2;
+
+
+	if(!((this_->isBound))) {return;}
+	/* Cannot start_list() because of moving center */
+
+	glPushAttrib(GL_LIGHTING_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
+	glShadeModel(GL_SMOOTH);
+	glPushMatrix();
+
+	glGetDoublev(GL_MODELVIEW_MATRIX, mod);
+	glGetDoublev(GL_PROJECTION_MATRIX, proj);
+	/* Get origin */
+	gluUnProject(0,0,0,mod,proj,viewport,&x,&y,&z);
+	glTranslatef(x,y,z);
+
+
+	gluUnProject(0,0,0,mod,unit,viewport,&x,&y,&z);
+	/* Get scale */
+	gluProject(x+1,y,z,mod,unit,viewport,&x1,&y1,&z1);
+	sx = 1/sqrt( x1*x1 + y1*y1 + z1*z1*4 );
+	gluProject(x,y+1,z,mod,unit,viewport,&x1,&y1,&z1);
+	sy = 1/sqrt( x1*x1 + y1*y1 + z1*z1*4 );
+	gluProject(x,y,z+1,mod,unit,viewport,&x1,&y1,&z1);
+	sz = 1/sqrt( x1*x1 + y1*y1 + z1*z1*4 );
+
+	/* Undo the translation and scale effects */
+	glScalef(sx,sy,sz);
+	 if(verbose)  printf("TS: %f %f %f,      %f %f %f\n",x,y,z,sx,sy,sz);
+	glDisable(GL_LIGHTING);
+
+	glScalef(200,200,200);
+
+	if(((this_->skyColor).n) == 1) {
+		c1 = &(((this_->skyColor).p[0]));
+		glColor3f(c1->c[0], c1->c[1], c1->c[2]);
+
+		/* Actually, one should do it... ? */
+		/* XXX */
+
+		glBegin(GL_TRIANGLES);
+		for(h=0; h<hdiv; h++) {
+			ha1 = h * 6.29 / hdiv;
+			ha2 = (h+1) * 6.29 / hdiv;
+			/* glNormal3f(sin(van) * cos(han), sin(van) * sin(han), cos(van)); */
+			glVertex3f(0, 1, 0);
+			glVertex3f(cos(ha1), 0, sin(ha1));
+			glVertex3f(cos(ha2), 0, sin(ha2));
+			glVertex3f(0, -1, 0);
+			glVertex3f(cos(ha2), 0, sin(ha2));
+			glVertex3f(cos(ha1), 0, sin(ha1));
+		}
+		glEnd();
+	} else {
+		glBegin(GL_QUADS);
+		for(v=0; v<((this_->skyColor).n); v++) {
+			if(v==0) {
+				va1 = 0;
+			} else {
+				va1 = ((this_->skyAngle).p[v-1]);
+			}
+			c1 = &(((this_->skyColor).p[v]));
+			if(v==((this_->skyColor).n)-1) {
+				c2 = &(((this_->skyColor).p[v]));
+				va2 = 3.142;
+			} else {
+				c2 = &(((this_->skyColor).p[v+1]));
+				va2 = ((this_->skyAngle).p[v]);
+			}
+			for(h=0; h<hdiv; h++) {
+				ha1 = h * 6.29 / hdiv;
+				ha2 = (h+1) * 6.29 / hdiv;
+				/* glNormal3f(sin(van) * cos(han), sin(van) * sin(han), cos(van)); */
+				glColor3f(c2->c[0], c2->c[1], c2->c[2]);
+				glVertex3f(sin(va2) * cos(ha1), cos(va2), sin(va2) * sin(ha1));
+				glVertex3f(sin(va2) * cos(ha2), cos(va2), sin(va2) * sin(ha2));
+				glColor3f(c1->c[0], c1->c[1], c1->c[2]);
+				glVertex3f(sin(va1) * cos(ha2), cos(va1), sin(va1) * sin(ha2));
+				glVertex3f(sin(va1) * cos(ha1), cos(va1), sin(va1) * sin(ha1));
+			}
+		}
+		glEnd();
+	}
+	glBegin(GL_QUADS);
+	for(v=0; v<((this_->groundColor).n); v++) {
+		if(v==0) {
+			va1 = 0;
+		} else {
+			va1 = ((this_->groundAngle).p[v-1]);
+		}
+		c1 = &(((this_->groundColor).p[v]));
+		if(v==((this_->groundColor).n)-1) {
+			c2 = &(((this_->groundColor).p[v]));
+			va2 = 1.56;
+		} else {
+			c2 = &(((this_->skyColor).p[v+1]));
+			va2 = ((this_->skyAngle).p[v]);
+		}
+		for(h=0; h<hdiv; h++) {
+			ha1 = h * 6.29 / hdiv;
+			ha2 = (h+1) * 6.29 / hdiv;
+			/* glNormal3f(sin(van) * cos(han), sin(van) * sin(han), cos(van)); */
+			glColor3f(c2->c[0], c2->c[1], c2->c[2]);
+			glVertex3f(sin(va2) * cos(ha1), cos(va2), sin(va2) * sin(ha1));
+			glVertex3f(sin(va2) * cos(ha2), cos(va2), sin(va2) * sin(ha2));
+			glColor3f(c1->c[0], c1->c[1], c1->c[2]);
+			glVertex3f(sin(va1) * cos(ha2), cos(va1), sin(va1) * sin(ha2));
+			glVertex3f(sin(va1) * cos(ha1), cos(va1), sin(va1) * sin(ha1));
+		}
+	}
+	glEnd();
+	
+		{
+		float x=0.5,y=0.5,z=0.5;
+		unsigned int len;
+		unsigned char *ptr = SvPV((this_->__data_front),len);
+		if(ptr && len) {
+
+		
+		  {
+			int rx,sx,ry,sy;
+			unsigned char *ptr = SvPV((this_->__data_front),na);
+			if((this_->__depth_front) && (this_->__x_front) && (this_->__y_front)) {
+				unsigned char *dest = ptr;
+				rx = 1; sx = (this_->__x_front);
+				while(sx) {sx /= 2; rx *= 2;}
+				if(rx/2 == (this_->__x_front)) {rx /= 2;}
+				ry = 1; sy = (this_->__y_front);
+				while(sy) {sy /= 2; ry *= 2;}
+				if(ry/2 == (this_->__y_front)) {ry /= 2;}
+
+				if(rx != (this_->__x_front) || ry != (this_->__y_front)) {
+					/* We have to scale */
+					dest = malloc((this_->__depth_front) * rx * ry);
+					printf("Scaling %d %d to %d %d
+",
+						(this_->__x_front), (this_->__y_front) ,
+						rx, ry);
+					gluScaleImage(
+					     ((this_->__depth_front)==1 ? GL_LUMINANCE : GL_RGB),
+					     (this_->__x_front), (this_->__y_front),
+					     GL_UNSIGNED_BYTE,
+					     ptr,
+					     rx, ry,
+					     GL_UNSIGNED_BYTE,
+					     dest
+					);
+				}
+
+
+				printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d
+",
+					dest, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5],
+					dest[6], dest[7], dest[8], dest[9]);
+
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+				printf("Doing imagetext %d %d %d
+",(this_->__depth_front),(this_->__x_front),(this_->__y_front));
+				glDisable(GL_LIGHTING);
+				glEnable(GL_TEXTURE_2D);
+				glColor3f(1,1,1);
+					
+				glTexImage2D(GL_TEXTURE_2D,
+					     0, 
+					     (this_->__depth_front),  
+					     rx, ry,
+					     0,
+					     ((this_->__depth_front)==1 ? GL_LUMINANCE : GL_RGB),
+					     GL_UNSIGNED_BYTE,
+					     dest
+				);
+				if(ptr != dest) free(dest);
+			}
+		     }
+			;
+
+		glBegin(GL_QUADS);
+		glNormal3f(0,0,1);
+		TC(1,1);
+		glVertex3f(x,y,z);
+		TC(0,1);
+		glVertex3f(-x,y,z);
+		TC(0,0);
+		glVertex3f(-x,-y,z);
+		TC(1,0);
+		glVertex3f(x,-y,z);
+		glEnd();
+		}
+		}
+		{
+		float x=0.5,y=0.5,z=0.5;
+		unsigned int len;
+		unsigned char *ptr = SvPV((this_->__data_back),len);
+		if(ptr && len) {
+
+		
+		  {
+			int rx,sx,ry,sy;
+			unsigned char *ptr = SvPV((this_->__data_back),na);
+			if((this_->__depth_back) && (this_->__x_back) && (this_->__y_back)) {
+				unsigned char *dest = ptr;
+				rx = 1; sx = (this_->__x_back);
+				while(sx) {sx /= 2; rx *= 2;}
+				if(rx/2 == (this_->__x_back)) {rx /= 2;}
+				ry = 1; sy = (this_->__y_back);
+				while(sy) {sy /= 2; ry *= 2;}
+				if(ry/2 == (this_->__y_back)) {ry /= 2;}
+
+				if(rx != (this_->__x_back) || ry != (this_->__y_back)) {
+					/* We have to scale */
+					dest = malloc((this_->__depth_back) * rx * ry);
+					printf("Scaling %d %d to %d %d
+",
+						(this_->__x_back), (this_->__y_back) ,
+						rx, ry);
+					gluScaleImage(
+					     ((this_->__depth_back)==1 ? GL_LUMINANCE : GL_RGB),
+					     (this_->__x_back), (this_->__y_back),
+					     GL_UNSIGNED_BYTE,
+					     ptr,
+					     rx, ry,
+					     GL_UNSIGNED_BYTE,
+					     dest
+					);
+				}
+
+
+				printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d
+",
+					dest, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5],
+					dest[6], dest[7], dest[8], dest[9]);
+
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+				printf("Doing imagetext %d %d %d
+",(this_->__depth_back),(this_->__x_back),(this_->__y_back));
+				glDisable(GL_LIGHTING);
+				glEnable(GL_TEXTURE_2D);
+				glColor3f(1,1,1);
+					
+				glTexImage2D(GL_TEXTURE_2D,
+					     0, 
+					     (this_->__depth_back),  
+					     rx, ry,
+					     0,
+					     ((this_->__depth_back)==1 ? GL_LUMINANCE : GL_RGB),
+					     GL_UNSIGNED_BYTE,
+					     dest
+				);
+				if(ptr != dest) free(dest);
+			}
+		     }
+			;
+
+		glBegin(GL_QUADS);
+		glNormal3f(0,0,-(1));
+		TC(1,1);
+		glVertex3f(x,y,-(z));
+		TC(0,1);
+		glVertex3f(-x,y,-(z));
+		TC(0,0);
+		glVertex3f(-x,-y,-(z));
+		TC(1,0);
+		glVertex3f(x,-y,-(z));
+		glEnd();
+		}
+		}
+		{
+		float x=0.5,y=0.5,z=0.5;
+		unsigned int len;
+		unsigned char *ptr = SvPV((this_->__data_top),len);
+		if(ptr && len) {
+
+		
+		  {
+			int rx,sx,ry,sy;
+			unsigned char *ptr = SvPV((this_->__data_top),na);
+			if((this_->__depth_top) && (this_->__x_top) && (this_->__y_top)) {
+				unsigned char *dest = ptr;
+				rx = 1; sx = (this_->__x_top);
+				while(sx) {sx /= 2; rx *= 2;}
+				if(rx/2 == (this_->__x_top)) {rx /= 2;}
+				ry = 1; sy = (this_->__y_top);
+				while(sy) {sy /= 2; ry *= 2;}
+				if(ry/2 == (this_->__y_top)) {ry /= 2;}
+
+				if(rx != (this_->__x_top) || ry != (this_->__y_top)) {
+					/* We have to scale */
+					dest = malloc((this_->__depth_top) * rx * ry);
+					printf("Scaling %d %d to %d %d
+",
+						(this_->__x_top), (this_->__y_top) ,
+						rx, ry);
+					gluScaleImage(
+					     ((this_->__depth_top)==1 ? GL_LUMINANCE : GL_RGB),
+					     (this_->__x_top), (this_->__y_top),
+					     GL_UNSIGNED_BYTE,
+					     ptr,
+					     rx, ry,
+					     GL_UNSIGNED_BYTE,
+					     dest
+					);
+				}
+
+
+				printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d
+",
+					dest, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5],
+					dest[6], dest[7], dest[8], dest[9]);
+
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+				printf("Doing imagetext %d %d %d
+",(this_->__depth_top),(this_->__x_top),(this_->__y_top));
+				glDisable(GL_LIGHTING);
+				glEnable(GL_TEXTURE_2D);
+				glColor3f(1,1,1);
+					
+				glTexImage2D(GL_TEXTURE_2D,
+					     0, 
+					     (this_->__depth_top),  
+					     rx, ry,
+					     0,
+					     ((this_->__depth_top)==1 ? GL_LUMINANCE : GL_RGB),
+					     GL_UNSIGNED_BYTE,
+					     dest
+				);
+				if(ptr != dest) free(dest);
+			}
+		     }
+			;
+
+		glBegin(GL_QUADS);
+		glNormal3f(0,1,0);
+		TC(1,1);
+		glVertex3f(x,z,y);
+		TC(0,1);
+		glVertex3f(-x,z,y);
+		TC(0,0);
+		glVertex3f(-x,z,-y);
+		TC(1,0);
+		glVertex3f(x,z,-y);
+		glEnd();
+		}
+		}
+		{
+		float x=0.5,y=0.5,z=0.5;
+		unsigned int len;
+		unsigned char *ptr = SvPV((this_->__data_bottom),len);
+		if(ptr && len) {
+
+		
+		  {
+			int rx,sx,ry,sy;
+			unsigned char *ptr = SvPV((this_->__data_bottom),na);
+			if((this_->__depth_bottom) && (this_->__x_bottom) && (this_->__y_bottom)) {
+				unsigned char *dest = ptr;
+				rx = 1; sx = (this_->__x_bottom);
+				while(sx) {sx /= 2; rx *= 2;}
+				if(rx/2 == (this_->__x_bottom)) {rx /= 2;}
+				ry = 1; sy = (this_->__y_bottom);
+				while(sy) {sy /= 2; ry *= 2;}
+				if(ry/2 == (this_->__y_bottom)) {ry /= 2;}
+
+				if(rx != (this_->__x_bottom) || ry != (this_->__y_bottom)) {
+					/* We have to scale */
+					dest = malloc((this_->__depth_bottom) * rx * ry);
+					printf("Scaling %d %d to %d %d
+",
+						(this_->__x_bottom), (this_->__y_bottom) ,
+						rx, ry);
+					gluScaleImage(
+					     ((this_->__depth_bottom)==1 ? GL_LUMINANCE : GL_RGB),
+					     (this_->__x_bottom), (this_->__y_bottom),
+					     GL_UNSIGNED_BYTE,
+					     ptr,
+					     rx, ry,
+					     GL_UNSIGNED_BYTE,
+					     dest
+					);
+				}
+
+
+				printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d
+",
+					dest, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5],
+					dest[6], dest[7], dest[8], dest[9]);
+
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+				printf("Doing imagetext %d %d %d
+",(this_->__depth_bottom),(this_->__x_bottom),(this_->__y_bottom));
+				glDisable(GL_LIGHTING);
+				glEnable(GL_TEXTURE_2D);
+				glColor3f(1,1,1);
+					
+				glTexImage2D(GL_TEXTURE_2D,
+					     0, 
+					     (this_->__depth_bottom),  
+					     rx, ry,
+					     0,
+					     ((this_->__depth_bottom)==1 ? GL_LUMINANCE : GL_RGB),
+					     GL_UNSIGNED_BYTE,
+					     dest
+				);
+				if(ptr != dest) free(dest);
+			}
+		     }
+			;
+
+		glBegin(GL_QUADS);
+		glNormal3f(0,-(1),0);
+		TC(1,1);
+		glVertex3f(x,-(z),y);
+		TC(0,1);
+		glVertex3f(-x,-(z),y);
+		TC(0,0);
+		glVertex3f(-x,-(z),-y);
+		TC(1,0);
+		glVertex3f(x,-(z),-y);
+		glEnd();
+		}
+		}
+		{
+		float x=0.5,y=0.5,z=0.5;
+		unsigned int len;
+		unsigned char *ptr = SvPV((this_->__data_left),len);
+		if(ptr && len) {
+
+		
+		  {
+			int rx,sx,ry,sy;
+			unsigned char *ptr = SvPV((this_->__data_left),na);
+			if((this_->__depth_left) && (this_->__x_left) && (this_->__y_left)) {
+				unsigned char *dest = ptr;
+				rx = 1; sx = (this_->__x_left);
+				while(sx) {sx /= 2; rx *= 2;}
+				if(rx/2 == (this_->__x_left)) {rx /= 2;}
+				ry = 1; sy = (this_->__y_left);
+				while(sy) {sy /= 2; ry *= 2;}
+				if(ry/2 == (this_->__y_left)) {ry /= 2;}
+
+				if(rx != (this_->__x_left) || ry != (this_->__y_left)) {
+					/* We have to scale */
+					dest = malloc((this_->__depth_left) * rx * ry);
+					printf("Scaling %d %d to %d %d
+",
+						(this_->__x_left), (this_->__y_left) ,
+						rx, ry);
+					gluScaleImage(
+					     ((this_->__depth_left)==1 ? GL_LUMINANCE : GL_RGB),
+					     (this_->__x_left), (this_->__y_left),
+					     GL_UNSIGNED_BYTE,
+					     ptr,
+					     rx, ry,
+					     GL_UNSIGNED_BYTE,
+					     dest
+					);
+				}
+
+
+				printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d
+",
+					dest, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5],
+					dest[6], dest[7], dest[8], dest[9]);
+
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+				printf("Doing imagetext %d %d %d
+",(this_->__depth_left),(this_->__x_left),(this_->__y_left));
+				glDisable(GL_LIGHTING);
+				glEnable(GL_TEXTURE_2D);
+				glColor3f(1,1,1);
+					
+				glTexImage2D(GL_TEXTURE_2D,
+					     0, 
+					     (this_->__depth_left),  
+					     rx, ry,
+					     0,
+					     ((this_->__depth_left)==1 ? GL_LUMINANCE : GL_RGB),
+					     GL_UNSIGNED_BYTE,
+					     dest
+				);
+				if(ptr != dest) free(dest);
+			}
+		     }
+			;
+
+		glBegin(GL_QUADS);
+		glNormal3f(1,0,0);
+		TC(1,1);
+		glVertex3f(z,y,x);
+		TC(0,1);
+		glVertex3f(z,y,-x);
+		TC(0,0);
+		glVertex3f(z,-y,-x);
+		TC(1,0);
+		glVertex3f(z,-y,x);
+		glEnd();
+		}
+		}
+		{
+		float x=0.5,y=0.5,z=0.5;
+		unsigned int len;
+		unsigned char *ptr = SvPV((this_->__data_right),len);
+		if(ptr && len) {
+
+		
+		  {
+			int rx,sx,ry,sy;
+			unsigned char *ptr = SvPV((this_->__data_right),na);
+			if((this_->__depth_right) && (this_->__x_right) && (this_->__y_right)) {
+				unsigned char *dest = ptr;
+				rx = 1; sx = (this_->__x_right);
+				while(sx) {sx /= 2; rx *= 2;}
+				if(rx/2 == (this_->__x_right)) {rx /= 2;}
+				ry = 1; sy = (this_->__y_right);
+				while(sy) {sy /= 2; ry *= 2;}
+				if(ry/2 == (this_->__y_right)) {ry /= 2;}
+
+				if(rx != (this_->__x_right) || ry != (this_->__y_right)) {
+					/* We have to scale */
+					dest = malloc((this_->__depth_right) * rx * ry);
+					printf("Scaling %d %d to %d %d
+",
+						(this_->__x_right), (this_->__y_right) ,
+						rx, ry);
+					gluScaleImage(
+					     ((this_->__depth_right)==1 ? GL_LUMINANCE : GL_RGB),
+					     (this_->__x_right), (this_->__y_right),
+					     GL_UNSIGNED_BYTE,
+					     ptr,
+					     rx, ry,
+					     GL_UNSIGNED_BYTE,
+					     dest
+					);
+				}
+
+
+				printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d
+",
+					dest, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5],
+					dest[6], dest[7], dest[8], dest[9]);
+
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+				printf("Doing imagetext %d %d %d
+",(this_->__depth_right),(this_->__x_right),(this_->__y_right));
+				glDisable(GL_LIGHTING);
+				glEnable(GL_TEXTURE_2D);
+				glColor3f(1,1,1);
+					
+				glTexImage2D(GL_TEXTURE_2D,
+					     0, 
+					     (this_->__depth_right),  
+					     rx, ry,
+					     0,
+					     ((this_->__depth_right)==1 ? GL_LUMINANCE : GL_RGB),
+					     GL_UNSIGNED_BYTE,
+					     dest
+				);
+				if(ptr != dest) free(dest);
+			}
+		     }
+			;
+
+		glBegin(GL_QUADS);
+		glNormal3f(-(1),0,0);
+		TC(1,1);
+		glVertex3f(-(z),y,x);
+		TC(0,1);
+		glVertex3f(-(z),y,-x);
+		TC(0,0);
+		glVertex3f(-(z),-y,-x);
+		TC(1,0);
+		glVertex3f(-(z),-y,x);
+		glEnd();
+		}
+		}
+	glPopMatrix();
+	glPopAttrib();
+}
+			}
+
+void Text_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER Text */
+			struct VRML_Text *this_ = (struct VRML_Text *)nod_;
+			{
+	void (*f)(int n, SV **p,int nl, float *l, float maxext, double spacing,double size);
+	double spacing = 1.0;
+	double size = 1.0; 
+	
+		        if(!this_->_dlist) {
+				this_->_dlist = glGenLists(1);
+			}
+			if(this_->_dlchange != this_->_change) {
+				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
+				this_->_dlchange = this_->_change;
+			} else {
+				glCallList(this_->_dlist); return;
+			};
+	/* We need both sides */
+	glPushAttrib(GL_ENABLE_BIT);
+	glDisable(GL_CULL_FACE);
+	f = (void *)(this_->__rendersub);
+	/* printf("Render text: %d \n", f); */
+	if((this_->fontStyle)) {
+		struct VRML_FontStyle *fsp = (this_->fontStyle);
+		spacing = fsp->spacing;
+		size = fsp->size;
+	}
+	if(f) {
+		f(((this_->string).n),((this_->string).p),((this_->length).n),((this_->length).p),(this_->maxExtent),spacing,size );
+	}
+	glPopAttrib();
+	
+			glEndList()
+			;
+}
+			}
+
+void Cone_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER Cone */
+			struct VRML_Cone *this_ = (struct VRML_Cone *)nod_;
+			{
+		int div = horiz_div;
+		float df = div;
+		float h = (this_->height)/2;
+		float r = (this_->bottomRadius); 
+		float a,a1;
+		int i;
+		DECL_TRIG1
+		
+		        if(!this_->_dlist) {
+				this_->_dlist = glGenLists(1);
+			}
+			if(this_->_dlchange != this_->_change) {
+				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
+				this_->_dlchange = this_->_change;
+			} else {
+				glCallList(this_->_dlist); return;
+			};
+		if(h <= 0 && r <= 0) {return;}
+		INIT_TRIG1(div)
+		if(((this_->bottom))) {
+			glBegin(GL_POLYGON);
+			glNormal3f(0,-1,0);
+			START_TRIG1
+			for(i=div-1; i>=0; i--) {
+				TC(0.5+0.5*-SIN1,0.5+0.5*COS1);
+				glVertex3f(r*-SIN1,-h,r*COS1);
+				UP_TRIG1
+			}
+			glEnd();
+		}
+		if(((this_->side))) {
+			double ml = sqrt(h*h + r * r);
+			double mlh = h / ml;
+			double mlr = r / ml;
+			glBegin(GL_TRIANGLES);
+			START_TRIG1
+			for(i=0; i<div; i++) {
+				float lsin = SIN1;
+				float lcos = COS1;
+				UP_TRIG1;
+				glNormal3f(mlh*lsin,mlr,-mlh*lcos);
+				TC((i+0.5)/df,0);
+				glVertex3f(0,h,0);
+				glNormal3f(mlh*SIN1,mlr,-mlh*COS1);
+				TC((i+1)/df,1);
+				glVertex3f(r*SIN1,-h,-r*COS1);
+				glNormal3f(mlh*lsin,mlr,-mlh*lcos);
+				TC(i/df,1);
+				glVertex3f(r*lsin,-h,-r*lcos);
+			}
+			glEnd();
+		}
+		
+		
+			glEndList()
+			;
+}
+			}
+
+void Cone_RendRay(void *nod_){ /* GENERATED FROM HASH RendRayC, MEMBER Cone */
+			struct VRML_Cone *this_ = (struct VRML_Cone *)nod_;
+			{
+	float h = (this_->height)/2; /* pos and neg dir. */
+	float y = h;
+	float r = (this_->bottomRadius);
+	float dx = t_r2.x-t_r1.x; float dz = t_r2.z-t_r1.z;
+	float dy = t_r2.y-t_r1.y;
+	float a = dx*dx + dz*dz - (r*r*dy*dy/(2*h*2*h));
+	float b = 2*(dx*t_r1.x + dz*t_r1.z) +
+		2*r*r*dy/(2*h)*(0.5-t_r1.y/(2*h));
+	float tmp = (0.5-t_r1.y/(2*h));
+	float c = t_r1.x * t_r1.x + t_r1.z * t_r1.z 
+		- r*r*tmp*tmp;
+	float und;
+	b /= a; c /= a;
+	und = b*b - 4*c;
+	/* 
+	printf("CONSOL0: (%f %f %f) (%f %f %f)\n",
+		t_r1.x, t_r1.y, t_r1.z, t_r2.x, t_r2.y, t_r2.z);
+	printf("CONSOL: (%f %f %f) (%f) (%f %f) (%f)\n",
+		dx, dy, dz, a, b, c, und);
+	*/
+	if(und > 0) { /* HITS the infinite cylinder */
+		float sol1 = (-b+sqrt(und))/2;
+		float sol2 = (-b-sqrt(und))/2;
+		float cy,cx,cz;
+		float cy0;
+		cy = MRATY(sol1);
+		if(cy > -h && cy < h) {
+			cx = MRATX(sol1);
+			cz = MRATZ(sol1);
+			/* XXX Normal */
+			HIT(sol1, cx,cy,cz, cx/r,0,cz/r, -1,-1, "conside 1");
+		}
+		cy0 = cy;
+		cy = MRATY(sol2);
+		if(cy > -h && cy < h) {
+			cx = MRATX(sol2);
+			cz = MRATZ(sol2);
+			HIT(sol2, cx,cy,cz, cx/r,0,cz/r, -1,-1, "conside 2");
+		}
+		/*
+		printf("CONSOLV: (%f %f) (%f %f)\n", sol1, sol2,cy0,cy);
+		*/
+	}
+	if(!YEQ) {
+		float yrat0 = YRAT(-y);
+		if(TRAT(yrat0)) {
+			float cx = MRATX(yrat0);
+			float cz = MRATZ(yrat0);
+			if(r*r > cx*cx + cz*cz) {
+				HIT(yrat0, cx, -y, cz, 0, -1, 0, -1, -1, "conbot");
+			}
+		}
+	}
+}
+			}
+
+void Viewpoint_Prep(void *nod_){ /* GENERATED FROM HASH PrepC, MEMBER Viewpoint */
+			struct VRML_Viewpoint *this_ = (struct VRML_Viewpoint *)nod_;
+			{
+	if(render_vp) {
+		GLint vp[10];
+		double a1;
+		double angle;
+		if(verbose) printf("Viewpoint: %d IB: %d..\n", 
+			this_,((this_->isBound)));
+		if(!((this_->isBound))) {return;}
+		render_anything = 0; /* Stop rendering any more */
+		/* These have to be in this order because the viewpoint
+		 * rotates in its place */
+		glRotatef(-(((this_->orientation).r[3]))/3.1415926536*180,((this_->orientation).r[0]),((this_->orientation).r[1]),((this_->orientation).r[2])
+		);
+		glTranslatef(-(((this_->position).c[0])),-(((this_->position).c[1])),-(((this_->position).c[2]))
+		);
+		glGetIntegerv(GL_VIEWPORT, vp);
+		if(vp[2] > vp[3]) {
+			a1=0;
+			angle = (this_->fieldOfView)/3.1415926536*180;
+		} else {
+			a1 = (this_->fieldOfView);
+			a1 = atan2(sin(a1),vp[2]/((float)vp[3]) * cos(a1));
+			angle = a1/3.1415926536*180;
+		}
+		if(verbose) printf("Vp: %d %d %d %d %f %f\n", vp[0], vp[1], vp[2], vp[3],
+			a1, angle);
+
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix(); /* This is so we do picking right */
+		/* glLoadIdentity(); */
+		gluPerspective(angle,vp[2]/(float)vp[3],0.1,vp_dist);
+		glMatrixMode(GL_MODELVIEW);
+	}
+}
+			}
+
+void TextureTransform_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER TextureTransform */
+			struct VRML_TextureTransform *this_ = (struct VRML_TextureTransform *)nod_;
+			{
+	
+		        if(!this_->_dlist) {
+				this_->_dlist = glGenLists(1);
+			}
+			if(this_->_dlchange != this_->_change) {
+				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
+				this_->_dlchange = this_->_change;
+			} else {
+				glCallList(this_->_dlist); return;
+			};
+	glMatrixMode(GL_TEXTURE);
+	glTranslatef(((this_->translation).c[0]), ((this_->translation).c[1]), 0);
+	glTranslatef(((this_->center).c[0]),((this_->center).c[1]), 0);
+	glRotatef(0,0,1,(this_->rotation)/3.1415926536*180);
+	glScalef(((this_->scale).c[0]),((this_->scale).c[1]),1);
+	glTranslatef(-((this_->center).c[0]),-((this_->center).c[1]), 0);
+	glMatrixMode(GL_MODELVIEW);
+	
+			glEndList()
+			;
+}
+			}
+
+void Group_Child(void *nod_){ /* GENERATED FROM HASH ChildC, MEMBER Group */
+			struct VRML_Group *this_ = (struct VRML_Group *)nod_;
+			{
+		int nc = ((this_->children).n); 
+		int i;
+		if(verbose) {printf("RENDER GROUP START %d (%d)\n",this_, nc);}
+		for(i=0; i<nc; i++) {
+			void *p = ((this_->children).p[i]);
+			if(verbose) {printf("RENDER GROUP %d CHILD %d\n",this_, p);}
+			render_node(p);
+		}
+		if(verbose) {printf("RENDER GROUP END %d\n",this_);}
+	}
+			}
+
+void ProximitySensor_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER ProximitySensor */
+			struct VRML_ProximitySensor *this_ = (struct VRML_ProximitySensor *)nod_;
+			{
+	/* Viewer pos = t_r2 */
+	double cx,cy,cz;
+	double len;
+	struct pt dr1r2;
+	struct pt dr2r3;
+	struct pt vec;
+	struct pt nor1,nor2;
+	struct pt ins;
+	static const struct pt yvec = {0,0.05,0};
+	static const struct pt zvec = {0,0,-0.05};
+	static const struct pt zpvec = {0,0,0.05};
+	static const struct pt orig = {0,0,0};
+	struct pt t_zvec, t_yvec, t_orig;
+GLdouble modelMatrix[16]; 
+GLdouble projMatrix[16];
+
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+	glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+	gluUnProject(orig.x,orig.y,orig.z,modelMatrix,projMatrix,viewport,
+		&t_orig.x,&t_orig.y,&t_orig.z);
+	gluUnProject(zvec.x,zvec.y,zvec.z,modelMatrix,projMatrix,viewport,
+		&t_zvec.x,&t_zvec.y,&t_zvec.z);
+	gluUnProject(yvec.x,yvec.y,yvec.z,modelMatrix,projMatrix,viewport,
+		&t_yvec.x,&t_yvec.y,&t_yvec.z);
+
+	cx = t_orig.x - ((this_->center).c[0]);
+	cy = t_orig.y - ((this_->center).c[1]);
+	cz = t_orig.z - ((this_->center).c[2]);
+
+	if(!((this_->enabled))) return;
+	if(((this_->size).c[0]) == 0 || ((this_->size).c[1]) == 0 || ((this_->size).c[2]) == 0) return;
+
+	if(fabs(cx) > ((this_->size).c[0])/2 ||
+	   fabs(cy) > ((this_->size).c[1])/2 ||
+	   fabs(cz) > ((this_->size).c[2])/2) return;
+
+	(this_->__hit) = 1;
+
+	((this_->__t1).c[0]) = t_orig.x;
+	((this_->__t1).c[1]) = t_orig.y;
+	((this_->__t1).c[2]) = t_orig.z;
+
+	VECDIFF(t_zvec,t_orig,dr1r2);  /* Z axis */
+	VECDIFF(t_yvec,t_orig,dr2r3);  /* Y axis */
+
+	len = sqrt(VECSQ(dr1r2)); VECSCALE(dr1r2,1/len);
+	len = sqrt(VECSQ(dr2r3)); VECSCALE(dr2r3,1/len);
+
+	if(verbose) printf("PROX_INT: (%f %f %f) (%f %f %f) (%f %f %f)\n (%f %f %f) (%f %f %f)\n",
+		t_orig.x, t_orig.y, t_orig.z, 
+		t_zvec.x, t_zvec.y, t_zvec.z, 
+		t_yvec.x, t_yvec.y, t_yvec.z,
+		dr1r2.x, dr1r2.y, dr1r2.z, 
+		dr2r3.x, dr2r3.y, dr2r3.z
+		);
+	
+	if(fabs(VECPT(dr1r2, dr2r3)) > 0.001) {
+		die("Sorry, can't handle unevenly scaled ProximitySensors yet :("
+		  "dp: %f v: (%f %f %f) (%f %f %f)", VECPT(dr1r2, dr2r3),
+		  	dr1r2.x,dr1r2.y,dr1r2.z,
+		  	dr2r3.x,dr2r3.y,dr2r3.z
+			);
+	}
+
+
+	if(APPROX(dr1r2.z,1.0)) {
+		((this_->__t2).r[0]) = 0;
+		((this_->__t2).r[1]) = 0;
+		((this_->__t2).r[2]) = 1;
+		((this_->__t2).r[3]) = atan2(-dr2r3.x,dr2r3.y);
+	} else if(APPROX(dr2r3.y,1.0)) {
+		((this_->__t2).r[0]) = 0;
+		((this_->__t2).r[1]) = 1;
+		((this_->__t2).r[2]) = 0;
+		((this_->__t2).r[3]) = atan2(dr1r2.x,dr1r2.z);
+	} else {
+		/* Get the normal vectors of the possible rotation planes */
+		nor1 = dr1r2;
+		nor1.z -= 1.0;
+		nor2 = dr2r3;
+		nor2.y -= 1.0;
+		/* Now, the intersection of the planes, obviously cp */
+		VECCP(nor1,nor2,ins);
+		if(APPROX(VECSQ(ins),0)) {
+			die("Proximitysensor problem!"
+		  "dp: %f v: (%f %f %f) (%f %f %f)\n"
+		  "Nor,I (%f %f %f) (%f %f %f) (%f %f %f)\n"
+		, 
+			VECPT(dr1r2, dr2r3),
+		  	dr1r2.x,dr1r2.y,dr1r2.z,
+		  	dr2r3.x,dr2r3.y,dr2r3.z,
+		  	nor1.x,nor1.y,nor1.z,
+		  	nor2.x,nor2.y,nor2.z,
+		  	ins.x,ins.y,ins.z
+			);
+		}
+		len = sqrt(VECSQ(ins)); VECSCALE(ins,1/len);
+		((this_->__t2).r[0]) = ins.x;
+		((this_->__t2).r[1]) = ins.y;
+		((this_->__t2).r[2]) = ins.z;
+		/* Finally, the angle */
+		VECCP(dr1r2,ins, nor1);
+		VECCP(zpvec, ins, nor2);
+		len = sqrt(VECSQ(nor1)); VECSCALE(nor1,1/len);
+		len = sqrt(VECSQ(nor2)); VECSCALE(nor2,1/len);
+		VECCP(nor1,nor2,ins);
+		((this_->__t2).r[3]) = -atan2(sqrt(VECSQ(ins)), VECPT(nor1,nor2));
+	}
+	if(verbose) printf("NORS: (%f %f %f) (%f %f %f) (%f %f %f)\n",
+		nor1.x, nor1.y, nor1.z,
+		nor2.x, nor2.y, nor2.z,
+		ins.x, ins.y, ins.z
+	);
+}
+			}
+
+void Material_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER Material */
+			struct VRML_Material *this_ = (struct VRML_Material *)nod_;
+			{	float m[4]; int i;
+		
+		        if(!this_->_dlist) {
+				this_->_dlist = glGenLists(1);
+			}
+			if(this_->_dlchange != this_->_change) {
+				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
+				this_->_dlchange = this_->_change;
+			} else {
+				glCallList(this_->_dlist); return;
+			};
+		m[0] = ((this_->diffuseColor).c[0]);m[1] = ((this_->diffuseColor).c[1]);m[2] = ((this_->diffuseColor).c[2]);m[3] = 1;;
+		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, m);
+		for(i=0; i<3; i++) {
+			m[i] *= (this_->ambientIntensity);
+		}
+		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, m);
+		m[0] = ((this_->specularColor).c[0]);m[1] = ((this_->specularColor).c[1]);m[2] = ((this_->specularColor).c[2]);m[3] = 1;;
+		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, m);
+
+		m[0] = ((this_->emissiveColor).c[0]);m[1] = ((this_->emissiveColor).c[1]);m[2] = ((this_->emissiveColor).c[2]);m[3] = 1;;
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, m);
+
+		glColor3f(m[0],m[1],m[2]);
+
+		if(fabs((this_->shininess) - 0.2) > 0.001) {
+			printf("Set shininess: %f\n",(this_->shininess));
+			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 
+				128*(this_->shininess)*(this_->shininess));
+				/* 128-(128*(this_->shininess))); */
+				/* 1.0/((",getf(Material,shininess),"+1)/128.0)); */
+		}
+		
+			glEndList()
+			;
+}
+			}
+
+void Appearance_Child(void *nod_){ /* GENERATED FROM HASH ChildC, MEMBER Appearance */
+			struct VRML_Appearance *this_ = (struct VRML_Appearance *)nod_;
+			{
+		if((this_->material)) {render_node((this_->material));}
+		else {
+			glDisable(GL_LIGHTING);
+			glColor3f(1.0,1.0,1.0);
+		} /* XXX */
+		if((this_->texture)) {
+			render_node((this_->texture));
+		}
+		if((this_->textureTransform)) {
+			render_node((this_->textureTransform));
+		}
+	}
+			}
+
+void Shape_Child(void *nod_){ /* GENERATED FROM HASH ChildC, MEMBER Shape */
+			struct VRML_Shape *this_ = (struct VRML_Shape *)nod_;
+			{
+		/* if(!(this_->appearance) || !(this_->geometry)) */
+		if(!(this_->geometry)) {
+			return;
+		}
+		glPushAttrib(GL_LIGHTING_BIT|GL_ENABLE_BIT|GL_TEXTURE_BIT);
+		/* glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE); */
+		if((this_->appearance)) {
+			render_node((this_->appearance));
+		} else {
+			glDisable(GL_LIGHTING);
+			glColor3f(1.0,1.0,1.0);
+		}
+		render_node((this_->geometry));
+		glPopAttrib();
+	}
+			}
+
+void IndexedLineSet_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER IndexedLineSet */
+			struct VRML_IndexedLineSet *this_ = (struct VRML_IndexedLineSet *)nod_;
+			{
+		int i;
+		int cin = ((this_->coordIndex).n);
+		int colin = ((this_->colorIndex).n);
+		int cpv = ((this_->colorPerVertex));
+		int plno = 0;
+		int ind1,ind2;
+		int ind;
+		int c;
+		struct SFColor *points; int npoints;
+		struct SFColor *colors; int ncolors=0;
+		
+		        if(!this_->_dlist) {
+				this_->_dlist = glGenLists(1);
+			}
+			if(this_->_dlchange != this_->_change) {
+				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
+				this_->_dlchange = this_->_change;
+			} else {
+				glCallList(this_->_dlist); return;
+			};
+		if(this_->coord) {
+		  if(!(*(struct VRML_Virt **)(this_->coord))-> get3) {
+		  	die("NULL METHOD IndexedLineSet coord  get3");
+		  }
+		   points =  ((*(struct VRML_Virt **)(this_->coord))-> get3(this_->coord,
+		     &npoints)) ;}
+ 	  else { (die("NULL FIELD IndexedLineSet coord "));};
+		if(this_->color) {
+		  if(!(*(struct VRML_Virt **)(this_->color))-> get3) {
+		  	die("NULL METHOD IndexedLineSet color  get3");
+		  }
+		   colors =  ((*(struct VRML_Virt **)(this_->color))-> get3(this_->color,
+		     &ncolors)) ;
+		};
+		glDisable(GL_LIGHTING);
+		if(ncolors && !cpv) {
+			glColor3f(colors[plno].c[0],
+				  colors[plno].c[1],
+				  colors[plno].c[2]);
+		}
+		glBegin(GL_LINE_STRIP);
+		for(i=0; i<cin; i++) {
+			ind = ((this_->coordIndex).p[i]);
+			if(verbose) printf("Line: %d %d\n",i,ind); 
+			if(ind==-1) {
+				glEnd();
+				plno++;
+				if(ncolors && !cpv) {
+					c = plno;
+					if((!colin && plno < ncolors) ||
+					   (colin && plno < colin)) {
+						if(colin) {
+							c = ((this_->colorIndex).p[c]);
+						}
+						glColor3f(colors[c].c[0],
+							  colors[c].c[1],
+							  colors[c].c[2]);
+					}
+				}
+				glBegin(GL_LINE_STRIP);
+			} else {
+				if(ncolors && cpv) {
+					c = i;
+					if(colin) {
+						c = ((this_->colorIndex).p[c]);
+					}
+					glColor3f(colors[c].c[0],
+						  colors[c].c[1],
+						  colors[c].c[2]);
+				}
+				/* printf("Line: vertex %f %f %f\n",
+					points[ind].c[0],
+					points[ind].c[1],
+					points[ind].c[2]
+				);
+				*/
+				glVertex3f(
+					points[ind].c[0],
+					points[ind].c[1],
+					points[ind].c[2]
+				);
+			}
+		}
+		glEnd();
+		glEnable(GL_LIGHTING);
+		
+			glEndList()
+			;
+}
+			}
+
+void PointSet_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER PointSet */
+			struct VRML_PointSet *this_ = (struct VRML_PointSet *)nod_;
+			{
+	int i; 
+	struct SFColor *points; int npoints=0;
+	struct SFColor *colors; int ncolors=0;
+	
+		        if(!this_->_dlist) {
+				this_->_dlist = glGenLists(1);
+			}
+			if(this_->_dlchange != this_->_change) {
+				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
+				this_->_dlchange = this_->_change;
+			} else {
+				glCallList(this_->_dlist); return;
+			};
+	if(this_->coord) {
+		  if(!(*(struct VRML_Virt **)(this_->coord))-> get3) {
+		  	die("NULL METHOD PointSet coord  get3");
+		  }
+		   points =  ((*(struct VRML_Virt **)(this_->coord))-> get3(this_->coord,
+		     &npoints)) ;}
+ 	  else { (die("NULL FIELD PointSet coord "));};
+	if(this_->color) {
+		  if(!(*(struct VRML_Virt **)(this_->color))-> get3) {
+		  	die("NULL METHOD PointSet color  get3");
+		  }
+		   colors =  ((*(struct VRML_Virt **)(this_->color))-> get3(this_->color,
+		     &ncolors)) ;
+		};
+	if(ncolors && ncolors != npoints) {
+		die("Not same number of colors and points");
+	}
+	glDisable(GL_LIGHTING);
+	glBegin(GL_POINTS);
+	if(verbose) printf("PointSet: %d %d\n", npoints, ncolors);
+	for(i=0; i<npoints; i++) {
+		if(ncolors) {
+			if(verbose) printf("Color: %f %f %f\n",
+				  colors[i].c[0],
+				  colors[i].c[1],
+				  colors[i].c[2]);
+			glColor3f(colors[i].c[0],
+				  colors[i].c[1],
+				  colors[i].c[2]);
+		}
+		glVertex3f(
+			points[i].c[0],
+			points[i].c[1],
+			points[i].c[2]
+		);
+	}
+	glEnd();
+	glEnable(GL_LIGHTING);
+	
+			glEndList()
+			;
+}
+			}
+
+void Cylinder_Rend(void *nod_){ /* GENERATED FROM HASH RendC, MEMBER Cylinder */
+			struct VRML_Cylinder *this_ = (struct VRML_Cylinder *)nod_;
+			{
+		int div = horiz_div;
+		float df = div;
+		float h = (this_->height)/2;
+		float r = (this_->radius);
+		float a,a1,a2;
+		DECL_TRIG1
+		int i;
+		
+		        if(!this_->_dlist) {
+				this_->_dlist = glGenLists(1);
+			}
+			if(this_->_dlchange != this_->_change) {
+				glNewList(this_->_dlist,GL_COMPILE_AND_EXECUTE);
+				this_->_dlchange = this_->_change;
+			} else {
+				glCallList(this_->_dlist); return;
+			};
+		INIT_TRIG1(div)
+		if(((this_->bottom))) {
+			glBegin(GL_POLYGON);
+			glNormal3f(0,1,0);
+			START_TRIG1
+			for(i=0; i<div; i++) {
+				TC(0.5+0.5*SIN1,0.5+0.5*SIN1);
+				glVertex3f(r*SIN1,h,r*COS1);
+				UP_TRIG1
+			}
+			glEnd();
+		} 
+		if(((this_->top))) {
+			glBegin(GL_POLYGON);
+			glNormal3f(0,-1,0);
+			START_TRIG1
+			for(i=div-1; i>=0; i--) {
+				TC(0.5+0.5*-SIN1,0.5+0.5*COS1);
+				glVertex3f(-r*SIN1,-h,r*COS1);
+				UP_TRIG1
+			}
+			glEnd();
+		}
+		if(((this_->side))) {
+				/* if(!nomode) {
+				glPushAttrib(GL_LIGHTING);
+				# glShadeModel(GL_SMOOTH);
+				} */
+			glBegin(GL_QUADS);
+			START_TRIG1
+			for(i=0; i<div; i++) {
+				float lsin = SIN1;
+				float lcos = COS1;
+				UP_TRIG1;
+				glNormal3f(lsin,0,lcos);
+				TC(i/df,0);
+				glVertex3f(r*lsin,-h,r*lcos);
+				glNormal3f(SIN1,0,COS1);
+				TC((i+1)/df,0);
+				glVertex3f(r*SIN1,-h,r*COS1);
+				/* glNormal3f(sin(a1),0,cos(a1));  (same) */
+				TC((i+1)/df,1);
+				glVertex3f(r*SIN1,h,r*COS1);
+				glNormal3f(lsin,0,lcos);
+				TC(i/df,1);
+				glVertex3f(r*lsin,h,r*lcos);
+			}
+			glEnd();
+				/*
+				if(!nomode) {
+				glPopAttrib();
+				}
+				*/
+		}
+		
+			glEndList()
+			;
+}
+			}
+
+void Cylinder_RendRay(void *nod_){ /* GENERATED FROM HASH RendRayC, MEMBER Cylinder */
+			struct VRML_Cylinder *this_ = (struct VRML_Cylinder *)nod_;
+			{
+	float h = (this_->height)/2; /* pos and neg dir. */
+	float r = (this_->radius);
+	float y = h;
+	/* Caps */
+	if(!YEQ) {
+		float yrat0 = YRAT(y);
+		float yrat1 = YRAT(-y);
+		if(TRAT(yrat0)) {
+			float cx = MRATX(yrat0);
+			float cz = MRATZ(yrat0);
+			if(r*r > cx*cx+cz*cz) {
+				HIT(yrat0, cx,y,cz, 0,1,0, -1,-1, "cylcap 0");
+			}
+		}
+		if(TRAT(yrat1)) {
+			float cx = MRATX(yrat1);
+			float cz = MRATZ(yrat1);
+			if(r*r > cx*cx+cz*cz) {
+				HIT(yrat1, cx,-y,cz, 0,-1,0, -1,-1, "cylcap 1");
+			}
+		}
+	}
+	/* Body -- do same as for sphere, except no y axis in distance */
+	if((!XEQ) && (!ZEQ)) {
+		float dx = t_r2.x-t_r1.x; float dz = t_r2.z-t_r1.z;
+		float a = dx*dx + dz*dz;
+		float b = 2*(dx * t_r1.x + dz * t_r1.z);
+		float c = t_r1.x * t_r1.x + t_r1.z * t_r1.z - r*r;
+		float und;
+		b /= a; c /= a;
+		und = b*b - 4*c;
+		if(und > 0) { /* HITS the infinite cylinder */
+			float sol1 = (-b+sqrt(und))/2;
+			float sol2 = (-b-sqrt(und))/2;
+			float cy,cx,cz;
+			cy = MRATY(sol1);
+			if(cy > -h && cy < h) {
+				cx = MRATX(sol1);
+				cz = MRATZ(sol1);
+				HIT(sol1, cx,cy,cz, cx/r,0,cz/r, -1,-1, "cylside 1");
+			}
+			cy = MRATY(sol2);
+			if(cy > -h && cy < h) {
+				cx = MRATX(sol2);
+				cz = MRATZ(sol2);
+				HIT(sol2, cx,cy,cz, cx/r,0,cz/r, -1,-1, "cylside 2");
+			}
+		}
+	}
+}
+			}
+
+void Anchor_Child(void *nod_){ /* GENERATED FROM HASH ChildC, MEMBER Anchor */
+			struct VRML_Anchor *this_ = (struct VRML_Anchor *)nod_;
+			{
+		int nc = ((this_->children).n); 
+		int i;
+		if(verbose) {printf("RENDER GROUP START %d (%d)\n",this_, nc);}
+		for(i=0; i<nc; i++) {
+			void *p = ((this_->children).p[i]);
+			if(verbose) {printf("RENDER GROUP %d CHILD %d\n",this_, p);}
+			render_node(p);
+		}
+		if(verbose) {printf("RENDER GROUP END %d\n",this_);}
+	}
+			}
+
+void Transform_Prep(void *nod_){ /* GENERATED FROM HASH PrepC, MEMBER Transform */
 			struct VRML_Transform *this_ = (struct VRML_Transform *)nod_;
 			{
 	glPushMatrix();
@@ -2306,7 +3837,9 @@ void render_ray_polyrep(void *node,
 			;
 	}
 }
-			}void Transform_Child(void *nod_){ /* GENERATED FROM HASH C, MEMBER Transform */
+			}
+
+void Transform_Child(void *nod_){ /* GENERATED FROM HASH ChildC, MEMBER Transform */
 			struct VRML_Transform *this_ = (struct VRML_Transform *)nod_;
 			{
 		int nc = ((this_->children).n); 
@@ -2319,18 +3852,64 @@ void render_ray_polyrep(void *node,
 		}
 		if(verbose) {printf("RENDER GROUP END %d\n",this_);}
 	}
-			}void Transform_Fin(void *nod_){ /* GENERATED FROM HASH C, MEMBER Transform */
+			}
+
+void Transform_Fin(void *nod_){ /* GENERATED FROM HASH FinC, MEMBER Transform */
 			struct VRML_Transform *this_ = (struct VRML_Transform *)nod_;
 			{
 	glPopMatrix();
 }
-			}struct SFColor *Color_Get3(void *nod_,int *n){ /* GENERATED FROM HASH C, MEMBER Color */
-			struct VRML_Color *this_ = (struct VRML_Color *)nod_;
+			}
+
+void SpotLight_Light(void *nod_){ /* GENERATED FROM HASH LightC, MEMBER SpotLight */
+			struct VRML_SpotLight *this_ = (struct VRML_SpotLight *)nod_;
 			{
-	*n = ((this_->color).n); 
-	return ((this_->color).p);
-}
-			}void LOD_Child(void *nod_){ /* GENERATED FROM HASH C, MEMBER LOD */
+		if(((this_->on))) {
+			int light = nextlight();
+			if(light >= 0) {
+				float vec[4];
+				glEnable(light);
+				vec[0] = ((this_->direction).c[0]);
+				vec[1] = ((this_->direction).c[1]);
+				vec[2] = ((this_->direction).c[2]);
+				vec[3] = 1;
+				glLightfv(light, GL_SPOT_DIRECTION, vec);
+				vec[0] = ((this_->location).c[0]);
+				vec[1] = ((this_->location).c[1]);
+				vec[2] = ((this_->location).c[2]);
+				vec[3] = 1;
+				glLightfv(light, GL_POSITION, vec);
+
+				glLightf(light, GL_CONSTANT_ATTENUATION, 
+					((this_->attenuation).c[0]));
+				glLightf(light, GL_LINEAR_ATTENUATION, 
+					((this_->attenuation).c[1]));
+				glLightf(light, GL_QUADRATIC_ATTENUATION, 
+					((this_->attenuation).c[2]));
+
+
+				vec[0] = ((this_->color).c[0]) * (this_->intensity);
+				vec[1] = ((this_->color).c[1]) * (this_->intensity);
+				vec[2] = ((this_->color).c[2]) * (this_->intensity);
+				vec[3] = 1;
+				glLightfv(light, GL_DIFFUSE, vec);
+				glLightfv(light, GL_SPECULAR, vec);
+				vec[0] *= (this_->ambientIntensity);
+				vec[1] *= (this_->ambientIntensity);
+				vec[2] *= (this_->ambientIntensity);
+				glLightfv(light, GL_AMBIENT, vec);
+
+				/* XXX */
+				glLightf(light, GL_SPOT_EXPONENT,
+					0.5/((this_->beamWidth)+0.1));
+				glLightf(light, GL_SPOT_CUTOFF,
+					(this_->cutOffAngle)/3.1415926536*180);
+			}
+		}
+	}
+			}
+
+void LOD_Child(void *nod_){ /* GENERATED FROM HASH ChildC, MEMBER LOD */
 			struct VRML_LOD *this_ = (struct VRML_LOD *)nod_;
 			{
 		GLdouble mod[16];
@@ -2366,33 +3945,46 @@ void render_ray_polyrep(void *node,
 
 	}
 			}
-static struct VRML_Virt virt_Background = { NULL,Background_Rend,NULL,NULL,NULL,NULL,NULL,NULL,"Background"};
-static struct VRML_Virt virt_Viewpoint = { Viewpoint_Prep,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"Viewpoint"};
-static struct VRML_Virt virt_Cone = { NULL,Cone_Rend,NULL,NULL,Cone_RendRay,NULL,NULL,NULL,"Cone"};
-static struct VRML_Virt virt_Text = { NULL,Text_Rend,NULL,NULL,NULL,NULL,NULL,NULL,"Text"};
-static struct VRML_Virt virt_DirectionalLight = { NULL,NULL,NULL,NULL,NULL,NULL,DirectionalLight_Light,NULL,"DirectionalLight"};
-static struct VRML_Virt virt_Sphere = { NULL,Sphere_Rend,NULL,NULL,Sphere_RendRay,NULL,NULL,NULL,"Sphere"};
-static struct VRML_Virt virt_Coordinate = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,Coordinate_Get3,"Coordinate"};
-static struct VRML_Virt virt_FontStyle = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"FontStyle"};
-static struct VRML_Virt virt_Normal = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,Normal_Get3,"Normal"};
-static struct VRML_Virt virt_Box = { NULL,Box_Rend,NULL,NULL,Box_RendRay,NULL,NULL,NULL,"Box"};
-static struct VRML_Virt virt_Billboard = { Billboard_Prep,NULL,Billboard_Child,Billboard_Fin,NULL,NULL,NULL,NULL,"Billboard"};
-static struct VRML_Virt virt_Group = { NULL,NULL,Group_Child,NULL,NULL,NULL,NULL,NULL,"Group"};
-static struct VRML_Virt virt_ElevationGrid = { NULL,ElevationGrid_Rend,NULL,NULL,ElevationGrid_RendRay,ElevationGrid_GenPolyRep,NULL,NULL,"ElevationGrid"};
-static struct VRML_Virt virt_Material = { NULL,Material_Rend,NULL,NULL,NULL,NULL,NULL,NULL,"Material"};
-static struct VRML_Virt virt_Appearance = { NULL,NULL,Appearance_Child,NULL,NULL,NULL,NULL,NULL,"Appearance"};
-static struct VRML_Virt virt_Extrusion = { NULL,Extrusion_Rend,NULL,NULL,Extrusion_RendRay,Extrusion_GenPolyRep,NULL,NULL,"Extrusion"};
-static struct VRML_Virt virt_Shape = { NULL,NULL,Shape_Child,NULL,NULL,NULL,NULL,NULL,"Shape"};
-static struct VRML_Virt virt_Switch = { NULL,NULL,Switch_Child,NULL,NULL,NULL,NULL,NULL,"Switch"};
-static struct VRML_Virt virt_ImageTexture = { NULL,ImageTexture_Rend,NULL,NULL,NULL,NULL,NULL,NULL,"ImageTexture"};
-static struct VRML_Virt virt_IndexedLineSet = { NULL,IndexedLineSet_Rend,NULL,NULL,NULL,NULL,NULL,NULL,"IndexedLineSet"};
-static struct VRML_Virt virt_PointSet = { NULL,PointSet_Rend,NULL,NULL,NULL,NULL,NULL,NULL,"PointSet"};
-static struct VRML_Virt virt_Cylinder = { NULL,Cylinder_Rend,NULL,NULL,Cylinder_RendRay,NULL,NULL,NULL,"Cylinder"};
-static struct VRML_Virt virt_Anchor = { NULL,NULL,Anchor_Child,NULL,NULL,NULL,NULL,NULL,"Anchor"};
-static struct VRML_Virt virt_IndexedFaceSet = { NULL,IndexedFaceSet_Rend,NULL,NULL,IndexedFaceSet_RendRay,IndexedFaceSet_GenPolyRep,NULL,NULL,"IndexedFaceSet"};
-static struct VRML_Virt virt_Transform = { Transform_Prep,NULL,Transform_Child,Transform_Fin,NULL,NULL,NULL,NULL,"Transform"};
-static struct VRML_Virt virt_Color = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,Color_Get3,"Color"};
-static struct VRML_Virt virt_LOD = { NULL,NULL,LOD_Child,NULL,NULL,NULL,NULL,NULL,"LOD"};
+
+struct SFColor *Color_Get3(void *nod_,int *n){ /* GENERATED FROM HASH Get3C, MEMBER Color */
+			struct VRML_Color *this_ = (struct VRML_Color *)nod_;
+			{
+	*n = ((this_->color).n); 
+	return ((this_->color).p);
+}
+			}
+static struct VRML_Virt virt_PointLight = { NULL,NULL,NULL,NULL,NULL,NULL,PointLight_Light,NULL,NULL,"PointLight"};
+static struct VRML_Virt virt_DirectionalLight = { NULL,NULL,NULL,NULL,NULL,NULL,DirectionalLight_Light,NULL,NULL,"DirectionalLight"};
+static struct VRML_Virt virt_Sphere = { NULL,Sphere_Rend,NULL,NULL,Sphere_RendRay,NULL,NULL,NULL,NULL,"Sphere"};
+static struct VRML_Virt virt_Coordinate = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,Coordinate_Get3,NULL,"Coordinate"};
+static struct VRML_Virt virt_FontStyle = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"FontStyle"};
+static struct VRML_Virt virt_Normal = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,Normal_Get3,NULL,"Normal"};
+static struct VRML_Virt virt_Box = { NULL,Box_Rend,NULL,NULL,Box_RendRay,NULL,NULL,NULL,NULL,"Box"};
+static struct VRML_Virt virt_Billboard = { Billboard_Prep,NULL,Billboard_Child,Billboard_Fin,NULL,NULL,NULL,NULL,NULL,"Billboard"};
+static struct VRML_Virt virt_ElevationGrid = { NULL,ElevationGrid_Rend,NULL,NULL,ElevationGrid_RendRay,ElevationGrid_GenPolyRep,NULL,NULL,NULL,"ElevationGrid"};
+static struct VRML_Virt virt_Extrusion = { NULL,Extrusion_Rend,NULL,NULL,Extrusion_RendRay,Extrusion_GenPolyRep,NULL,NULL,NULL,"Extrusion"};
+static struct VRML_Virt virt_Switch = { NULL,NULL,Switch_Child,NULL,NULL,NULL,NULL,NULL,NULL,"Switch"};
+static struct VRML_Virt virt_ImageTexture = { NULL,ImageTexture_Rend,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"ImageTexture"};
+static struct VRML_Virt virt_TextureCoordinate = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,TextureCoordinate_Get2,"TextureCoordinate"};
+static struct VRML_Virt virt_IndexedFaceSet = { NULL,IndexedFaceSet_Rend,NULL,NULL,IndexedFaceSet_RendRay,IndexedFaceSet_GenPolyRep,NULL,NULL,NULL,"IndexedFaceSet"};
+static struct VRML_Virt virt_Background = { NULL,Background_Rend,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"Background"};
+static struct VRML_Virt virt_Text = { NULL,Text_Rend,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"Text"};
+static struct VRML_Virt virt_Cone = { NULL,Cone_Rend,NULL,NULL,Cone_RendRay,NULL,NULL,NULL,NULL,"Cone"};
+static struct VRML_Virt virt_Viewpoint = { Viewpoint_Prep,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"Viewpoint"};
+static struct VRML_Virt virt_TextureTransform = { NULL,TextureTransform_Rend,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"TextureTransform"};
+static struct VRML_Virt virt_Group = { NULL,NULL,Group_Child,NULL,NULL,NULL,NULL,NULL,NULL,"Group"};
+static struct VRML_Virt virt_ProximitySensor = { NULL,ProximitySensor_Rend,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"ProximitySensor"};
+static struct VRML_Virt virt_Material = { NULL,Material_Rend,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"Material"};
+static struct VRML_Virt virt_Appearance = { NULL,NULL,Appearance_Child,NULL,NULL,NULL,NULL,NULL,NULL,"Appearance"};
+static struct VRML_Virt virt_Shape = { NULL,NULL,Shape_Child,NULL,NULL,NULL,NULL,NULL,NULL,"Shape"};
+static struct VRML_Virt virt_IndexedLineSet = { NULL,IndexedLineSet_Rend,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"IndexedLineSet"};
+static struct VRML_Virt virt_PointSet = { NULL,PointSet_Rend,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"PointSet"};
+static struct VRML_Virt virt_Cylinder = { NULL,Cylinder_Rend,NULL,NULL,Cylinder_RendRay,NULL,NULL,NULL,NULL,"Cylinder"};
+static struct VRML_Virt virt_Anchor = { NULL,NULL,Anchor_Child,NULL,NULL,NULL,NULL,NULL,NULL,"Anchor"};
+static struct VRML_Virt virt_Transform = { Transform_Prep,NULL,Transform_Child,Transform_Fin,NULL,NULL,NULL,NULL,NULL,"Transform"};
+static struct VRML_Virt virt_SpotLight = { NULL,NULL,NULL,NULL,NULL,NULL,SpotLight_Light,NULL,NULL,"SpotLight"};
+static struct VRML_Virt virt_LOD = { NULL,NULL,LOD_Child,NULL,NULL,NULL,NULL,NULL,NULL,"LOD"};
+static struct VRML_Virt virt_Color = { NULL,NULL,NULL,NULL,NULL,NULL,NULL,Color_Get3,NULL,"Color"};
 /*********************************************************************
  * Code here again comes almost verbatim from VRMLC.pm 
  */
@@ -2423,11 +4015,11 @@ void render_polyrep(void *node,
 /*	printf("Render polyrep %d '%s' (%d %d): %d\n",node,v->name, 
 		p->_change, r->_change, r->ntri);
  */
-	glBegin(GL_TRIANGLES);
 	hasc = (ncolors || r->color);
 	if(hasc) {
 		glEnable(GL_COLOR_MATERIAL);
 	}
+	glBegin(GL_TRIANGLES);
 	for(i=0; i<r->ntri*3; i++) {
 		int nori = i;
 		int coli = i;
@@ -2459,10 +4051,10 @@ void render_polyrep(void *node,
 			glVertex3fv(r->coord+3*ind);
 		}
 	}
+	glEnd();
 	if(hasc) {
 		glDisable(GL_COLOR_MATERIAL);
 	}
-	glEnd();
 }
 
 /*********************************************************************
@@ -2667,19 +4259,16 @@ void render_node(void *node) {
 	if(!node) {return;}
 	v = *(struct VRML_Virt **)node;
 	p = node;
-	if(verbose) printf("Render_node_v %d\n",v);
-	if(verbose) printf("Render_node_v_d \"%s\"\n",v->name);
-	if(verbose) printf("Render_node_v_prep %d\n",v->prep);
-	if(verbose) printf("Render_node_v_rend %d\n",v->rend);
-	if(verbose) printf("Render_node_v_children %d\n",v->children);
-	if(verbose) printf("Render_node_v_fin %d\n",v->fin);
+	if(verbose) printf("Render_node_v %d (%s) %d %d %d %d RAY: %d HYP: %d\n",v,
+		v->name, v->prep, v->rend, v->children, v->fin, v->rendray,
+		hypersensitive);
+	if(verbose) printf("Render_state any %d geom %d light %d sens %d\n",
+		render_anything, render_geom, render_light, render_sensitive);
 	if(render_anything && v->prep) {v->prep(node);
-		if(render_sensitive && v == &virt_Transform) { upd_ray(); }
+		if(render_sensitive && !hypersensitive) { upd_ray(); }
 	}
-	if(render_anything && render_geom && v->rend) {v->rend(node);}
+	if(render_anything && render_geom && !render_sensitive && v->rend) {v->rend(node);}
 	if(render_anything && render_light && v->light) {v->light(node);}
-	if(render_anything && render_geom && render_sensitive &&
-		v->rendray) {v->rendray(node);}
 	/* Future optimization: when doing VP/Lights, do only 
 	 * that child... further in future: could just calculate
 	 * transforms myself..
@@ -2689,10 +4278,7 @@ void render_node(void *node) {
 	   p->_sens) {
 	   	srg = render_geom;
 		render_geom = 1;
-		cur_hits += glRenderMode(GL_SELECT);
 		if(verbose) printf("CH1 %d: %d\n",node, cur_hits, p->_hit);
-		glInitNames();
-		glPushName(1);
 		sch = cur_hits;
 		cur_hits = 0;
 		/* HP */
@@ -2701,6 +4287,8 @@ void render_node(void *node) {
 		glGetDoublev(GL_MODELVIEW_MATRIX, rph.modelMatrix);
 		glGetDoublev(GL_PROJECTION_MATRIX, rph.projMatrix);
 	}
+	if(render_anything && render_geom && render_sensitive &&
+		!hypersensitive && v->rendray) {v->rendray(node);}
 	if(hypersensitive == node) {
 		hyper_r1 = t_r1;
 		hyper_r2 = t_r2;
@@ -2710,11 +4298,6 @@ void render_node(void *node) {
 	if(render_anything &&
 	   render_sensitive &&
 	   p->_sens) {
-	   	cur_hits += glRenderMode(GL_SELECT);
-		if(verbose) printf("CH2 %d: %d\n",node, cur_hits);
-		glInitNames();
-		glPushName(1);
-		/* p->_hit += cur_hits; */
 		render_geom = srg;
 		cur_hits = sch;
 		if(verbose) printf("CH3: %d %d\n",cur_hits, p->_hit);
@@ -2782,6 +4365,8 @@ get_hyperhit(x1,y1,z1,x2,y2,z2)
 	double y2
 	double z2
 CODE:
+	GLdouble projMatrix[16];
+	/*
 	if(hyperhit) {
 		x1 = hyper_r1.x;
 		y1 = hyper_r1.y;
@@ -2791,6 +4376,13 @@ CODE:
 		z2 = hyper_r2.z;
 		RETVAL=1;
 	} else RETVAL = 0;
+	*/
+	glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+	gluUnProject(r1.x, r1.y, r1.z, rhhyper.modelMatrix,
+		projMatrix, viewport, &x1, &y1, &z1);
+	gluUnProject(r2.x, r2.y, r2.z, rhhyper.modelMatrix,
+		projMatrix, viewport, &x2, &y2, &z2);
+	RETVAL=1;
 OUTPUT:
 	RETVAL
 	x1
@@ -2895,6 +4487,38 @@ OUTPUT:
 	tx
 	ty
 
+void 
+get_proximitysensor_vecs(node,hit,x1,y1,z1,x2,y2,z2,q2)
+	void *node
+	int hit
+	double x1
+	double y1
+	double z1
+	double x2
+	double y2
+	double z2
+	double q2
+CODE:
+	struct VRML_ProximitySensor *px = node;
+	hit = px->__hit;
+	px->__hit = 0;
+	x1 = px->__t1.c[0];
+	y1 = px->__t1.c[1];
+	z1 = px->__t1.c[2];
+	x2 = px->__t2.r[0];
+	y2 = px->__t2.r[1];
+	z2 = px->__t2.r[2];
+	q2 = px->__t2.r[3];
+OUTPUT:
+	hit
+	x1
+	y1
+	z1
+	x2
+	y2
+	z2
+	q2
+
 void
 set_divs(horiz,vert)
 int horiz
@@ -2902,6 +4526,12 @@ int vert
 CODE:
 	horiz_div = horiz;
 	vert_div = vert;
+
+void
+set_vpdist(dist)
+int dist
+CODE:
+	vp_dist = dist;
 
 
 
@@ -2955,25 +4585,28 @@ CODE:
 		int iM;
 		int lM;
 		if(!SvROK(sv_)) {
-			die("Help! Multi without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! Multi without being arrayref");
-		}
-		aM = (AV *) SvRV(sv_);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		(*ptr_).n = lM;
-		(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die("Help: Multi VRML::Field::SFFloat bM == 0");
+			(*ptr_).n = 0;
+			(*ptr_).p = 0;
+			/* die("Help! Multi without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! Multi without being arrayref");
 			}
-			
-			((*ptr_).p[iM]) = SvNV((*bM));
+			aM = (AV *) SvRV(sv_);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			(*ptr_).n = lM;
+			(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die("Help: Multi VRML::Field::SFFloat bM == 0");
+				}
+				
+				((*ptr_).p[iM]) = SvNV((*bM));
 
+			}
 		}
 	}
 	
@@ -3013,18 +4646,23 @@ CODE:
 		SV **b;
 		int i;
 		if(!SvROK(sv_)) {
-			die("Help! SFRotation without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! SFRotation without being arrayref");
-		}
-		a = (AV *) SvRV(sv_);
-		for(i=0; i<4; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			(*ptr_).r[0] = 0;
+			(*ptr_).r[1] = 1;
+			(*ptr_).r[2] = 0;
+			(*ptr_).r[3] = 0;
+			/* die("Help! SFRotation without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! SFRotation without being arrayref");
 			}
-			(*ptr_).r[i] = SvNV(*b);
+			a = (AV *) SvRV(sv_);
+			for(i=0; i<4; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				(*ptr_).r[i] = SvNV(*b);
+			}
 		}
 	}
 	
@@ -3065,43 +4703,51 @@ CODE:
 		int iM;
 		int lM;
 		if(!SvROK(sv_)) {
-			die("Help! Multi without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! Multi without being arrayref");
-		}
-		aM = (AV *) SvRV(sv_);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		(*ptr_).n = lM;
-		(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die("Help: Multi VRML::Field::SFRotation bM == 0");
+			(*ptr_).n = 0;
+			(*ptr_).p = 0;
+			/* die("Help! Multi without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! Multi without being arrayref");
 			}
-			
-			{
+			aM = (AV *) SvRV(sv_);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			(*ptr_).n = lM;
+			(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die("Help: Multi VRML::Field::SFRotation bM == 0");
+				}
+				
+				{
 		AV *a;
 		SV **b;
 		int i;
 		if(!SvROK((*bM))) {
-			die("Help! SFRotation without being ref");
-		}
-		if(SvTYPE(SvRV((*bM))) != SVt_PVAV) {
-			die("Help! SFRotation without being arrayref");
-		}
-		a = (AV *) SvRV((*bM));
-		for(i=0; i<4; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			((*ptr_).p[iM]).r[0] = 0;
+			((*ptr_).p[iM]).r[1] = 1;
+			((*ptr_).p[iM]).r[2] = 0;
+			((*ptr_).p[iM]).r[3] = 0;
+			/* die("Help! SFRotation without being ref"); */
+		} else {
+			if(SvTYPE(SvRV((*bM))) != SVt_PVAV) {
+				die("Help! SFRotation without being arrayref");
 			}
-			((*ptr_).p[iM]).r[i] = SvNV(*b);
+			a = (AV *) SvRV((*bM));
+			for(i=0; i<4; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				((*ptr_).p[iM]).r[i] = SvNV(*b);
+			}
 		}
 	}
 	
+			}
 		}
 	}
 	
@@ -3141,18 +4787,22 @@ CODE:
 		SV **b;
 		int i;
 		if(!SvROK(sv_)) {
-			die("Help! SFColor without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! SFColor without being arrayref");
-		}
-		a = (AV *) SvRV(sv_);
-		for(i=0; i<3; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			(*ptr_).c[0] = 0;
+			(*ptr_).c[1] = 0;
+			(*ptr_).c[2] = 0;
+			/* die("Help! SFColor without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! SFColor without being arrayref");
 			}
-			(*ptr_).c[i] = SvNV(*b);
+			a = (AV *) SvRV(sv_);
+			for(i=0; i<3; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				(*ptr_).c[i] = SvNV(*b);
+			}
 		}
 	}
 	
@@ -3193,43 +4843,50 @@ CODE:
 		int iM;
 		int lM;
 		if(!SvROK(sv_)) {
-			die("Help! Multi without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! Multi without being arrayref");
-		}
-		aM = (AV *) SvRV(sv_);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		(*ptr_).n = lM;
-		(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die("Help: Multi VRML::Field::SFVec3f bM == 0");
+			(*ptr_).n = 0;
+			(*ptr_).p = 0;
+			/* die("Help! Multi without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! Multi without being arrayref");
 			}
-			
-			{
+			aM = (AV *) SvRV(sv_);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			(*ptr_).n = lM;
+			(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die("Help: Multi VRML::Field::SFVec3f bM == 0");
+				}
+				
+				{
 		AV *a;
 		SV **b;
 		int i;
 		if(!SvROK((*bM))) {
-			die("Help! SFColor without being ref");
-		}
-		if(SvTYPE(SvRV((*bM))) != SVt_PVAV) {
-			die("Help! SFColor without being arrayref");
-		}
-		a = (AV *) SvRV((*bM));
-		for(i=0; i<3; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			((*ptr_).p[iM]).c[0] = 0;
+			((*ptr_).p[iM]).c[1] = 0;
+			((*ptr_).p[iM]).c[2] = 0;
+			/* die("Help! SFColor without being ref"); */
+		} else {
+			if(SvTYPE(SvRV((*bM))) != SVt_PVAV) {
+				die("Help! SFColor without being arrayref");
 			}
-			((*ptr_).p[iM]).c[i] = SvNV(*b);
+			a = (AV *) SvRV((*bM));
+			for(i=0; i<3; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				((*ptr_).p[iM]).c[i] = SvNV(*b);
+			}
 		}
 	}
 	
+			}
 		}
 	}
 	
@@ -3336,25 +4993,28 @@ CODE:
 		int iM;
 		int lM;
 		if(!SvROK(sv_)) {
-			die("Help! Multi without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! Multi without being arrayref");
-		}
-		aM = (AV *) SvRV(sv_);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		(*ptr_).n = lM;
-		(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die("Help: Multi VRML::Field::SFInt32 bM == 0");
+			(*ptr_).n = 0;
+			(*ptr_).p = 0;
+			/* die("Help! Multi without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! Multi without being arrayref");
 			}
-			
-			((*ptr_).p[iM]) = SvIV((*bM));
+			aM = (AV *) SvRV(sv_);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			(*ptr_).n = lM;
+			(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die("Help: Multi VRML::Field::SFInt32 bM == 0");
+				}
+				
+				((*ptr_).p[iM]) = SvIV((*bM));
 
+			}
 		}
 	}
 	
@@ -3427,24 +5087,27 @@ CODE:
 		int iM;
 		int lM;
 		if(!SvROK(sv_)) {
-			die("Help! Multi without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! Multi without being arrayref");
-		}
-		aM = (AV *) SvRV(sv_);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		(*ptr_).n = lM;
-		(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die("Help: Multi VRML::Field::SFNode bM == 0");
+			(*ptr_).n = 0;
+			(*ptr_).p = 0;
+			/* die("Help! Multi without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! Multi without being arrayref");
 			}
-			(*ptr_).p[iM] = 0;
-			((*ptr_).p[iM]) = (void *)SvIV((*bM));
+			aM = (AV *) SvRV(sv_);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			(*ptr_).n = lM;
+			(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die("Help: Multi VRML::Field::SFNode bM == 0");
+				}
+				(*ptr_).p[iM] = 0;
+				((*ptr_).p[iM]) = (void *)SvIV((*bM));
+			}
 		}
 	}
 	
@@ -3484,18 +5147,22 @@ CODE:
 		SV **b;
 		int i;
 		if(!SvROK(sv_)) {
-			die("Help! SFColor without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! SFColor without being arrayref");
-		}
-		a = (AV *) SvRV(sv_);
-		for(i=0; i<3; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			(*ptr_).c[0] = 0;
+			(*ptr_).c[1] = 0;
+			(*ptr_).c[2] = 0;
+			/* die("Help! SFColor without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! SFColor without being arrayref");
 			}
-			(*ptr_).c[i] = SvNV(*b);
+			a = (AV *) SvRV(sv_);
+			for(i=0; i<3; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				(*ptr_).c[i] = SvNV(*b);
+			}
 		}
 	}
 	
@@ -3536,43 +5203,50 @@ CODE:
 		int iM;
 		int lM;
 		if(!SvROK(sv_)) {
-			die("Help! Multi without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! Multi without being arrayref");
-		}
-		aM = (AV *) SvRV(sv_);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		(*ptr_).n = lM;
-		(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die("Help: Multi VRML::Field::SFColor bM == 0");
+			(*ptr_).n = 0;
+			(*ptr_).p = 0;
+			/* die("Help! Multi without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! Multi without being arrayref");
 			}
-			
-			{
+			aM = (AV *) SvRV(sv_);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			(*ptr_).n = lM;
+			(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die("Help: Multi VRML::Field::SFColor bM == 0");
+				}
+				
+				{
 		AV *a;
 		SV **b;
 		int i;
 		if(!SvROK((*bM))) {
-			die("Help! SFColor without being ref");
-		}
-		if(SvTYPE(SvRV((*bM))) != SVt_PVAV) {
-			die("Help! SFColor without being arrayref");
-		}
-		a = (AV *) SvRV((*bM));
-		for(i=0; i<3; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			((*ptr_).p[iM]).c[0] = 0;
+			((*ptr_).p[iM]).c[1] = 0;
+			((*ptr_).p[iM]).c[2] = 0;
+			/* die("Help! SFColor without being ref"); */
+		} else {
+			if(SvTYPE(SvRV((*bM))) != SVt_PVAV) {
+				die("Help! SFColor without being arrayref");
 			}
-			((*ptr_).p[iM]).c[i] = SvNV(*b);
+			a = (AV *) SvRV((*bM));
+			for(i=0; i<3; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				((*ptr_).p[iM]).c[i] = SvNV(*b);
+			}
 		}
 	}
 	
+			}
 		}
 	}
 	
@@ -3678,24 +5352,27 @@ CODE:
 		int iM;
 		int lM;
 		if(!SvROK(sv_)) {
-			die("Help! Multi without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! Multi without being arrayref");
-		}
-		aM = (AV *) SvRV(sv_);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		(*ptr_).n = lM;
-		(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die("Help: Multi VRML::Field::SFString bM == 0");
+			(*ptr_).n = 0;
+			(*ptr_).p = 0;
+			/* die("Help! Multi without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! Multi without being arrayref");
 			}
-			(*ptr_).p[iM] = newSVpv("",0);
-			sv_setsv(((*ptr_).p[iM]),(*bM));
+			aM = (AV *) SvRV(sv_);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			(*ptr_).n = lM;
+			(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die("Help: Multi VRML::Field::SFString bM == 0");
+				}
+				(*ptr_).p[iM] = newSVpv("",0);
+				sv_setsv(((*ptr_).p[iM]),(*bM));
+			}
 		}
 	}
 	
@@ -3735,18 +5412,21 @@ CODE:
 		SV **b;
 		int i;
 		if(!SvROK(sv_)) {
-			die("Help! SFVec2f without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! SFVec2f without being arrayref");
-		}
-		a = (AV *) SvRV(sv_);
-		for(i=0; i<2; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			(*ptr_).c[0] = 0;
+			(*ptr_).c[1] = 0;
+			/* die("Help! SFVec2f without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! SFVec2f without being arrayref");
 			}
-			(*ptr_).c[i] = SvNV(*b);
+			a = (AV *) SvRV(sv_);
+			for(i=0; i<2; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				(*ptr_).c[i] = SvNV(*b);
+			}
 		}
 	}
 	
@@ -3787,43 +5467,49 @@ CODE:
 		int iM;
 		int lM;
 		if(!SvROK(sv_)) {
-			die("Help! Multi without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! Multi without being arrayref");
-		}
-		aM = (AV *) SvRV(sv_);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		(*ptr_).n = lM;
-		(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die("Help: Multi VRML::Field::SFVec2f bM == 0");
+			(*ptr_).n = 0;
+			(*ptr_).p = 0;
+			/* die("Help! Multi without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! Multi without being arrayref");
 			}
-			
-			{
+			aM = (AV *) SvRV(sv_);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			(*ptr_).n = lM;
+			(*ptr_).p = malloc(lM * sizeof(*((*ptr_).p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die("Help: Multi VRML::Field::SFVec2f bM == 0");
+				}
+				
+				{
 		AV *a;
 		SV **b;
 		int i;
 		if(!SvROK((*bM))) {
-			die("Help! SFVec2f without being ref");
-		}
-		if(SvTYPE(SvRV((*bM))) != SVt_PVAV) {
-			die("Help! SFVec2f without being arrayref");
-		}
-		a = (AV *) SvRV((*bM));
-		for(i=0; i<2; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			((*ptr_).p[iM]).c[0] = 0;
+			((*ptr_).p[iM]).c[1] = 0;
+			/* die("Help! SFVec2f without being ref"); */
+		} else {
+			if(SvTYPE(SvRV((*bM))) != SVt_PVAV) {
+				die("Help! SFVec2f without being arrayref");
 			}
-			((*ptr_).p[iM]).c[i] = SvNV(*b);
+			a = (AV *) SvRV((*bM));
+			for(i=0; i<2; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				((*ptr_).p[iM]).c[i] = SvNV(*b);
+			}
 		}
 	}
 	
+			}
 		}
 	}
 	
@@ -3847,112 +5533,24 @@ CODE:
 
 
 void *
-get_Background_offsets(p)
-	SV *p;
-CODE:
-	int *ptr_;
-	SvGROW(p,(37+1)*sizeof(int));
-	SvCUR_set(p,(37+1)*sizeof(int));
-	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Background, __y_left);
-	*ptr_++ = offsetof(struct VRML_Background, __data_left);
-	*ptr_++ = offsetof(struct VRML_Background, __depth_back);
-	*ptr_++ = offsetof(struct VRML_Background, backUrl);
-	*ptr_++ = offsetof(struct VRML_Background, __depth_top);
-	*ptr_++ = offsetof(struct VRML_Background, topUrl);
-	*ptr_++ = offsetof(struct VRML_Background, __y_back);
-	*ptr_++ = offsetof(struct VRML_Background, __depth_bottom);
-	*ptr_++ = offsetof(struct VRML_Background, __data_back);
-	*ptr_++ = offsetof(struct VRML_Background, __x_top);
-	*ptr_++ = offsetof(struct VRML_Background, bottomUrl);
-	*ptr_++ = offsetof(struct VRML_Background, __y_top);
-	*ptr_++ = offsetof(struct VRML_Background, __y_bottom);
-	*ptr_++ = offsetof(struct VRML_Background, bindTime);
-	*ptr_++ = offsetof(struct VRML_Background, __data_bottom);
-	*ptr_++ = offsetof(struct VRML_Background, __depth_right);
-	*ptr_++ = offsetof(struct VRML_Background, __x_right);
-	*ptr_++ = offsetof(struct VRML_Background, isBound);
-	*ptr_++ = offsetof(struct VRML_Background, __y_right);
-	*ptr_++ = offsetof(struct VRML_Background, groundAngle);
-	*ptr_++ = offsetof(struct VRML_Background, skyColor);
-	*ptr_++ = offsetof(struct VRML_Background, __data_front);
-	*ptr_++ = offsetof(struct VRML_Background, __x_left);
-	*ptr_++ = offsetof(struct VRML_Background, __x_back);
-	*ptr_++ = offsetof(struct VRML_Background, set_bind);
-	*ptr_++ = offsetof(struct VRML_Background, __data_top);
-	*ptr_++ = offsetof(struct VRML_Background, __x_bottom);
-	*ptr_++ = offsetof(struct VRML_Background, groundColor);
-	*ptr_++ = offsetof(struct VRML_Background, rightUrl);
-	*ptr_++ = offsetof(struct VRML_Background, __data_right);
-	*ptr_++ = offsetof(struct VRML_Background, __depth_front);
-	*ptr_++ = offsetof(struct VRML_Background, frontUrl);
-	*ptr_++ = offsetof(struct VRML_Background, __depth_left);
-	*ptr_++ = offsetof(struct VRML_Background, leftUrl);
-	*ptr_++ = offsetof(struct VRML_Background, skyAngle);
-	*ptr_++ = offsetof(struct VRML_Background, __x_front);
-	*ptr_++ = offsetof(struct VRML_Background, __y_front);
-	*ptr_++ = sizeof(struct VRML_Background);
-RETVAL=&(virt_Background);
-	if(verbose) printf("Background virtual: %d\n", RETVAL);
-OUTPUT:
-	RETVAL
-
-void *
-get_Viewpoint_offsets(p)
+get_PointLight_offsets(p)
 	SV *p;
 CODE:
 	int *ptr_;
 	SvGROW(p,(8+1)*sizeof(int));
 	SvCUR_set(p,(8+1)*sizeof(int));
 	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Viewpoint, fieldOfView);
-	*ptr_++ = offsetof(struct VRML_Viewpoint, description);
-	*ptr_++ = offsetof(struct VRML_Viewpoint, isBound);
-	*ptr_++ = offsetof(struct VRML_Viewpoint, position);
-	*ptr_++ = offsetof(struct VRML_Viewpoint, set_bind);
-	*ptr_++ = offsetof(struct VRML_Viewpoint, bindTime);
-	*ptr_++ = offsetof(struct VRML_Viewpoint, jump);
-	*ptr_++ = offsetof(struct VRML_Viewpoint, orientation);
-	*ptr_++ = sizeof(struct VRML_Viewpoint);
-RETVAL=&(virt_Viewpoint);
-	if(verbose) printf("Viewpoint virtual: %d\n", RETVAL);
-OUTPUT:
-	RETVAL
-
-void *
-get_Cone_offsets(p)
-	SV *p;
-CODE:
-	int *ptr_;
-	SvGROW(p,(4+1)*sizeof(int));
-	SvCUR_set(p,(4+1)*sizeof(int));
-	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Cone, height);
-	*ptr_++ = offsetof(struct VRML_Cone, bottomRadius);
-	*ptr_++ = offsetof(struct VRML_Cone, side);
-	*ptr_++ = offsetof(struct VRML_Cone, bottom);
-	*ptr_++ = sizeof(struct VRML_Cone);
-RETVAL=&(virt_Cone);
-	if(verbose) printf("Cone virtual: %d\n", RETVAL);
-OUTPUT:
-	RETVAL
-
-void *
-get_Text_offsets(p)
-	SV *p;
-CODE:
-	int *ptr_;
-	SvGROW(p,(5+1)*sizeof(int));
-	SvCUR_set(p,(5+1)*sizeof(int));
-	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Text, fontStyle);
-	*ptr_++ = offsetof(struct VRML_Text, __rendersub);
-	*ptr_++ = offsetof(struct VRML_Text, length);
-	*ptr_++ = offsetof(struct VRML_Text, maxExtent);
-	*ptr_++ = offsetof(struct VRML_Text, string);
-	*ptr_++ = sizeof(struct VRML_Text);
-RETVAL=&(virt_Text);
-	if(verbose) printf("Text virtual: %d\n", RETVAL);
+	*ptr_++ = offsetof(struct VRML_PointLight, radius);
+	*ptr_++ = offsetof(struct VRML_PointLight, location);
+	*ptr_++ = offsetof(struct VRML_PointLight, direction);
+	*ptr_++ = offsetof(struct VRML_PointLight, attenuation);
+	*ptr_++ = offsetof(struct VRML_PointLight, on);
+	*ptr_++ = offsetof(struct VRML_PointLight, color);
+	*ptr_++ = offsetof(struct VRML_PointLight, ambientIntensity);
+	*ptr_++ = offsetof(struct VRML_PointLight, intensity);
+	*ptr_++ = sizeof(struct VRML_PointLight);
+RETVAL=&(virt_PointLight);
+	if(verbose) printf("PointLight virtual: %d\n", RETVAL);
 OUTPUT:
 	RETVAL
 
@@ -4077,78 +5675,27 @@ OUTPUT:
 	RETVAL
 
 void *
-get_Group_offsets(p)
-	SV *p;
-CODE:
-	int *ptr_;
-	SvGROW(p,(3+1)*sizeof(int));
-	SvCUR_set(p,(3+1)*sizeof(int));
-	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Group, children);
-	*ptr_++ = offsetof(struct VRML_Group, bboxCenter);
-	*ptr_++ = offsetof(struct VRML_Group, bboxSize);
-	*ptr_++ = sizeof(struct VRML_Group);
-RETVAL=&(virt_Group);
-	if(verbose) printf("Group virtual: %d\n", RETVAL);
-OUTPUT:
-	RETVAL
-
-void *
 get_ElevationGrid_offsets(p)
 	SV *p;
 CODE:
 	int *ptr_;
-	SvGROW(p,(9+1)*sizeof(int));
-	SvCUR_set(p,(9+1)*sizeof(int));
+	SvGROW(p,(11+1)*sizeof(int));
+	SvCUR_set(p,(11+1)*sizeof(int));
 	ptr_ = (int *)SvPV(p,na);
 	*ptr_++ = offsetof(struct VRML_ElevationGrid, zDimension);
-	*ptr_++ = offsetof(struct VRML_ElevationGrid, normal);
+	*ptr_++ = offsetof(struct VRML_ElevationGrid, colorPerVertex);
 	*ptr_++ = offsetof(struct VRML_ElevationGrid, height);
+	*ptr_++ = offsetof(struct VRML_ElevationGrid, normal);
 	*ptr_++ = offsetof(struct VRML_ElevationGrid, creaseAngle);
 	*ptr_++ = offsetof(struct VRML_ElevationGrid, solid);
 	*ptr_++ = offsetof(struct VRML_ElevationGrid, xSpacing);
 	*ptr_++ = offsetof(struct VRML_ElevationGrid, xDimension);
-	*ptr_++ = offsetof(struct VRML_ElevationGrid, zSpacing);
+	*ptr_++ = offsetof(struct VRML_ElevationGrid, normalPerVertex);
 	*ptr_++ = offsetof(struct VRML_ElevationGrid, color);
+	*ptr_++ = offsetof(struct VRML_ElevationGrid, zSpacing);
 	*ptr_++ = sizeof(struct VRML_ElevationGrid);
 RETVAL=&(virt_ElevationGrid);
 	if(verbose) printf("ElevationGrid virtual: %d\n", RETVAL);
-OUTPUT:
-	RETVAL
-
-void *
-get_Material_offsets(p)
-	SV *p;
-CODE:
-	int *ptr_;
-	SvGROW(p,(6+1)*sizeof(int));
-	SvCUR_set(p,(6+1)*sizeof(int));
-	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Material, transparency);
-	*ptr_++ = offsetof(struct VRML_Material, emissiveColor);
-	*ptr_++ = offsetof(struct VRML_Material, shininess);
-	*ptr_++ = offsetof(struct VRML_Material, diffuseColor);
-	*ptr_++ = offsetof(struct VRML_Material, specularColor);
-	*ptr_++ = offsetof(struct VRML_Material, ambientIntensity);
-	*ptr_++ = sizeof(struct VRML_Material);
-RETVAL=&(virt_Material);
-	if(verbose) printf("Material virtual: %d\n", RETVAL);
-OUTPUT:
-	RETVAL
-
-void *
-get_Appearance_offsets(p)
-	SV *p;
-CODE:
-	int *ptr_;
-	SvGROW(p,(2+1)*sizeof(int));
-	SvCUR_set(p,(2+1)*sizeof(int));
-	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Appearance, texture);
-	*ptr_++ = offsetof(struct VRML_Appearance, material);
-	*ptr_++ = sizeof(struct VRML_Appearance);
-RETVAL=&(virt_Appearance);
-	if(verbose) printf("Appearance virtual: %d\n", RETVAL);
 OUTPUT:
 	RETVAL
 
@@ -4173,22 +5720,6 @@ CODE:
 	*ptr_++ = sizeof(struct VRML_Extrusion);
 RETVAL=&(virt_Extrusion);
 	if(verbose) printf("Extrusion virtual: %d\n", RETVAL);
-OUTPUT:
-	RETVAL
-
-void *
-get_Shape_offsets(p)
-	SV *p;
-CODE:
-	int *ptr_;
-	SvGROW(p,(2+1)*sizeof(int));
-	SvCUR_set(p,(2+1)*sizeof(int));
-	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Shape, appearance);
-	*ptr_++ = offsetof(struct VRML_Shape, geometry);
-	*ptr_++ = sizeof(struct VRML_Shape);
-RETVAL=&(virt_Shape);
-	if(verbose) printf("Shape virtual: %d\n", RETVAL);
 OUTPUT:
 	RETVAL
 
@@ -4226,6 +5757,271 @@ CODE:
 	*ptr_++ = sizeof(struct VRML_ImageTexture);
 RETVAL=&(virt_ImageTexture);
 	if(verbose) printf("ImageTexture virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_TextureCoordinate_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(1+1)*sizeof(int));
+	SvCUR_set(p,(1+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_TextureCoordinate, point);
+	*ptr_++ = sizeof(struct VRML_TextureCoordinate);
+RETVAL=&(virt_TextureCoordinate);
+	if(verbose) printf("TextureCoordinate virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_IndexedFaceSet_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(13+1)*sizeof(int));
+	SvCUR_set(p,(13+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, texCoordIndex);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, normalIndex);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, convex);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, colorPerVertex);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, coord);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, colorIndex);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, texCoord);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, normal);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, creaseAngle);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, solid);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, ccw);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, coordIndex);
+	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, color);
+	*ptr_++ = sizeof(struct VRML_IndexedFaceSet);
+RETVAL=&(virt_IndexedFaceSet);
+	if(verbose) printf("IndexedFaceSet virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Background_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(37+1)*sizeof(int));
+	SvCUR_set(p,(37+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Background, __y_left);
+	*ptr_++ = offsetof(struct VRML_Background, __data_left);
+	*ptr_++ = offsetof(struct VRML_Background, __depth_back);
+	*ptr_++ = offsetof(struct VRML_Background, backUrl);
+	*ptr_++ = offsetof(struct VRML_Background, __depth_top);
+	*ptr_++ = offsetof(struct VRML_Background, topUrl);
+	*ptr_++ = offsetof(struct VRML_Background, __y_back);
+	*ptr_++ = offsetof(struct VRML_Background, __depth_bottom);
+	*ptr_++ = offsetof(struct VRML_Background, __data_back);
+	*ptr_++ = offsetof(struct VRML_Background, __x_top);
+	*ptr_++ = offsetof(struct VRML_Background, bottomUrl);
+	*ptr_++ = offsetof(struct VRML_Background, __y_top);
+	*ptr_++ = offsetof(struct VRML_Background, __y_bottom);
+	*ptr_++ = offsetof(struct VRML_Background, bindTime);
+	*ptr_++ = offsetof(struct VRML_Background, __data_bottom);
+	*ptr_++ = offsetof(struct VRML_Background, __depth_right);
+	*ptr_++ = offsetof(struct VRML_Background, __x_right);
+	*ptr_++ = offsetof(struct VRML_Background, isBound);
+	*ptr_++ = offsetof(struct VRML_Background, __y_right);
+	*ptr_++ = offsetof(struct VRML_Background, groundAngle);
+	*ptr_++ = offsetof(struct VRML_Background, skyColor);
+	*ptr_++ = offsetof(struct VRML_Background, __data_front);
+	*ptr_++ = offsetof(struct VRML_Background, __x_left);
+	*ptr_++ = offsetof(struct VRML_Background, __x_back);
+	*ptr_++ = offsetof(struct VRML_Background, set_bind);
+	*ptr_++ = offsetof(struct VRML_Background, __data_top);
+	*ptr_++ = offsetof(struct VRML_Background, __x_bottom);
+	*ptr_++ = offsetof(struct VRML_Background, groundColor);
+	*ptr_++ = offsetof(struct VRML_Background, rightUrl);
+	*ptr_++ = offsetof(struct VRML_Background, __data_right);
+	*ptr_++ = offsetof(struct VRML_Background, __depth_front);
+	*ptr_++ = offsetof(struct VRML_Background, frontUrl);
+	*ptr_++ = offsetof(struct VRML_Background, __depth_left);
+	*ptr_++ = offsetof(struct VRML_Background, leftUrl);
+	*ptr_++ = offsetof(struct VRML_Background, skyAngle);
+	*ptr_++ = offsetof(struct VRML_Background, __x_front);
+	*ptr_++ = offsetof(struct VRML_Background, __y_front);
+	*ptr_++ = sizeof(struct VRML_Background);
+RETVAL=&(virt_Background);
+	if(verbose) printf("Background virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Text_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(5+1)*sizeof(int));
+	SvCUR_set(p,(5+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Text, fontStyle);
+	*ptr_++ = offsetof(struct VRML_Text, __rendersub);
+	*ptr_++ = offsetof(struct VRML_Text, length);
+	*ptr_++ = offsetof(struct VRML_Text, maxExtent);
+	*ptr_++ = offsetof(struct VRML_Text, string);
+	*ptr_++ = sizeof(struct VRML_Text);
+RETVAL=&(virt_Text);
+	if(verbose) printf("Text virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Cone_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(4+1)*sizeof(int));
+	SvCUR_set(p,(4+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Cone, height);
+	*ptr_++ = offsetof(struct VRML_Cone, bottomRadius);
+	*ptr_++ = offsetof(struct VRML_Cone, side);
+	*ptr_++ = offsetof(struct VRML_Cone, bottom);
+	*ptr_++ = sizeof(struct VRML_Cone);
+RETVAL=&(virt_Cone);
+	if(verbose) printf("Cone virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Viewpoint_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(8+1)*sizeof(int));
+	SvCUR_set(p,(8+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Viewpoint, fieldOfView);
+	*ptr_++ = offsetof(struct VRML_Viewpoint, description);
+	*ptr_++ = offsetof(struct VRML_Viewpoint, isBound);
+	*ptr_++ = offsetof(struct VRML_Viewpoint, position);
+	*ptr_++ = offsetof(struct VRML_Viewpoint, set_bind);
+	*ptr_++ = offsetof(struct VRML_Viewpoint, bindTime);
+	*ptr_++ = offsetof(struct VRML_Viewpoint, jump);
+	*ptr_++ = offsetof(struct VRML_Viewpoint, orientation);
+	*ptr_++ = sizeof(struct VRML_Viewpoint);
+RETVAL=&(virt_Viewpoint);
+	if(verbose) printf("Viewpoint virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_TextureTransform_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(4+1)*sizeof(int));
+	SvCUR_set(p,(4+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_TextureTransform, rotation);
+	*ptr_++ = offsetof(struct VRML_TextureTransform, scale);
+	*ptr_++ = offsetof(struct VRML_TextureTransform, center);
+	*ptr_++ = offsetof(struct VRML_TextureTransform, translation);
+	*ptr_++ = sizeof(struct VRML_TextureTransform);
+RETVAL=&(virt_TextureTransform);
+	if(verbose) printf("TextureTransform virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Group_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(3+1)*sizeof(int));
+	SvCUR_set(p,(3+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Group, children);
+	*ptr_++ = offsetof(struct VRML_Group, bboxCenter);
+	*ptr_++ = offsetof(struct VRML_Group, bboxSize);
+	*ptr_++ = sizeof(struct VRML_Group);
+RETVAL=&(virt_Group);
+	if(verbose) printf("Group virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_ProximitySensor_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(11+1)*sizeof(int));
+	SvCUR_set(p,(11+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, center);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, __hit);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, __t1);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, __t2);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, orientation_changed);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, isActive);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, exitTime);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, size);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, enabled);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, enterTime);
+	*ptr_++ = offsetof(struct VRML_ProximitySensor, position_changed);
+	*ptr_++ = sizeof(struct VRML_ProximitySensor);
+RETVAL=&(virt_ProximitySensor);
+	if(verbose) printf("ProximitySensor virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Material_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(6+1)*sizeof(int));
+	SvCUR_set(p,(6+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Material, transparency);
+	*ptr_++ = offsetof(struct VRML_Material, emissiveColor);
+	*ptr_++ = offsetof(struct VRML_Material, shininess);
+	*ptr_++ = offsetof(struct VRML_Material, diffuseColor);
+	*ptr_++ = offsetof(struct VRML_Material, specularColor);
+	*ptr_++ = offsetof(struct VRML_Material, ambientIntensity);
+	*ptr_++ = sizeof(struct VRML_Material);
+RETVAL=&(virt_Material);
+	if(verbose) printf("Material virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Appearance_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(3+1)*sizeof(int));
+	SvCUR_set(p,(3+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Appearance, texture);
+	*ptr_++ = offsetof(struct VRML_Appearance, textureTransform);
+	*ptr_++ = offsetof(struct VRML_Appearance, material);
+	*ptr_++ = sizeof(struct VRML_Appearance);
+RETVAL=&(virt_Appearance);
+	if(verbose) printf("Appearance virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Shape_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(2+1)*sizeof(int));
+	SvCUR_set(p,(2+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Shape, appearance);
+	*ptr_++ = offsetof(struct VRML_Shape, geometry);
+	*ptr_++ = sizeof(struct VRML_Shape);
+RETVAL=&(virt_Shape);
+	if(verbose) printf("Shape virtual: %d\n", RETVAL);
 OUTPUT:
 	RETVAL
 
@@ -4304,33 +6100,6 @@ OUTPUT:
 	RETVAL
 
 void *
-get_IndexedFaceSet_offsets(p)
-	SV *p;
-CODE:
-	int *ptr_;
-	SvGROW(p,(13+1)*sizeof(int));
-	SvCUR_set(p,(13+1)*sizeof(int));
-	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, texCoordIndex);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, normalIndex);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, convex);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, colorPerVertex);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, coord);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, colorIndex);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, texCoord);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, normal);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, creaseAngle);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, solid);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, ccw);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, coordIndex);
-	*ptr_++ = offsetof(struct VRML_IndexedFaceSet, color);
-	*ptr_++ = sizeof(struct VRML_IndexedFaceSet);
-RETVAL=&(virt_IndexedFaceSet);
-	if(verbose) printf("IndexedFaceSet virtual: %d\n", RETVAL);
-OUTPUT:
-	RETVAL
-
-void *
 get_Transform_offsets(p)
 	SV *p;
 CODE:
@@ -4353,17 +6122,26 @@ OUTPUT:
 	RETVAL
 
 void *
-get_Color_offsets(p)
+get_SpotLight_offsets(p)
 	SV *p;
 CODE:
 	int *ptr_;
-	SvGROW(p,(1+1)*sizeof(int));
-	SvCUR_set(p,(1+1)*sizeof(int));
+	SvGROW(p,(10+1)*sizeof(int));
+	SvCUR_set(p,(10+1)*sizeof(int));
 	ptr_ = (int *)SvPV(p,na);
-	*ptr_++ = offsetof(struct VRML_Color, color);
-	*ptr_++ = sizeof(struct VRML_Color);
-RETVAL=&(virt_Color);
-	if(verbose) printf("Color virtual: %d\n", RETVAL);
+	*ptr_++ = offsetof(struct VRML_SpotLight, direction);
+	*ptr_++ = offsetof(struct VRML_SpotLight, beamWidth);
+	*ptr_++ = offsetof(struct VRML_SpotLight, ambientIntensity);
+	*ptr_++ = offsetof(struct VRML_SpotLight, intensity);
+	*ptr_++ = offsetof(struct VRML_SpotLight, radius);
+	*ptr_++ = offsetof(struct VRML_SpotLight, location);
+	*ptr_++ = offsetof(struct VRML_SpotLight, attenuation);
+	*ptr_++ = offsetof(struct VRML_SpotLight, on);
+	*ptr_++ = offsetof(struct VRML_SpotLight, cutOffAngle);
+	*ptr_++ = offsetof(struct VRML_SpotLight, color);
+	*ptr_++ = sizeof(struct VRML_SpotLight);
+RETVAL=&(virt_SpotLight);
+	if(verbose) printf("SpotLight virtual: %d\n", RETVAL);
 OUTPUT:
 	RETVAL
 
@@ -4381,6 +6159,21 @@ CODE:
 	*ptr_++ = sizeof(struct VRML_LOD);
 RETVAL=&(virt_LOD);
 	if(verbose) printf("LOD virtual: %d\n", RETVAL);
+OUTPUT:
+	RETVAL
+
+void *
+get_Color_offsets(p)
+	SV *p;
+CODE:
+	int *ptr_;
+	SvGROW(p,(1+1)*sizeof(int));
+	SvCUR_set(p,(1+1)*sizeof(int));
+	ptr_ = (int *)SvPV(p,na);
+	*ptr_++ = offsetof(struct VRML_Color, color);
+	*ptr_++ = sizeof(struct VRML_Color);
+RETVAL=&(virt_Color);
+	if(verbose) printf("Color virtual: %d\n", RETVAL);
 OUTPUT:
 	RETVAL
 

@@ -2,6 +2,7 @@
 CVS/
 ^Makefile$
 ^JPEG/Makefile$
+^PNG/Makefile$
 ^OpenGL/Makefile$
 ^Text/Makefile$
 ^Text/Text.bs$
@@ -23,6 +24,8 @@ tmp\.a$
 ^JS/js/samples
 ^JPEG/JPEG\.bs
 ^JPEG/JPEG\.c
+^PNG/PNG\.bs
+^PNG/PNG\.c
 ^JS/a\.out$
 ^JS/js\.c
 ^LOG
@@ -33,3 +36,4 @@ MANIFEST\.b.*
 javapipe
 ^JS/JS\.bs$
 ^JS/JS\.c$
+^tmp

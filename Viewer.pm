@@ -1,6 +1,7 @@
 # Copyright (C) 1998 Tuomas J. Lukka
+# Portions Copyright (C) 1998 John Breen
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 
@@ -15,6 +16,32 @@ use strict qw/vars/;
 #
 # XXX Examine doesn't handle animated viewpoints at all!
 
+
+# The following is POD documentation for the freewrl command.
+# It will be automatically installed in a manual page upon make install.
+# See the perlpod manpage for the I<>, C<> &c explanation
+
+=head1 NAME
+
+VRML::Viewer -- navigation modes of FreeWRL
+
+=head1 SYNOPSIS
+
+(used internally by FreeWRL)
+
+
+=head1 DESCRIPTION
+
+This module implements the various
+navigation modes for the FreeWRL VRML browser
+(see L<VRML::Browser>, L<freewrl>). 
+L<freewrl> explains how to use the navigation modes.
+
+=head1 AUTHOR
+
+Tuomas J. Lukka, with help from John Breen.
+
+=cut
 
 package VRML::Viewer;
 require 'VRML/Quaternion.pm';
@@ -32,12 +59,20 @@ sub new {
 	# AntiPos is the real position, AntiQuat is inverted ;)
 		AntiPos => [0,0,0],
 		AntiQuat => new VRML::Quaternion(1,0,0,0),
+		Navi => undef,
 	}, $type;
 	if($old) {
 		$this->{Pos} = $old->{Pos};
 		$this->{Quat} = $old->{Quat};
 		$this->{Dist} = $old->{Dist};
-	}
+		$this->{AntiPos} = $old->{AntiPos};
+		$this->{AntiQuat} = $old->{AntiQuat};
+                $this->{Navi} = $old->{Navi};
+	} else {
+                $this->{Navi} = VRML::Scene->new_node("NavigationInfo",
+                                VRML::Nodes->{NavigationInfo}{Defaults});
+        }
+	$this->resolve_pos();
 	return $this;
 }
 
@@ -58,7 +93,10 @@ sub bind_viewpoint {
 	$this->{AntiPos} = [@{$node->{Fields}{position}}];
 	$this->{AntiQuat} = VRML::Quaternion->new_vrmlrot(
 		@{$node->{Fields}{orientation}})->invert;
+	$this->resolve_pos();
 }
+
+sub resolve_pos { } # hook to modify Pos & Quat, e.g. for Examine
 
 # Just restore these later...
 sub unbind_viewpoint {
@@ -66,12 +104,17 @@ sub unbind_viewpoint {
 	return [$this->{Pos},$this->{Quat}];
 }
 
+sub bind_navi_info {
+	my($this,$node) = @_;
+	$this->{Navi} = $node;
+}
+
 sub togl {
 	my($this) = @_;
-	VRML::OpenGL::glTranslatef(@{$this->{AntiPos}});
-	$this->{AntiQuat}->togl();
 	$this->{Quat}->togl();
 	VRML::OpenGL::glTranslatef(map {-$_} @{$this->{Pos}});
+	VRML::OpenGL::glTranslatef(@{$this->{AntiPos}});
+	$this->{AntiQuat}->togl();
 }
 
 package VRML::Viewer::None;
@@ -79,10 +122,9 @@ package VRML::Viewer::None;
 
 sub new {
 	my($type, $loc, $ori) = @_;
-	my $this = bless {
-		Pos => $loc,
-		Quat => new_vrmlrot VRML::Quaternion(@$ori),
-	}, $type;
+	my $this = VRML::Viewer->new();
+	$this->{Pos} = $loc;
+	$this->{Quat} = new_vrmlrot VRML::Quaternion(@$ori);
 	return $this;
 }
 
@@ -90,23 +132,23 @@ package VRML::Viewer::Walk;
 @VRML::Viewer::Walk::ISA=VRML::Viewer;
 
 sub handle {
-       my($this, $mev, $but, $mx, $my) = @_;
-       # print "VEIEVENT\n";
-       if($mev eq "PRESS" and $but == 1) {
-               $this->{SY} = $my;
-               $this->{SX} = $mx;
-       } elsif($mev eq "DRAG" and $but == 1) {
-               my $yd = ($my - $this->{SY});
-               my $xd = ($mx - $this->{SX});
-               my $nv = $this->{Quat}->invert->rotate([0,0,0.15*$yd]);
-               for(0..2) {$this->{Pos}[$_] += $nv->[$_]}
-               my $nq = new VRML::Quaternion(1-0.2*$xd,0,0.2*$xd,0);
-               $nq->normalize_this;
-               $this->{Quat} = $nq->multiply($this->{Quat});
-               print "WVIEW: (",(join ',',@{$this->{Quat}}),") (",
-                               (join ',',@{$this->{Pos}}),") (",
-                               (join ',',@{$nv}),") \n";
-       }
+       #my($this, $mev, $but, $mx, $my) = @_;
+       ## print "VEIEVENT\n";
+       #if($mev eq "PRESS" and $but == 1) {
+       #        $this->{SY} = $my;
+       #        $this->{SX} = $mx;
+       #} elsif($mev eq "DRAG" and $but == 1) {
+       #        my $yd = ($my - $this->{SY});
+       #        my $xd = ($mx - $this->{SX});
+       #        my $nv = $this->{Quat}->invert->rotate([0,0,0.15*$yd]);
+       #        for(0..2) {$this->{Pos}[$_] += $nv->[$_]}
+       #        my $nq = new VRML::Quaternion(1-0.2*$xd,0,0.2*$xd,0);
+       #        $nq->normalize_this;
+       #        $this->{Quat} = $nq->multiply($this->{Quat});
+       #        print "WVIEW: (",(join ',',@{$this->{Quat}}),") (",
+       #                        (join ',',@{$this->{Pos}}),") (",
+       #                        (join ',',@{$nv}),") \n";
+       #}
     my($this, $mev, $but, $mx, $my) = @_;
     # print "VEIEVENT\n";
     if($mev eq "PRESS" and $but == 1) {
@@ -116,11 +158,11 @@ sub handle {
         $this->{SY} = $my;
         $this->{SX} = $mx;
     } elsif($mev eq "DRAG" and $but == 1) {
-        $this->{ZD} = ($my - $this->{SY});
-        $this->{RD} = ($mx - $this->{SX}) * 0.5;
+        $this->{ZD} = ($my - $this->{SY}) * $this->{Navi}{Fields}{speed};
+        $this->{RD} = ($mx - $this->{SX}) * 0.1;
     } elsif($mev eq "DRAG" and $but == 3) {
-        $this->{XD} = ($mx - $this->{SX});
-        $this->{YD} = -($my - $this->{SY});
+        $this->{XD} = ($mx - $this->{SX}) * $this->{Navi}{Fields}{speed};
+        $this->{YD} = -($my - $this->{SY}) * $this->{Navi}{Fields}{speed};
     } elsif ($mev eq "RELEASE") {
         if ($but == 1) {
             $this->{ZD} = 0;
@@ -239,8 +281,8 @@ sub handle_tick {
 	my $v = $this->{Velocity};
 	my $ind = 0;
 	my $dt = $time-$lasttime;
-	for(@$v) {$_ *= 0.09 ** ($dt);
-		$_ += $dt * $aadd[$ind++] * 18.5;
+	for(@$v) {$_ *= 0.06 ** ($dt);
+		$_ += $dt * $aadd[$ind++] * 14.5;
 		if(abs($_) > 9.0) {$_ /= abs($_)/9.0}
 	}
 	my $nv = $this->{Quat}->invert->rotate(
@@ -251,8 +293,8 @@ sub handle_tick {
 	my $av = $this->{AVelocity};
 	$ind = 0;
 	my $sq;
-	for(@$av) {$_ *= 0.05 ** ($dt);
-		$_ += $dt * $radd[$ind++] * 0.2;
+	for(@$av) {$_ *= 0.04 ** ($dt);
+		$_ += $dt * $radd[$ind++] * 0.1;
 		if(abs($_) > 0.8) {$_ /= abs($_)/0.8;}
 		$sq += $_*$_;
 	}
@@ -267,6 +309,19 @@ sub handle_tick {
 
 package VRML::Viewer::Examine;
 @VRML::Viewer::Examine::ISA=VRML::Viewer;
+
+# Semantics: given a viewpoint and orientation,
+# we take the center to revolve around to be the closest point to origin
+# on the z axis.
+
+sub resolve_pos {
+	my($this) = @_;
+        my $z = $this->{Quat}->invert->rotate([0,0,1]);
+	# my $l = 0; for(0..2) {$l += $this->{Pos}[$_]**2} $l = sqrt($l);
+	my $d = 0; for(0..2) {$d += $this->{Pos}[$_] * $z->[$_]}
+	$this->{Origin} = [ map {$this->{Pos}[$_] - $d * $z->[$_]} 0..2 ];
+	$this->{Dist} = $d;
+}
 
 # Mev: PRESS, DRAG
 sub handle {
@@ -296,6 +351,7 @@ sub handle {
 		$this->{Dist} = $this->{ODist} * exp($this->{SY} - $my);
 	}
 	$this->{Pos} = $this->{Quat}->invert->rotate([0,0,$this->{Dist}]);
+	for(0..2) {$this->{Pos}[$_] += $this->{Origin}[$_]}
 	# print "POS:     ",(join '    ',@{$this->{Pos}}),"\n";
 	# print "QUASQ: ",$this->{Quat}->abssq,"\n";
 	# print "VIEW: (",(join ',',@{$this->{Quat}}),") (",

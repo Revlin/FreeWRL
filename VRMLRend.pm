@@ -1,7 +1,23 @@
 # Copyright (C) 1998 Tuomas J. Lukka
+# Portions Copyright (C) 1998 Bernhard Reiter
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
+
+# Name:        VRMLRend.c
+# Description: 
+#              Fills Hash Variables with "C" Code. They are used by VRMLC.pm
+#              to write the C functions-source to render different notes.
+#              
+#              Certain Abbreviation are used, some are substituted in the
+#              writing process in get_rendfunc() [VRMLC.pm]. 
+#              Others are "C-#defines".
+#              e.g. for #define TC(a,b) glTexCoord2f(a,b) see gen() [VRMLC.pm] 
+#  
+#              Hashes filled in this file:
+#                      %RendC, %PrepC, %FinC, %ChildC, %LightC
+
+
 
 
 #######################################################################
@@ -96,25 +112,29 @@ Cylinder => '
 		float h = $f(height)/2;
 		float r = $f(radius);
 		float a,a1,a2;
+		DECL_TRIG1
 		int i;
 		$start_list();
+		INIT_TRIG1(div)
 		if($f(bottom)) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,1,0);
+			START_TRIG1
 			for(i=0; i<div; i++) {
-				a = i * 6.29 / div;
-				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),h,r*cos(a));
+				TC(0.5+0.5*SIN1,0.5+0.5*SIN1);
+				glVertex3f(r*SIN1,h,r*COS1);
+				UP_TRIG1
 			}
 			glEnd();
 		} 
 		if($f(top)) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,-1,0);
+			START_TRIG1
 			for(i=div-1; i>=0; i--) {
-				a = i * 6.29 / div;
-				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),-h,r*cos(a));
+				TC(0.5+0.5*-SIN1,0.5+0.5*COS1);
+				glVertex3f(-r*SIN1,-h,r*COS1);
+				UP_TRIG1
 			}
 			glEnd();
 		}
@@ -124,22 +144,23 @@ Cylinder => '
 				# glShadeModel(GL_SMOOTH);
 				} */
 			glBegin(GL_QUADS);
+			START_TRIG1
 			for(i=0; i<div; i++) {
-				a = i * 6.29 / div;
-				a1 = (i+1) * 6.29 / div;
-				a2 = (a+a1)/2;
-				glNormal3f(sin(a),0,cos(a));
+				float lsin = SIN1;
+				float lcos = COS1;
+				UP_TRIG1;
+				glNormal3f(lsin,0,lcos);
 				TC(i/df,0);
-				glVertex3f(r*sin(a),-h,r*cos(a));
-				glNormal3f(sin(a1),0,cos(a1));
+				glVertex3f(r*lsin,-h,r*lcos);
+				glNormal3f(SIN1,0,COS1);
 				TC((i+1)/df,0);
-				glVertex3f(r*sin(a1),-h,r*cos(a1));
+				glVertex3f(r*SIN1,-h,r*COS1);
 				/* glNormal3f(sin(a1),0,cos(a1));  (same) */
 				TC((i+1)/df,1);
-				glVertex3f(r*sin(a1),h,r*cos(a1));
-				glNormal3f(sin(a),0,cos(a));
+				glVertex3f(r*SIN1,h,r*COS1);
+				glNormal3f(lsin,0,lcos);
 				TC(i/df,1);
-				glVertex3f(r*sin(a),h,r*cos(a));
+				glVertex3f(r*lsin,h,r*lcos);
 			}
 			glEnd();
 				/*
@@ -158,15 +179,18 @@ Cone => '
 		float r = $f(bottomRadius); 
 		float a,a1;
 		int i;
+		DECL_TRIG1
 		$start_list();
 		if(h <= 0 && r <= 0) {return;}
+		INIT_TRIG1(div)
 		if($f(bottom)) {
 			glBegin(GL_POLYGON);
 			glNormal3f(0,-1,0);
+			START_TRIG1
 			for(i=div-1; i>=0; i--) {
-				a = i * 6.29 / div;
-				TC(0.5+0.5*sin(a),0.5+0.5*cos(a));
-				glVertex3f(r*sin(a),-h,r*cos(a));
+				TC(0.5+0.5*-SIN1,0.5+0.5*COS1);
+				glVertex3f(r*-SIN1,-h,r*COS1);
+				UP_TRIG1
 			}
 			glEnd();
 		}
@@ -174,21 +198,21 @@ Cone => '
 			double ml = sqrt(h*h + r * r);
 			double mlh = h / ml;
 			double mlr = r / ml;
-			glBegin(GL_QUADS);
+			glBegin(GL_TRIANGLES);
+			START_TRIG1
 			for(i=0; i<div; i++) {
-				a = i * 6.29 / div;
-				a1 = (i+1) * 6.29 / div;
-				glNormal3f(mlh*sin(a),mlr,mlh*cos(a));
-				TC((i+1)/df,0);
+				float lsin = SIN1;
+				float lcos = COS1;
+				UP_TRIG1;
+				glNormal3f(mlh*lsin,mlr,-mlh*lcos);
+				TC((i+0.5)/df,0);
 				glVertex3f(0,h,0);
-				TC(i/df,0);
-				glVertex3f(r*sin(a),-h,r*cos(a));
-				glNormal3f(mlh*sin(a1),mlr,mlh*cos(a1));
-				TC(i/df,1);
-				glVertex3f(r*sin(a1),-h,r*cos(a1));
+				glNormal3f(mlh*SIN1,mlr,-mlh*COS1);
 				TC((i+1)/df,1);
-				glVertex3f(0,h,0);
-
+				glVertex3f(r*SIN1,-h,-r*COS1);
+				glNormal3f(mlh*lsin,mlr,-mlh*lcos);
+				TC(i/df,1);
+				glVertex3f(r*lsin,-h,-r*lcos);
 			}
 			glEnd();
 		}
@@ -202,6 +226,10 @@ Sphere => 'int vdiv = vert_div;
 	   float hf = horiz_div;
 		int v; int h;
 		float va1,va2,van,ha1,ha2,han;
+		DECL_TRIG1
+		DECL_TRIG2
+		INIT_TRIG1(vdiv) 
+		INIT_TRIG2(hdiv)
 		$start_list();
 		glPushMatrix();
 			/* if(!nomode) {
@@ -210,36 +238,26 @@ Sphere => 'int vdiv = vert_div;
 			} */
 		glScalef($f(radius), $f(radius), $f(radius));
 		glBegin(GL_QUAD_STRIP);
+		START_TRIG1
 		for(v=0; v<vdiv; v++) {
-			va1 = v * 3.15 / vdiv;
-			va2 = (v+1) * 3.15 / vdiv;
-			van = (v+0.5) * 3.15 / vdiv;
+			float vsin1 = SIN1;
+			float vcos1 = COS1, vsin2,vcos2;
+			UP_TRIG1
+			vsin2 = SIN1;
+			vcos2 = COS1;
+			START_TRIG2
 			for(h=0; h<=hdiv; h++) {
-				ha1 = h * 6.29 / hdiv;
-				ha2 = (h+1) * 6.29 / hdiv;
-				han = (h+0.5) * 6.29 / hdiv;
+				float hsin1 = SIN2;
+				float hcos1 = COS2;
+				UP_TRIG2
 
-				glNormal3f(sin(va1) * cos(ha1), sin(va1) * sin(ha1), cos(va1));
-				TC(v/vf,h/hf);
-				glVertex3f(sin(va1) * cos(ha1), sin(va1) * sin(ha1), cos(va1));
+				glNormal3f(vsin2 * hcos1, vcos2, vsin2 * hsin1);
+				TC(h/hf,(v+1)/vf);
+				glVertex3f(vsin2 * hcos1, vcos2, vsin2 * hsin1);
 
-				glNormal3f(sin(va2) * cos(ha1), sin(va2) * sin(ha1), cos(va2));
-				TC((v+1)/vf,h/hf);
-				glVertex3f(sin(va2) * cos(ha1), sin(va2) * sin(ha1), cos(va2));
-			#ifdef FOO
-				glNormal3f(sin(va2) * cos(ha1), sin(va2) * sin(ha1), cos(va2));
-				TC((v+1)/vf,h/hf);
-				glVertex3f(sin(va2) * cos(ha1), sin(va2) * sin(ha1), cos(va2));
-				glNormal3f(sin(va2) * cos(ha2), sin(va2) * sin(ha2), cos(va2));
-				TC((v+1)/vf,(h+1)/hf);
-				glVertex3f(sin(va2) * cos(ha2), sin(va2) * sin(ha2), cos(va2));
-				glNormal3f(sin(va1) * cos(ha2), sin(va1) * sin(ha2), cos(va1));
-				TC(v/vf,(h+1)/hf);
-				glVertex3f(sin(va1) * cos(ha2), sin(va1) * sin(ha2), cos(va1));
-				glNormal3f(sin(va1) * cos(ha1), sin(va1) * sin(ha1), cos(va1));
-				TC(v/vf,h/hf);
-				glVertex3f(sin(va1) * cos(ha1), sin(va1) * sin(ha1), cos(va1));
-			#endif
+				glNormal3f(vsin1 * hcos1, vcos1, vsin1 * hsin1); 
+				TC(h/hf,v/vf);
+				glVertex3f(vsin1 * hcos1, vcos1, vsin1 * hsin1); 
 			}
 		}
 		glEnd();
@@ -299,11 +317,10 @@ IndexedLineSet => '
 				  colors[plno].c[1],
 				  colors[plno].c[2]);
 		}
-		if(!ncolors) {glColor3f(1,1,1);} /* XXX WRONG */
 		glBegin(GL_LINE_STRIP);
 		for(i=0; i<cin; i++) {
 			ind = $f(coordIndex,i);
-			/* printf("Line: %d %d\n",i,ind); */
+			if(verbose) printf("Line: %d %d\n",i,ind); 
 			if(ind==-1) {
 				glEnd();
 				plno++;
@@ -359,7 +376,6 @@ PointSet => '
 		die("Not same number of colors and points");
 	}
 	glDisable(GL_LIGHTING);
-	if(!ncolors) {glColor3f(1,1,1);} /* XXX WRONG */
 	glBegin(GL_POINTS);
 	if(verbose) printf("PointSet: %d %d\n", npoints, ncolors);
 	for(i=0; i<npoints; i++) {
@@ -464,6 +480,8 @@ Material => ( join '',
 		",assgn_m(emissiveColor,1),';
 		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, m);
 
+		glColor3f(m[0],m[1],m[2]);
+
 		if(fabs($f(shininess) - 0.2) > 0.001) {
 			printf("Set shininess: %f\n",$f(shininess));
 			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 
@@ -472,35 +490,24 @@ Material => ( join '',
 				/* 1.0/((",getf(Material,shininess),"+1)/128.0)); */
 		}
 		$end_list();
-		
 '),
 
-ImageTexture => ('
-	/* ASSUMING 2^n * 2^n XXX Check */
-	unsigned char *ptr = SvPV($f(__data),na);
+TextureTransform => '
 	$start_list();
-	printf("PTR: %d, %d %d %d %d %d %d %d %d %d %d\n",
-		ptr, ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5],
-		ptr[6], ptr[7], ptr[8], ptr[9]);
+	glMatrixMode(GL_TEXTURE);
+	glTranslatef($f(translation,0), $f(translation,1), 0);
+	glTranslatef($f(center,0),$f(center,1), 0);
+	glRotatef(0,0,1,$f(rotation)/3.1415926536*180);
+	glScalef($f(scale,0),$f(scale,1),1);
+	glTranslatef(-$f(center,0),-$f(center,1), 0);
+	glMatrixMode(GL_MODELVIEW);
+	$end_list();
+',
 
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-	printf("Doing imagetext %d %d %d\n",$f(__depth),$f(__x),$f(__y));
-	glDisable(GL_LIGHTING);
-	glEnable(GL_TEXTURE_2D);
-	glColor3f(1,1,1);
-        	
-	glTexImage2D(GL_TEXTURE_2D,
-		     0, 
-		     $f(__depth),  
-		     $f(__x), $f(__y),
-		     0,
-		     ($f(__depth)==1 ? GL_LUMINANCE : GL_RGB),
-		     GL_UNSIGNED_BYTE,
-		     ptr
-	);
+ImageTexture => ('
+	$start_list();
+	$tex2d();
+
 	$end_list();
 '),
 
@@ -551,32 +558,55 @@ Background => '
 
 	glScalef(200,200,200);
 
-	glBegin(GL_QUADS);
-	for(v=0; v<$f_n(skyColor); v++) {
-		if(v==0) {
-			va1 = 0;
-		} else {
-			va1 = $f(skyAngle,v-1);
-		}
-		c1 = &($f(skyColor,v));
-		if(v==$f_n(skyColor)-1) {
-			c2 = &($f(skyColor,v));
-			va2 = 3.142;
-		} else {
-			c2 = &($f(skyColor,v+1));
-			va2 = $f(skyAngle,v);
-		}
+	if($f_n(skyColor) == 1) {
+		c1 = &($f(skyColor,0));
+		glColor3f(c1->c[0], c1->c[1], c1->c[2]);
+
+		/* Actually, one should do it... ? */
+		/* XXX */
+
+		glBegin(GL_TRIANGLES);
 		for(h=0; h<hdiv; h++) {
 			ha1 = h * 6.29 / hdiv;
 			ha2 = (h+1) * 6.29 / hdiv;
 			/* glNormal3f(sin(van) * cos(han), sin(van) * sin(han), cos(van)); */
-			glColor3f(c2->c[0], c2->c[1], c2->c[2]);
-			glVertex3f(sin(va2) * cos(ha1), cos(va2), sin(va2) * sin(ha1));
-			glVertex3f(sin(va2) * cos(ha2), cos(va2), sin(va2) * sin(ha2));
-			glColor3f(c1->c[0], c1->c[1], c1->c[2]);
-			glVertex3f(sin(va1) * cos(ha2), cos(va1), sin(va1) * sin(ha2));
-			glVertex3f(sin(va1) * cos(ha1), cos(va1), sin(va1) * sin(ha1));
+			glVertex3f(0, 1, 0);
+			glVertex3f(cos(ha1), 0, sin(ha1));
+			glVertex3f(cos(ha2), 0, sin(ha2));
+			glVertex3f(0, -1, 0);
+			glVertex3f(cos(ha2), 0, sin(ha2));
+			glVertex3f(cos(ha1), 0, sin(ha1));
 		}
+		glEnd();
+	} else {
+		glBegin(GL_QUADS);
+		for(v=0; v<$f_n(skyColor); v++) {
+			if(v==0) {
+				va1 = 0;
+			} else {
+				va1 = $f(skyAngle,v-1);
+			}
+			c1 = &($f(skyColor,v));
+			if(v==$f_n(skyColor)-1) {
+				c2 = &($f(skyColor,v));
+				va2 = 3.142;
+			} else {
+				c2 = &($f(skyColor,v+1));
+				va2 = $f(skyAngle,v);
+			}
+			for(h=0; h<hdiv; h++) {
+				ha1 = h * 6.29 / hdiv;
+				ha2 = (h+1) * 6.29 / hdiv;
+				/* glNormal3f(sin(van) * cos(han), sin(van) * sin(han), cos(van)); */
+				glColor3f(c2->c[0], c2->c[1], c2->c[2]);
+				glVertex3f(sin(va2) * cos(ha1), cos(va2), sin(va2) * sin(ha1));
+				glVertex3f(sin(va2) * cos(ha2), cos(va2), sin(va2) * sin(ha2));
+				glColor3f(c1->c[0], c1->c[1], c1->c[2]);
+				glVertex3f(sin(va1) * cos(ha2), cos(va1), sin(va1) * sin(ha2));
+				glVertex3f(sin(va1) * cos(ha1), cos(va1), sin(va1) * sin(ha1));
+			}
+		}
+		glEnd();
 	}
 	glBegin(GL_QUADS);
 	for(v=0; v<$f_n(groundColor); v++) {
@@ -613,23 +643,8 @@ Background => '
 		unsigned char *ptr = SvPV($f(__data_'.$_->[0].'),len);
 		if(ptr && len) {
 
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-		glDisable(GL_LIGHTING);
-		glEnable(GL_TEXTURE_2D);
-		glColor3f(1,1,1);
-			
-		glTexImage2D(GL_TEXTURE_2D,
-			     0, 
-			     $f(__depth_'.$_->[0].'),  
-			     $f(__x_'.$_->[0].'), $f(__y_'.$_->[0].'),
-			     0,
-			     ($f(__depth_'.$_->[0].')==1 ? GL_LUMINANCE : GL_RGB),
-			     GL_UNSIGNED_BYTE,
-			     ptr
-		);
+		$tex2d(_'.$_->[0].');
+
 		glBegin(GL_QUADS);
 		glNormal3f('.$_->[1]->(0,0,1).');
 		TC(1,1);
@@ -654,6 +669,123 @@ Background => '
 	glPopMatrix();
 	glPopAttrib();
 ',
+
+ProximitySensor => q~
+	/* Viewer pos = t_r2 */
+	double cx,cy,cz;
+	double len;
+	struct pt dr1r2;
+	struct pt dr2r3;
+	struct pt vec;
+	struct pt nor1,nor2;
+	struct pt ins;
+	static const struct pt yvec = {0,0.05,0};
+	static const struct pt zvec = {0,0,-0.05};
+	static const struct pt zpvec = {0,0,0.05};
+	static const struct pt orig = {0,0,0};
+	struct pt t_zvec, t_yvec, t_orig;
+GLdouble modelMatrix[16]; 
+GLdouble projMatrix[16];
+
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+	glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+	gluUnProject(orig.x,orig.y,orig.z,modelMatrix,projMatrix,viewport,
+		&t_orig.x,&t_orig.y,&t_orig.z);
+	gluUnProject(zvec.x,zvec.y,zvec.z,modelMatrix,projMatrix,viewport,
+		&t_zvec.x,&t_zvec.y,&t_zvec.z);
+	gluUnProject(yvec.x,yvec.y,yvec.z,modelMatrix,projMatrix,viewport,
+		&t_yvec.x,&t_yvec.y,&t_yvec.z);
+
+	cx = t_orig.x - $f(center,0);
+	cy = t_orig.y - $f(center,1);
+	cz = t_orig.z - $f(center,2);
+
+	if(!$f(enabled)) return;
+	if($f(size,0) == 0 || $f(size,1) == 0 || $f(size,2) == 0) return;
+
+	if(fabs(cx) > $f(size,0)/2 ||
+	   fabs(cy) > $f(size,1)/2 ||
+	   fabs(cz) > $f(size,2)/2) return;
+
+	$f(__hit) = 1;
+
+	$f(__t1,0) = t_orig.x;
+	$f(__t1,1) = t_orig.y;
+	$f(__t1,2) = t_orig.z;
+
+	VECDIFF(t_zvec,t_orig,dr1r2);  /* Z axis */
+	VECDIFF(t_yvec,t_orig,dr2r3);  /* Y axis */
+
+	len = sqrt(VECSQ(dr1r2)); VECSCALE(dr1r2,1/len);
+	len = sqrt(VECSQ(dr2r3)); VECSCALE(dr2r3,1/len);
+
+	if(verbose) printf("PROX_INT: (%f %f %f) (%f %f %f) (%f %f %f)\n (%f %f %f) (%f %f %f)\n",
+		t_orig.x, t_orig.y, t_orig.z, 
+		t_zvec.x, t_zvec.y, t_zvec.z, 
+		t_yvec.x, t_yvec.y, t_yvec.z,
+		dr1r2.x, dr1r2.y, dr1r2.z, 
+		dr2r3.x, dr2r3.y, dr2r3.z
+		);
+	
+	if(fabs(VECPT(dr1r2, dr2r3)) > 0.001) {
+		die("Sorry, can't handle unevenly scaled ProximitySensors yet :("
+		  "dp: %f v: (%f %f %f) (%f %f %f)", VECPT(dr1r2, dr2r3),
+		  	dr1r2.x,dr1r2.y,dr1r2.z,
+		  	dr2r3.x,dr2r3.y,dr2r3.z
+			);
+	}
+
+
+	if(APPROX(dr1r2.z,1.0)) {
+		$f(__t2,0) = 0;
+		$f(__t2,1) = 0;
+		$f(__t2,2) = 1;
+		$f(__t2,3) = atan2(-dr2r3.x,dr2r3.y);
+	} else if(APPROX(dr2r3.y,1.0)) {
+		$f(__t2,0) = 0;
+		$f(__t2,1) = 1;
+		$f(__t2,2) = 0;
+		$f(__t2,3) = atan2(dr1r2.x,dr1r2.z);
+	} else {
+		/* Get the normal vectors of the possible rotation planes */
+		nor1 = dr1r2;
+		nor1.z -= 1.0;
+		nor2 = dr2r3;
+		nor2.y -= 1.0;
+		/* Now, the intersection of the planes, obviously cp */
+		VECCP(nor1,nor2,ins);
+		if(APPROX(VECSQ(ins),0)) {
+			die("Proximitysensor problem!"
+		  "dp: %f v: (%f %f %f) (%f %f %f)\n"
+		  "Nor,I (%f %f %f) (%f %f %f) (%f %f %f)\n"
+		, 
+			VECPT(dr1r2, dr2r3),
+		  	dr1r2.x,dr1r2.y,dr1r2.z,
+		  	dr2r3.x,dr2r3.y,dr2r3.z,
+		  	nor1.x,nor1.y,nor1.z,
+		  	nor2.x,nor2.y,nor2.z,
+		  	ins.x,ins.y,ins.z
+			);
+		}
+		len = sqrt(VECSQ(ins)); VECSCALE(ins,1/len);
+		$f(__t2,0) = ins.x;
+		$f(__t2,1) = ins.y;
+		$f(__t2,2) = ins.z;
+		/* Finally, the angle */
+		VECCP(dr1r2,ins, nor1);
+		VECCP(zpvec, ins, nor2);
+		len = sqrt(VECSQ(nor1)); VECSCALE(nor1,1/len);
+		len = sqrt(VECSQ(nor2)); VECSCALE(nor2,1/len);
+		VECCP(nor1,nor2,ins);
+		$f(__t2,3) = -atan2(sqrt(VECSQ(ins)), VECPT(nor1,nor2));
+	}
+	if(verbose) printf("NORS: (%f %f %f) (%f %f %f) (%f %f %f)\n",
+		nor1.x, nor1.y, nor1.z,
+		nor2.x, nor2.y, nor2.z,
+		ins.x, ins.y, ins.z
+	);
+~,
+
 
 );
 
@@ -777,13 +909,17 @@ Viewpoint => (join '','
 		GLint vp[10];
 		double a1;
 		double angle;
+		if(verbose) printf("Viewpoint: %d IB: %d..\n", 
+			this_,$f(isBound));
 		if(!$f(isBound)) {return;}
 		render_anything = 0; /* Stop rendering any more */
-		glTranslatef(',(join ',',map {"-(".getf(Viewpoint,position,$_).")"} 
-			0..2),'
-		);
+		/* These have to be in this order because the viewpoint
+		 * rotates in its place */
 		glRotatef(-(',getf(Viewpoint,orientation,3),')/3.1415926536*180,',
 			(join ',',map {getf(Viewpoint,orientation,$_)} 0..2),'
+		);
+		glTranslatef(',(join ',',map {"-(".getf(Viewpoint,position,$_).")"} 
+			0..2),'
 		);
 		glGetIntegerv(GL_VIEWPORT, vp);
 		if(vp[2] > vp[3]) {
@@ -800,7 +936,7 @@ Viewpoint => (join '','
 		glMatrixMode(GL_PROJECTION);
 		glPopMatrix(); /* This is so we do picking right */
 		/* glLoadIdentity(); */
-		gluPerspective(angle,vp[2]/(float)vp[3],0.1,200000);
+		gluPerspective(angle,vp[2]/(float)vp[3],0.1,vp_dist);
 		glMatrixMode(GL_MODELVIEW);
 	}
 '),
@@ -891,9 +1027,15 @@ Billboard => (join '','
 	',
 	Appearance => '
 		if($f(material)) {render_node($f(material));}
-		else {glColor3f(1.0,1.0,1.0);} /* XXX */
+		else {
+			glDisable(GL_LIGHTING);
+			glColor3f(1.0,1.0,1.0);
+		} /* XXX */
 		if($f(texture)) {
 			render_node($f(texture));
+		}
+		if($f(textureTransform)) {
+			render_node($f(textureTransform));
 		}
 	',
 	Shape => '
@@ -905,6 +1047,9 @@ Billboard => (join '','
 		/* glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE); */
 		if($f(appearance)) {
 			render_node($f(appearance));
+		} else {
+			glDisable(GL_LIGHTING);
+			glColor3f(1.0,1.0,1.0);
 		}
 		render_node($f(geometry));
 		glPopAttrib();
@@ -947,6 +1092,91 @@ $ChildC{Anchor} = $ChildC{Group};
 				vec[1] *= $f(ambientIntensity);
 				vec[2] *= $f(ambientIntensity);
 				glLightfv(light, GL_AMBIENT, vec);
+			}
+		}
+	',
+	PointLight => '
+		if($f(on)) {
+			int light = nextlight();
+			if(light >= 0) {
+				float vec[4];
+				glEnable(light);
+				vec[0] = $f(direction,0);
+				vec[1] = $f(direction,1);
+				vec[2] = $f(direction,2);
+				vec[3] = 1;
+				glLightfv(light, GL_SPOT_DIRECTION, vec);
+				vec[0] = $f(location,0);
+				vec[1] = $f(location,1);
+				vec[2] = $f(location,2);
+				vec[3] = 1;
+				glLightfv(light, GL_POSITION, vec);
+
+				glLightf(light, GL_CONSTANT_ATTENUATION, 
+					$f(attenuation,0));
+				glLightf(light, GL_LINEAR_ATTENUATION, 
+					$f(attenuation,1));
+				glLightf(light, GL_QUADRATIC_ATTENUATION, 
+					$f(attenuation,2));
+
+
+				vec[0] = $f(color,0) * $f(intensity);
+				vec[1] = $f(color,1) * $f(intensity);
+				vec[2] = $f(color,2) * $f(intensity);
+				vec[3] = 1;
+				glLightfv(light, GL_DIFFUSE, vec);
+				glLightfv(light, GL_SPECULAR, vec);
+				vec[0] *= $f(ambientIntensity);
+				vec[1] *= $f(ambientIntensity);
+				vec[2] *= $f(ambientIntensity);
+				glLightfv(light, GL_AMBIENT, vec);
+
+				/* XXX */
+				glLightf(light, GL_SPOT_CUTOFF, 180);
+			}
+		}
+	',
+	SpotLight => '
+		if($f(on)) {
+			int light = nextlight();
+			if(light >= 0) {
+				float vec[4];
+				glEnable(light);
+				vec[0] = $f(direction,0);
+				vec[1] = $f(direction,1);
+				vec[2] = $f(direction,2);
+				vec[3] = 1;
+				glLightfv(light, GL_SPOT_DIRECTION, vec);
+				vec[0] = $f(location,0);
+				vec[1] = $f(location,1);
+				vec[2] = $f(location,2);
+				vec[3] = 1;
+				glLightfv(light, GL_POSITION, vec);
+
+				glLightf(light, GL_CONSTANT_ATTENUATION, 
+					$f(attenuation,0));
+				glLightf(light, GL_LINEAR_ATTENUATION, 
+					$f(attenuation,1));
+				glLightf(light, GL_QUADRATIC_ATTENUATION, 
+					$f(attenuation,2));
+
+
+				vec[0] = $f(color,0) * $f(intensity);
+				vec[1] = $f(color,1) * $f(intensity);
+				vec[2] = $f(color,2) * $f(intensity);
+				vec[3] = 1;
+				glLightfv(light, GL_DIFFUSE, vec);
+				glLightfv(light, GL_SPECULAR, vec);
+				vec[0] *= $f(ambientIntensity);
+				vec[1] *= $f(ambientIntensity);
+				vec[2] *= $f(ambientIntensity);
+				glLightfv(light, GL_AMBIENT, vec);
+
+				/* XXX */
+				glLightf(light, GL_SPOT_EXPONENT,
+					0.5/($f(beamWidth)+0.1));
+				glLightf(light, GL_SPOT_CUTOFF,
+					$f(cutOffAngle)/3.1415926536*180);
 			}
 		}
 	',

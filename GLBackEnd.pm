@@ -1,6 +1,6 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 
@@ -81,11 +81,21 @@ $VRML::verbose = 1;
 }
 
 sub new {
-	my($type) = @_;
+	my($type,%pars) = @_;
 	my $this = bless {}, $type;
+
 	my($w,$h) = (300,300);
-	$this->{W} = $w; $this->{H} = $h;
         my $x = 0; 
+        my $y = 0; 
+
+	if(my $g = $pars{Geometry}) {
+		$g =~ /^(\d+)x(\d+)(?:([+-]\d+)([+-]\d+))?$/ 
+			or die("Invalid geometry string '$g' given to GLBackend");
+		($w,$h,$x,$y) = ($1,$2,$3,$4);
+		# print "GEOMETRY: $w $h $x $y\n";
+	}
+
+	$this->{W} = $w; $this->{H} = $h;
         my @db = &GLX_DOUBLEBUFFER;
 #       my @db = ();
         if($VRML::offline) {$x = -1; @db=()}
@@ -104,7 +114,8 @@ sub new {
                         PointerMotionMask),
                 width => $w,height => $h,
                 "x" => $x,
-		cmap => !$ENV{FREEWRL_NO_COLORMAP});
+                "y" => $y,
+		cmap => !$VRML::ENV{FREEWRL_NO_COLORMAP});
 
         glClearColor(0,0,0,1);
 #        my $lb = VRML::OpenGL::glpRasterFont("5x8",0,256);
@@ -123,6 +134,9 @@ sub new {
 
 	glEnable(&GL_POLYGON_OFFSET_EXT);
 	glPolygonOffsetEXT(0.0000000001,0.00002);
+
+	glPixelStorei(&GL_UNPACK_ALIGNMENT,1);
+	glPixelStorei(&GL_PACK_ALIGNMENT,1);
 
         # $this->reshape();
 
@@ -150,6 +164,11 @@ sub new {
 	$this->{Viewer} = VRML::Viewer::Examine->new;
 
 	return $this;
+}
+
+# Set the sub used to go forwards/backwards in VP list
+sub set_vp_sub {
+	$_[0]{VPSub} = $_[1];
 }
 
 sub quitpressed {
@@ -185,6 +204,42 @@ sub bind_viewpoint {
 sub unbind_viewpoint {
 	my($this, $node) = @_;
 	return $this->{Viewer}->unbind_viewpoint($node);
+}
+
+sub bind_navi_info {
+	my($this,$node) = @_;
+	$this->{Viewer}->bind_navi_info($node);
+	my $t = ref $this->{Viewer};
+	$t =~ /^VRML::Viewer::(\w+)/ or die("Invalid viewer");
+	$this->choose_viewer($1);
+}
+
+sub choose_viewer {
+	my($this,$viewer) = @_;
+	my $vs = [];
+	if($this->{Viewer}{Navi}) {
+		$vs = $this->{Viewer}{Navi}{RFields}{"type"};
+	}
+	if(!@$vs) {
+		if($viewer) {
+			$this->set_viewer($viewer);
+		} else {
+			$this->set_viewer("WALK");
+		}
+		return;
+	} 
+	if(grep {(lc $_) eq (lc $viewer)} @$vs) {
+		$this->set_viewer($viewer);
+		return;
+	}
+	$this->set_viewer($vs->[0]);
+}
+	
+sub set_viewer {
+	my($this,$viewer) = @_;
+	$viewer = ucfirst lc $viewer;
+	print "Setting viewing mode '$viewer'\n";
+	$this->{Viewer} = "VRML::Viewer::$viewer"->new($this->{Viewer});
 }
 
 sub event {
@@ -246,13 +301,25 @@ sub event {
 	} elsif($type == &KeyPress) {
 		# print "KEY: $args[0] $args[1] $args[2] $args[3]\n";
 		if((lc $args[0]) eq "e") {
-			$this->{Viewer} = VRML::Viewer::Examine->new;
+			$this->{Viewer} = VRML::Viewer::Examine->new($this->{Viewer});
 		} elsif((lc $args[0]) eq "w") {
-			$this->{Viewer} = VRML::Viewer::Walk->new;
+			$this->{Viewer} = VRML::Viewer::Walk->new($this->{Viewer});
 		} elsif((lc $args[0]) eq "d") {
-			$this->{Viewer} = VRML::Viewer::Fly->new;
+			$this->{Viewer} = VRML::Viewer::Fly->new($this->{Viewer});
+		} elsif((lc $args[0]) eq "/") {
+			my $tr = join ', ',@{$this->{Viewer}{Pos}};
+			my $rot = join ', ',@{$this->{Viewer}{Quat}->to_vrmlrot()};
+			print "Viewpoint: [$tr], [$rot]\n";
 		} elsif((lc $args[0]) eq "q") {
 			$this->{QuitPressed} = 1;
+		} elsif((lc $args[0]) eq "v") {
+			print "NEXT VP\n";
+			if($this->{VPSub}) {$this->{VPSub}->(1)}
+			else {die("No VPSUB");}
+		} elsif((lc $args[0]) eq "b") {
+			print "PREV VP\n";
+			if($this->{VPSub}) {$this->{VPSub}->(-1)}
+			else {die("No VPSUB");}
 		} elsif(!$this->{Viewer}->use_keys) {
 			if((lc $args[0]) eq "k") {
 				$this->{Viewer}->handle("PRESS", 1, 0.5, 0.5);
@@ -295,7 +362,7 @@ sub finish_event {
 
 sub resize { # Called by resizehandler.
 	my($t,$w,$h) = @_;
-	print "RESIZE: $w $h\n";
+	print "RESIZE: $w $h\n" if $VRML::verbose::be;
 	$t->{W} = $w;
 	$t->{H} = $h;
 }
@@ -327,6 +394,7 @@ sub set_fields {
 
 sub set_sensitive {
 	my($this,$node,$sub) = @_;
+	print "BE SET SENS $node $node->{TypeName} $sub\n" if $VRML::verbose::glsens;
 	push @{$this->{Sens}}, [$node, $sub];
 	$this->{SensC}{$node->{CNode}} = $node;
 	$this->{SensR}{$node->{CNode}} = $sub;
@@ -335,6 +403,17 @@ sub set_sensitive {
 sub delete_node {
 	my($this,$node) = @_;
 	VRML::CU::free_struct_be($node->{CNode}, $node->{Type});
+}
+
+sub get_proximitysensor_stuff {
+	my($this,$node) = @_;
+	my($hit, $x1, $y1, $z1, $x2, $y2, $z2, $q2);
+	VRML::VRMLFunc::get_proximitysensor_vecs($node->{CNode},$hit,$x1,$y1,$z1,$x2,$y2,$z2,$q2);
+	if($hit or !$hit) {
+		return [$hit, [$x1, $y1, $z1], [$x2, $y2, $z2, $q2]];
+	} else {
+		return [$hit];
+	}
 }
 
 sub setup_projection {
@@ -462,13 +541,16 @@ sub render {
 		}
 	   }
 	   for(@{$this->{BUTEV}}) {
-	   	print "BUTEV: $_->[0]\n";
+	   	print "BUTEV: $_->[0]\n" 
+			if $VRML::verbose::glsens;
 		for(@{$this->{Sens}}) {
 			VRML::VRMLFunc::zero_hits($_->[0]{CNode});
 			VRML::VRMLFunc::set_sensitive($_->[0]{CNode},1);
 		}
 		if($this->{MOUSEGRABBED}) {
 			VRML::VRMLFunc::set_hypersensitive($this->{MOUSEGRABBED});
+		} else {
+			VRML::VRMLFunc::set_hypersensitive(0);
 		}
 		my $nints = 100;
 		my $s = pack("i$nints");
@@ -484,6 +566,7 @@ sub render {
 		my $p = VRML::VRMLFunc::get_rayhit($x,$y,$z,$nx,$ny,$nz,$tx,$ty);
 		if($this->{MOUSEGRABBED}) {
 			if($_->[0] eq "RELEASE") {
+				# XXX The position at release is garbage :(
 				my $rout = $this->{SensR}{$this->{MOUSEGRABBED}};
 				$pos = [$x,$y,$z];
 				my $nor = [$nx,$ny,$nz];
@@ -499,6 +582,8 @@ sub render {
 					$x,$y,$z,$nx,$ny,$nz)) {
 						die("No hyperhit??? REPORT BUG!");
 				}
+				print "HYP: $x $y $z $nx $ny $nz\n" 
+					if $VRML::verbose::glsens;
 				my $rout = $this->{SensR}{$this->{MOUSEGRABBED}};
 				$pos = [$x,$y,$z];
 				$nor = [$nx,$ny,$nz];
@@ -535,10 +620,10 @@ sub render {
 			}
 			$this->{MOUSOVER} = $p;
 		} 
-		glRenderMode(&GL_RENDER);
 	   }
 	}
 	$#{$this->{BUTEV}} = -1;
+	glRenderMode(&GL_RENDER);
 }
 
 

@@ -1,7 +1,52 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
+
+# The following is POD documentation for the VRML::Browser module
+# It will be automatically installed in a manual page upon make install.
+# See the perlpod manpage for the I<>, C<> &c explanation
+
+=head1 NAME
+
+VRML::Browser -- perl module to implement a VRML97 browser
+
+=head1 SYNOPSIS
+
+Use the command-line interface (L<freewrl>), or
+inside Perl:
+
+	use VRML::Browser;
+
+	$b = VRML::Browser->new();
+
+	$b->load_file($url);
+	$b->load_file($url,$base_url);
+	$b->load_string("Shape { geometry ....", $base_url);
+
+	$b->eventloop();
+
+	# VRML Browser API
+	$name = 	$b->getName();
+	$version = 	$b->getVersion();
+	$speed =	$b->getCurrentSpeed();
+	...
+
+	# The rest of the API may still change and is not documented
+	# here. If you need to know, check the file Browser.pm
+
+=head1 DESCRIPTION
+
+This module implements a VRML browser. The actual module
+is of interest only if you are planning to use the code from Perl.
+
+For information on the user interface, see L<VRML::Viewer>.
+
+=head1 AUTHOR
+
+See L<freewrl>.
+
+=cut
 
 require 'VRML/GLBackEnd.pm';
 require 'VRML/Parser.pm';
@@ -22,7 +67,7 @@ sub new {
 	my($type,$pars) = @_;
 	my $this = bless {
 		Verbose => delete $pars->{Verbose},
-		BE => new VRML::GLBackEnd(),
+		BE => new VRML::GLBackEnd(@{$pars->{BackEnd} or []}),
 		EV => new VRML::EventMachine(),
 	}, $type;
 	return $this;
@@ -35,10 +80,18 @@ sub clear_scene {
 
 # Discards previous scene
 sub load_file {
-	my($this,$file) = @_;
-	$this->{URL} = $file;
+	my($this,$file,$url) = @_;
+	$url = ($url || $file);
+	$this->{URL} = $url ; 
+	print "File: $file URL: $url\n" if $VRML::verbose::scene;
 	my $t = VRML::URL::get_absolute($file);
-	$this->load_string($t,$file);
+	unless($t =~ /^#VRML V2.0/s) {
+		if($t =~ /^#VRML V1.0/s) {
+			die("Sorry, this file is according to VRML V1.0, I only know V2.0");
+		}
+		warn("WARNING: file '$file' doesn't start with the '#VRML V2.0' header line");
+	}
+	$this->load_string($t,$url);
 }
 
 sub load_string {
@@ -47,10 +100,10 @@ sub load_string {
 	$this->{Scene} = VRML::Scene->new($this->{EV},$file);
 	$this->{Scene}->set_browser($this);
 	VRML::Parser::parse($this->{Scene},$string);
-	$this->{Scene}->make_executable();
-	$this->{Scene}->make_backend($this->{BE});
-	$this->{Scene}->setup_routing($this->{EV},$this->{BE});
-	$this->{EV}->print;
+#	$this->{Scene}->make_executable();
+#	$this->{Scene}->make_backend($this->{BE});
+#	$this->{Scene}->setup_routing($this->{EV},$this->{BE});
+#	$this->{EV}->print;
 }
 
 sub get_scene {
@@ -58,6 +111,7 @@ sub get_scene {
 	$this->{Scene} or ($this->{Scene} = VRML::Scene->new(
 		$this->{EV}, "USER"));
 }
+sub get_eventmodel { return $_[0]->{EV} }
 
 sub get_backend { return $_[0]{BE} }
 
@@ -71,8 +125,11 @@ sub eventloop {
 
 sub prepare {
 	my($this) = @_;
+	$this->{Scene}->make_executable();
 	$this->{Scene}->make_backend($this->{BE});
+	$this->{Scene}->setup_routing($this->{EV}, $this->{BE});
 	$this->{Scene}->init_routing($this->{EV},$this->{BE});
+	$this->{EV}->print;
 }
 
 sub tick {
@@ -81,6 +138,9 @@ sub tick {
 	$this->{BE}->update_scene($time);
 	$this->{EV}->propagate_events($time,$this->{BE},
 		$this->{Scene});
+	for(@{$this->{Periodic}}) {
+		&$_();
+	}
 }
 
 my $FPS = 0;
@@ -107,8 +167,6 @@ sub createVrmlFromString {
 	$scene->set_browser($this);
 	VRML::Parser::parse($scene, $string);
 	$scene->make_executable();
-# Do NOT! This just makes the node root -- no good.
-#	$scene->make_backend($this->{BE});
 	$scene->setup_routing($this->{EV}, $this->{BE});
 	return $scene->get_as_mfnode();
 }
@@ -121,9 +179,27 @@ sub addRoute { die "No addroute yet" }
 sub deleteRoute { die "No deleteroute yet" }
 
 # EAI
-sub api_beginUpdate { }
-sub api_endUpdate { }
-sub api_getNode { }
+sub api_beginUpdate { die "XXX" }
+sub api_endUpdate { die "XXX" }
+sub api_getNode { 
+	$_[0]->{Scene}->getNode($_[1]);
+}
+sub api__sendEvent { 
+	my($this,$node,$field,$val) = @_;
+	$this->{EV}->send_event_to($node,$field,$val);
+}
+sub api__registerListener { 
+	my($this, $node, $field, $sub) = @_;
+	$this->{EV}->register_listener($node, $field, $sub);
+}
+
+sub api__getFieldInfo {
+	my($this,$node,$field) = @_;
+	my($k,$t) = ($node->{Type}{FieldKinds}{$field},$node->{Type}{FieldTypes}{$field});
+	return($k,$t);
+}
+
+sub add_periodic { push @{$_[0]{Periodic}}, $_[1]; }
 
 #########################################################3
 #
@@ -163,6 +239,7 @@ sub tmeasure_single {
 	$curt = $t;
 }
 sub pmeasures {
+	return;
 	my $s = 0;
 	for(values %h) {$s += $_}
 	print "TIMES NOW:\n";

@@ -63,7 +63,7 @@ $extra{SFRotation} = {
 		TJL_SFVec3f *vfrom;
 		TJL_SFVec3f *vto;
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
-			printf("Convarg: false\\n");
+			if(verbose) printf("Convarg: false\\n");
 			return JS_FALSE;
 	};
 	    if (!JS_InstanceOf(cx, o, &cls_SFVec3f, argv)) {
@@ -92,7 +92,7 @@ JSObject *ret;
 		TJL_SFVec3f *vec2;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "o",&v2) == JS_FALSE) {
-			printf("Convarg: false\\n");
+			if(verbose) printf("Convarg: false\\n");
 			return JS_FALSE;
 	};
 	    if (!JS_InstanceOf(cx, v2, &cls_SFVec3f, argv)) {
@@ -114,7 +114,7 @@ my $vecr = q~
 		TJL_SFVec3f *vec1;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "") == JS_FALSE) {
-			printf("Convarg: false\\n");
+			if(verbose) printf("Convarg: false\\n");
 			return JS_FALSE;
 	};
 	    proto = JS_GetPrototype(cx, obj);
@@ -132,7 +132,7 @@ my $veco = q~
 		TJL_SFVec3f *vec1;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "") == JS_FALSE) {
-			printf("Convarg: false\\n");
+			if(verbose) printf("Convarg: false\\n");
 			return JS_FALSE;
 	};
 	    proto = JS_GetPrototype(cx, obj);
@@ -203,7 +203,7 @@ browser_$_(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -214,7 +214,7 @@ browser_$_(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		PUTBACK;
 		count = perl_call_method("brow_$_", G_SCALAR);
 		if(count) {
-			printf("Got return %f\\n",POPn);
+			if(verbose) printf("Got return %f\\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -261,7 +261,7 @@ cons_SFNode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		p = JS_GetStringBytes(str);
 		/* Hidden two-arg constructor: we construct it using
 		 * an id... */
-		printf("CONS_SFNODE: '%s'\n",p);
+		if(verbose) printf("CONS_SFNODE: '%s'\n",p);
 		if(!JS_DefineProperty(cx,obj,"__id",argv[1],
 			NULL,NULL,JSPROP_PERMANENT)) {
 				die("SFNode defprop error");
@@ -289,7 +289,7 @@ setprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	JS_SetProperty(cx, globalObj, "__node", &v);
 	JS_SetProperty(cx, globalObj, "__prop", &id);
 	JS_SetProperty(cx, globalObj, "__val", vp);
-	printf("SFNode setprop \n");
+	if(verbose) printf("SFNode setprop \n");
 		ENTER;
 		SAVETMPS;
 		PUSHMARK(sp);
@@ -297,7 +297,7 @@ setprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		PUTBACK;
 		count = perl_call_method("node_setprop", G_SCALAR);
 		if(count) {
-			printf("Got return %f\\n",POPn);
+			if(verbose) printf("Got return %f\\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -308,7 +308,7 @@ setprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool
 getprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	printf("SFNode getprop \n");
+	if(verbose) printf("SFNode getprop \n");
 	return JS_TRUE;
 }
 
@@ -362,20 +362,20 @@ addprop_$f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF %d addprop '%s'\\n",obj,p);
+	if(verbose) printf("JS MF %d addprop '%s'\\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'\n",p);
+		if(verbose) printf("JS MF APVAL '%s'\n",p);
 	}
 	if(!JSVAL_IS_INT(id)){ 
 		die("MF prop not int");
 	}
 	if(!JS_GetProperty(cx,obj,"length",&v)) {die("MF lenval");}
 	len = JSVAL_TO_INT(v);
-	printf("MF addprop %d %d\\n",ind,len);
+	if(verbose) printf("MF addprop %d %d\\n",ind,len);
 	if(ind >= len) {
 		len = ind+1;
 		v = INT_TO_JSVAL(len);
@@ -394,13 +394,13 @@ setprop_$f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char *p;
 	str = JS_ValueToString(cx, id);
 	p = JS_GetStringBytes(str);
-	printf("JS MF %d setprop '%s'\\n",obj,p);
+	if(verbose) printf("JS MF %d setprop '%s'\\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'\n",p);
+		if(verbose) printf("JS MF APVAL '%s'\n",p);
 	}
 	if(JSVAL_IS_INT(id)) {
 		myv = INT_TO_JSVAL(1);
@@ -454,9 +454,9 @@ assign_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     JSObject *o;
     if (!JS_InstanceOf(cx, obj, &cls_$f, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK $f %d\\n",argc);
+    if(verbose) printf("ASSIGN HACK $f %d\\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
-			printf("Convarg: false\\n");
+			if(verbose) printf("Convarg: false\\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_$f, argv)) {
@@ -477,7 +477,7 @@ assign_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     }
 
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\\n");
+    if(verbose) printf("Assgn: true\\n");
     return JS_TRUE;
 }
 
@@ -526,7 +526,7 @@ sub get_offsf {
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_$f, argv))
 			return JS_FALSE;
-		     printf(\"METHOD: $_ $f\\n\");
+		     if(verbose) printf(\"METHOD: $_ $f\\n\");
 		    {
 			$extra{$f}{$_}
 	            }
@@ -543,17 +543,17 @@ sub get_offsf {
 	my $jscons = $ft->jscons("(ptr->v)");
 	if($#$jscons != 1) {
 		$jscons->[1] = qq~
-			printf("CONSTRUCTING: GOT %d args\\n",argc);
+			if(verbose) printf("CONSTRUCTING: GOT %d args\\n",argc);
 			if(argc==0) {
 				$jscons->[4];
 				return JS_TRUE;
 			}
 			if(JS_ConvertArguments(cx, argc, argv, "$jscons->[1]",
 				$jscons->[2]) == JS_FALSE) {
-					printf("Convarg: false\\n");
+					if(verbose) printf("Convarg: false\\n");
 					return JS_FALSE;
 			};
-			printf("CONSARGS: %f %f %f\\n",pars[0],pars[1],pars[2]);
+			if(verbose) printf("CONSARGS: %f %f %f\\n",pars[0],pars[1],pars[2]);
 			{
 				$jscons->[3];
 			}
@@ -700,9 +700,9 @@ assign_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     JSObject *ofoo;
     if (!JS_InstanceOf(cx, obj, &cls_$f, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK $f %d\\n",argc);
+    if(verbose) printf("ASSIGN HACK $f %d\\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o,&o) == JS_FALSE) {
-			printf("Convarg: false\\n");
+			if(verbose) printf("Convarg: false\\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_$f, argv)) {
@@ -720,7 +720,7 @@ assign_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     	fptr, fptr->v.c[0],fptr->v.c[1],fptr->v.c[2]);
  */
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\\n");
+    if(verbose) printf("Assgn: true\\n");
     return JS_TRUE;
 }
 
@@ -732,7 +732,7 @@ touched_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     if (!JS_InstanceOf(cx, obj, &cls_$f, argv))
         return JS_FALSE;
     t = ptr->touched; ptr->touched = 0;
-    printf("TOUCHED WAS %d\\n",t);
+    if(verbose) printf("TOUCHED WAS %d\\n",t);
     *rval = INT_TO_JSVAL(t);
     return JS_TRUE;
 }
@@ -789,7 +789,7 @@ print XS <<__STOP__
 #define STACK_CHUNK_SIZE 8192
 
 
-static int verbose = 1;
+static int verbose = 0;
 
 static JSRuntime *rt;
 
@@ -839,7 +839,7 @@ double runscript(void *cxp, void *glo, char *script, SV*r) {
 	jsdouble d;
 	JSString *strval;
 	char *strp;
-	printf("Running script '%s'\\n",script);
+	if(verbose) printf("Running script '%s'\\n",script);
 
 	ok = JS_EvaluateScript(cx, globalObj, script, strlen(script),
 		filename, lineno, &rval);
@@ -888,7 +888,11 @@ void load_classes(JSContext *cx, JSObject *globalObj, SV *jssv) {
 }
 
 void errorrep(JSContext *cx, const char *message, JSErrorReport *report) {
-	fprintf(stderr,"JS ERROR: %s\\n", message);
+/* This reports even stupid errors, like when using wrong number
+ * of arguments for constructor which has variable numbers.
+ * XXX FIX
+ */
+	/* fprintf(stderr,"JS ERROR: %s\\n", message); */
 }
 
 static JSBool 
@@ -896,7 +900,7 @@ set_touchable(JSContext *cx, JSObject *obj, jsval id, jsval *vp) {
 	char *n = JS_GetStringBytes(JSVAL_TO_STRING(id));
 	char buffer[100];
 	jsval v;
-	printf("SET_TOUCHABLE %s\\n",n);
+	if(verbose) printf("SET_TOUCHABLE %s\\n",n);
 	sprintf(buffer,"_%s_touched",n);
 	v = INT_TO_JSVAL(1);
 	JS_SetProperty(cx, obj, buffer, &v);
@@ -906,6 +910,12 @@ set_touchable(JSContext *cx, JSObject *obj, jsval id, jsval *vp) {
 
 MODULE=VRML::JS	PACKAGE=VRML::JS
 PROTOTYPES: ENABLE
+
+void
+set_verbose(v)
+	int v;
+CODE:
+	verbose = v;
 
 void 
 init()
@@ -958,11 +968,11 @@ CODE:
     JSObject *globalObj = p; 
     jsval rval;
     int ok;
-    printf("Addasgn eval '%s'\\n",str);
+    if(verbose) printf("Addasgn eval '%s'\\n",str);
 	ok = JS_EvaluateScript(cx, globalObj, str, strlen(str),
 		"bar", 15, &rval);
 	if(!ok) { printf("SCRFAIL\\n"); die("Addasgn script fail"); }
-    printf("Addasgn eval ok \\n",str);
+    if(verbose) printf("Addasgn eval ok \\n",str);
         JS_DefineProperty(cx, globalObj, name, rval,
                   NULL, NULL, 0 | JSPROP_ASSIGNHACK | JSPROP_PERMANENT ); /* */
 
@@ -982,7 +992,7 @@ CODE:
 		INT_TO_JSVAL(0), 
 		NULL, set_touchable,  0 | JSPROP_PERMANENT);
 	if(!ok) {die("Addwatch script fail");}
-	printf("SET_TOUCHABLE INIT %s\\n",name);
+	if(verbose) printf("SET_TOUCHABLE INIT %s\\n",name);
 	sprintf(buffer,"_%s_touched",name);
 	v = INT_TO_JSVAL(1);
 	JS_SetProperty(cx, globalObj, buffer, &v);

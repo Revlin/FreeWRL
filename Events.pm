@@ -1,6 +1,6 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 # Events.pm -- event handling code for VRML::Browser.
@@ -22,6 +22,7 @@ sub new {
 
 sub print {
 	my($this) = @_;
+	return unless $VRML::verbose::events;
 	print "DUMPING EVENTMODEL\nFIRST:\n";
 	for(values %{$this->{First}}) {
 		print "\t$_:\t$_->{TypeName}\n";
@@ -60,8 +61,17 @@ sub remove_first {
 }
 
 sub add_route {
-	my($this,$fn, $ff, $tn, $tf) = @_;
-	print "ADD_ROUTE $fn $ff $tn $tf\n";
+	my($this,$fn, $ff0, $tn, $tf0) = @_;
+	print "ADD_ROUTE $fn $ff $tn $tf\n" if $VRML::verbose::events;
+	$ff = $fn->{Type}{EventOuts}{$ff0};
+	$tf = $tn->{Type}{EventIns}{$tf0};
+	print "MAPPED: $ff, $tf\n" if $VRML::verbose::events;
+	if(!defined $ff) {
+		die("Invalid fromfield '$ff0' for ROUTE");
+	}
+	if(!defined $tf) {
+		die("Invalid tofield '$tf0' for ROUTE");
+	}
 	push @{$this->{Route}{$fn}{$ff}}, [$tn, $tf]
 }
 
@@ -75,6 +85,11 @@ sub add_is_in {
 	my($this,$pn, $pf, $cn, $cf) = @_;
 	$this->{PIsN}{$pn} = $pn;
 	push @{$this->{PIs}{$pn}{$pf}}, [$cn,$cf];
+}
+
+sub register_listener {
+	my($this, $node, $field, $sub) = @_;
+	$this->{Listen}{$node}{$field} = $sub;
 }
 
 # get_firstevent returns [$node, fieldName, value]
@@ -117,6 +132,12 @@ sub propagate_events {
 				# don't send same event again
 				next if($sent{$e->[0]}{$e->[1]}++);
 
+				my $sub;
+				if($this->{Listen}{$e->[0]} and
+				   $sub = $this->{Listen}{$e->[0]}{$e->[1]}) {
+				   	$sub->($e->[2]);
+				}
+
 				for(@{$this->{Route}{$e->[0]}{$e->[1]}}) {
 					push @ne, 
 					   $_->[0]->receive_event($_->[1],
@@ -155,14 +176,14 @@ sub propagate_events {
 					}
 				}
 			}
-			for (@te) {
+			for my $e (@te) {
 					push @ne, 
-					   $_->[0]->receive_event($_->[1],
-							$_->[2],$timestamp);
-					$ep{$_->[0]} = $_->[0];
+					   $e->[0]->receive_event($e->[1],
+							$e->[2],$timestamp);
+					$ep{$e->[0]} = $e->[0];
 					# Was this event routed to someone
 					# who has children?
-					for(@{$this->{PIs}{$_->[0]}{$_->[1]}}) {
+					for(@{$this->{PIs}{$e->[0]}{$e->[1]}}) {
 						print "P_IS: send to $_\n"
 						 if $VRML::verbose::events;
 						my $fk = $_->[0]->{Type}{FieldKinds}{$_->[1]};
@@ -171,7 +192,7 @@ sub propagate_events {
 						   $fk eq "exposedField") {
 							push @ne, 
 							    $_->[0]->receive_event($_->[1],
-								$_->[2], $timestamp);
+								$e->[2], $timestamp);
 							$ep{$_->[0]} = $_->[0];
 						}
 					}

@@ -1,6 +1,6 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 # Field types, parsing and printing, Perl, C and Java.
@@ -58,6 +58,9 @@ sub copy {
 	if(ref $value eq "ARRAY") {
 		return [map {copy("",$_)} @$value]
 	}
+	if(ref $value eq "VRML::Node") {
+		return $value;
+	}
 	die("Can't copy this")
 }
 
@@ -67,7 +70,7 @@ VRML::Error->import();
 
 sub parse {
 	my($type,$p,$s,$n) = @_;
-	$_[2] =~ /\G\s*($Float)\b/ogcs or 
+	$_[2] =~ /\G\s*($Float)/ogcs or 
 		parsefail($_[2], "didn't match SFFloat");
 	return $1;
 }
@@ -82,6 +85,7 @@ sub cfunc {"$_[1] = SvNV($_[2]);\n"}
 sub jdata {"float v;"}
 sub jalloc {""}
 sub jset {return {""=>"v = 0;", "float val" => "v=val;"}}
+sub jeaiset {return "float val"}
 sub jset_str { '
 	s = s.trim();
 	v = new Float(s).floatValue();
@@ -98,6 +102,7 @@ package VRML::Field::SFTime;
 
 sub jdata {"double v;"}
 sub jset {return {""=>"v = 0;", "double val" => "v=val;"}}
+sub jeaiset {return "double val"}
 sub jset_str { '
 	s = s.trim();
 	v = new Double(s).doubleValue();
@@ -128,7 +133,7 @@ VRML::Error->import;
 
 sub parse {
 	my($type,$p) = @_;
-	$_[2] =~ /\G\s*($Float)\s+($Float)\s+($Float)\b/ogsc 
+	$_[2] =~ /\G\s*($Float)\s+($Float)\s+($Float)/ogsc 
 		or parsefail($_[2],"Didn't match SFColor");
 	return [$1,$2,$3];
 }
@@ -149,18 +154,22 @@ sub cfunc {
 		SV **b;
 		int i;
 		if(!SvROK($_[2])) {
-			die(\"Help! SFColor without being ref\");
-		}
-		if(SvTYPE(SvRV($_[2])) != SVt_PVAV) {
-			die(\"Help! SFColor without being arrayref\");
-		}
-		a = (AV *) SvRV($_[2]);
-		for(i=0; i<3; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die(\"Help: SFColor b == 0\");
+			$_[1].c[0] = 0;
+			$_[1].c[1] = 0;
+			$_[1].c[2] = 0;
+			/* die(\"Help! SFColor without being ref\"); */
+		} else {
+			if(SvTYPE(SvRV($_[2])) != SVt_PVAV) {
+				die(\"Help! SFColor without being arrayref\");
 			}
-			$_[1].c[i] = SvNV(*b);
+			a = (AV *) SvRV($_[2]);
+			for(i=0; i<3; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die(\"Help: SFColor b == 0\");
+				}
+				$_[1].c[i] = SvNV(*b);
+			}
 		}
 	}
 	"
@@ -174,6 +183,7 @@ sub jset {return {"" => "red=0; green=0; blue=0;",
 	"float colors[]" => "red = colors[0]; green=colors[1]; blue=colors[2];",
 	"float r,float g,float b" => "red=r; green=g; blue=b;"
 }}
+sub jeaiset { return "float colors[]" }
 sub jset_str {"
    	StringTokenizer tok = new StringTokenizer(s);
 	red = 	new Float(tok.nextToken()).floatValue();
@@ -266,12 +276,13 @@ VRML::Error->import();
 
 sub parse {
 	my($type,$p) = @_;
-	$_[2] =~ /\G\s*($Float)\s+($Float)\b/gsc 
+	$_[2] =~ /\G\s*($Float)\s+($Float)/gsc 
 		or parsefail($_[2],"didn't match SFVec2f");
 	return [$1,$2];
 }
 
 sub print {print join ' ',@{$_[1]}}
+sub as_string {join ' ',@{$_[1]}}
 
 sub cstruct {return "struct SFVec2f {
 	float c[2]; };"}
@@ -284,18 +295,21 @@ sub cfunc {
 		SV **b;
 		int i;
 		if(!SvROK($_[2])) {
-			die(\"Help! SFVec2f without being ref\");
-		}
-		if(SvTYPE(SvRV($_[2])) != SVt_PVAV) {
-			die(\"Help! SFVec2f without being arrayref\");
-		}
-		a = (AV *) SvRV($_[2]);
-		for(i=0; i<2; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die(\"Help: SFColor b == 0\");
+			$_[1].c[0] = 0;
+			$_[1].c[1] = 0;
+			/* die(\"Help! SFVec2f without being ref\"); */
+		} else {
+			if(SvTYPE(SvRV($_[2])) != SVt_PVAV) {
+				die(\"Help! SFVec2f without being arrayref\");
 			}
-			$_[1].c[i] = SvNV(*b);
+			a = (AV *) SvRV($_[2]);
+			for(i=0; i<2; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die(\"Help: SFColor b == 0\");
+				}
+				$_[1].c[i] = SvNV(*b);
+			}
 		}
 	}
 	"
@@ -307,6 +321,7 @@ sub jset {return {"" => "x=0; y=0;",
 	"float coords[]" => "x = colors[0]; y=colors[1];",
 	"float x2,float y2" => "x=x2; y=y2;"
 }}
+sub jeaiset { "float coords[]" }
 sub jset_str {"
    	StringTokenizer tok = new StringTokenizer(s);
 	x = 	new Float(tok.nextToken()).floatValue();
@@ -332,7 +347,7 @@ VRML::Error->import();
 
 sub parse {
 	my($type,$p) = @_;
-	$_[2] =~ /\G\s*($Float)\s+($Float)\s+($Float)\s+($Float)\b/ogsc 
+	$_[2] =~ /\G\s*($Float)\s+($Float)\s+($Float)\s+($Float)/ogsc 
 		or VRML::Error::parsefail($_[2],"not proper rotation");
 	return [$1,$2,$3,$4];
 }
@@ -374,10 +389,12 @@ sub rot_multvec {
 		$_[3].c[0] = $_[2].c[0] + s * c1[0] + (1-c)*c2[0];
 		$_[3].c[1] = $_[2].c[1] + s * c1[1] + (1-c)*c2[1];
 		$_[3].c[2] = $_[2].c[2] + s * c1[2] + (1-c)*c2[2];
+		/*
 		printf("ROT MULTVEC (%f %f %f : %f) (%f %f %f) -> (%f %f %f)\\n",
 			$_[1].r[0], $_[1].r[1], $_[1].r[2], $_[1].r[3],
 			$_[2].c[0], $_[2].c[1], $_[2].c[2],
 			$_[3].c[0], $_[3].c[1], $_[3].c[2]);
+		*/
 	~
 }
 
@@ -392,18 +409,23 @@ sub cfunc {
 		SV **b;
 		int i;
 		if(!SvROK($_[2])) {
-			die(\"Help! SFRotation without being ref\");
-		}
-		if(SvTYPE(SvRV($_[2])) != SVt_PVAV) {
-			die(\"Help! SFRotation without being arrayref\");
-		}
-		a = (AV *) SvRV($_[2]);
-		for(i=0; i<4; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die(\"Help: SFColor b == 0\");
+			$_[1].r[0] = 0;
+			$_[1].r[1] = 1;
+			$_[1].r[2] = 0;
+			$_[1].r[3] = 0;
+			/* die(\"Help! SFRotation without being ref\"); */
+		} else {
+			if(SvTYPE(SvRV($_[2])) != SVt_PVAV) {
+				die(\"Help! SFRotation without being arrayref\");
 			}
-			$_[1].r[i] = SvNV(*b);
+			a = (AV *) SvRV($_[2]);
+			for(i=0; i<4; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die(\"Help: SFColor b == 0\");
+				}
+				$_[1].r[i] = SvNV(*b);
+			}
 		}
 	}
 	"
@@ -471,11 +493,13 @@ return ["",qq~
 		v12dp /= v1len * v2len;
 		$_[1].r[3] = 
 			atan2(sqrt(1-v12dp*v12dp),v12dp);
+		/* 
 		printf("V12cons: (%f %f %f) (%f %f %f) %f %f %f (%f %f %f : %f)\n",
 			vec1->v.c[0], vec1->v.c[1], vec1->v.c[2],
 			vec2->v.c[0], vec2->v.c[1], vec2->v.c[2],
 			v1len, v2len, v12dp, 
 			$_[1].r[0], $_[1].r[1], $_[1].r[2], $_[1].r[3]);
+		*/
 	} else if(JS_ConvertArguments(cx,argc,argv,"o d",
 		&ob1,&(pars[0])) == JS_TRUE) {
 		TJL_SFVec3f *vec;
@@ -527,6 +551,7 @@ sub jalloc {""}
 sub jset {return {"" => "v = false;",
 	"boolean value" => "v = value;",
 }}
+sub jeaiset { "boolean value" }
 sub jset_str { q~
    	s = s.trim();
 	if(s.equals("1")) {v = true;}
@@ -535,7 +560,7 @@ sub jset_str { q~
 ~}
 sub jget {return {"boolean" => "return v;"}}
 sub jcopy {"v = f.getValue();"}
-sub jstr {'if(v) return "1"; else return "0";'}
+sub jstr {'return (v? "1": "0");'}
 sub jclonearg {"v"}
 sub toj {return $_[1]}
 sub fromj {return $_[1]}
@@ -581,7 +606,7 @@ sub parse {
 		$a =~ s/^\s*//;
 		$a =~ s/\s*$//;
 		# XXX Errors ???
-		my @a = split /\s+|\s*,\s*/,$a;
+		my @a = split /\s*,\s*|\s+/,$a;
 		pop @a if $a[-1] =~ /^\s+$/;
 		# while($_[2] !~ /\G\s*,?\s*\]\s*/gsc) {
 		# 	$_[2] =~ /\G\s*,\s*/gsc; # Eat comma if it is there...
@@ -618,10 +643,10 @@ sub parse {
 		$_[2] =~ /\G([^\]]*)\]/gsc or
 		 VRML::Error::parsefail($_[2],"unterminated MFFloat");
 		my $a = $1;
-		$a =~ s/^\s*//;
-		$a =~ s/\s*$//;
+		$a =~ s/^\s*//s;
+		$a =~ s/\s*$//s;
 		# XXX Errors ???
-		my @a = split /\s+|\s*,\s*/,$a;
+		my @a = split /\s*,\s*|\s+/,$a;
 		pop @a if $a[-1] =~ /^\s+$/;
 		# while($_[2] !~ /\G\s*,?\s*\]\s*/gsc) {
 		# 	$_[2] =~ /\G\s*,\s*/gsc; # Eat comma if it is there...
@@ -698,24 +723,27 @@ sub cfunc {
 		int iM;
 		int lM;
 		if(!SvROK($_[2])) {
-			die(\"Help! Multi without being ref\");
-		}
-		if(SvTYPE(SvRV($_[2])) != SVt_PVAV) {
-			die(\"Help! Multi without being arrayref\");
-		}
-		aM = (AV *) SvRV($_[2]);
-		lM = av_len(aM)+1;
-		/* XXX Free previous p */
-		$_[1].n = lM;
-		$_[1].p = malloc(lM * sizeof(*($_[1].p)));
-		/* XXX ALLOC */
-		for(iM=0; iM<lM; iM++) {
-			bM = av_fetch(aM, iM, 1); /* LVal for easiness */
-			if(!bM) {
-				die(\"Help: Multi $r bM == 0\");
+			$_[1].n = 0;
+			$_[1].p = 0;
+			/* die(\"Help! Multi without being ref\"); */
+		} else {
+			if(SvTYPE(SvRV($_[2])) != SVt_PVAV) {
+				die(\"Help! Multi without being arrayref\");
 			}
-			$cm
-			$su
+			aM = (AV *) SvRV($_[2]);
+			lM = av_len(aM)+1;
+			/* XXX Free previous p */
+			$_[1].n = lM;
+			$_[1].p = malloc(lM * sizeof(*($_[1].p)));
+			/* XXX ALLOC */
+			for(iM=0; iM<lM; iM++) {
+				bM = av_fetch(aM, iM, 1); /* LVal for easiness */
+				if(!bM) {
+					die(\"Help: Multi $r bM == 0\");
+				}
+				$cm
+				$su
+			}
 		}
 	}
 	"
@@ -729,15 +757,22 @@ sub parse {
 	if($_[2] =~ /\G\s*\[\s*/gsc) {
 		my @a;
 		while($_[2] !~ /\G\s*,?\s*\]\s*/gsc) {
-			$_[2] =~ /\G\s*,\s*/gsc; # Eat comma if it is there...
+			# print "POS0: ",(pos $_[2]),"\n";
+			# removing $r = causes this to be evaluated
+			# in array context -> fail.
+			my $r = ($_[2] =~ /\G\s*,\s*/gsc); # Eat comma if it is there...
+			# my $wa = wantarray;
+			# print "R: '$r' (WA: $wa)\n";
+			# print "POS1: ",(pos $_[2]),"\n";
 			my $v =  $stype->parse($p,$_[2],$_[3]);
+			# print "POS2: ",(pos $_[2]),"\n";
 			push @a, $v if defined $v; 
 		}
 		return \@a;
 	} else {
 		my $res = [$stype->parse($p,$_[2],$_[3])];
 		# Eat comma if it is there
-		$_[2] =~ /\G\s*,\s*/gsc;
+		my $r = $_[2] =~ /\G\s*,\s*/gsc;
 		return $res;
 	}
 }

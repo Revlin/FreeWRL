@@ -6,3 +6,6 @@ all:
 
 tjl:
 	$(JAVAC) -classpath /usr/lib/jdk1.1/lib/classes.zip:./classes/ -d ./classes/ Tjl*.java
+
+eai::
+	(cd eai; make)

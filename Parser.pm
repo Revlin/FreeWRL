@@ -1,6 +1,6 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 # Parser.pm -- implement a VRML parser
@@ -16,7 +16,8 @@ require Exporter;
 @EXPORT=qw/parsefail parsewarnstd $Word $Float $Integer/;
 
 # Define the RE for a VRML word.
-$Word = q|[^-+0-9"'#,\.\[\]\\{}\0-\x20][^"'#,\.\{\}\\{}\0-\x20]*|;
+# $Word = q|[^\-+0-9"'#,\.\[\]\\{}\0-\x20][^"'#,\.\{\}\\{}\0-\x20]*|;
+$Word = q|[^\x30-\x39\x0-\x20\x22\x23\x27\x2b\x2c\x2d\x2e\x5b\x5c\x5d\x7b\x7d\x7f][^\x0-\x20\x22\x23\x27\x2c\x2e\x5b\x5c\x5d\x7b\x7d\x7f]*|;
 
 # Spec:
 # ([+/-]?(
@@ -32,7 +33,7 @@ $Word = q|[^-+0-9"'#,\.\[\]\\{}\0-\x20][^"'#,\.\{\}\\{}\0-\x20]*|;
 $Float = q~[\deE+\-\.]+~;
 
 # ([+\-]?(([0-9]+)|(0[xX][0-9a-fA-F]+))) 
-$Integer = q~[\da-fA-FxX+\-]~;
+$Integer = q~[\da-fA-FxX+\-]+~;
 
 sub parsefail {
 	my $p = pos $_[0];
@@ -61,9 +62,11 @@ sub parse {
 	my($scene,$text) = @_;
 	# XXX Inside string??
 	$text =~ s/#.*\n//g;
+	$text =~ s/#.*$//g;
 	my @a;
 	while($text !~ /\G\s*$/gsc) {
 		my $n = parse_statement($scene,$text);
+		my $r = ($text =~ /\G\s*,\s*/gsc); # Eat comma if it is there...
 		if(defined $n) {push @a, $n}
 	}
 	$scene->topnodes(\@a);
@@ -274,7 +277,7 @@ sub parse {
 			if $VRML::verbose::parse;
 		# Apparently, some people use it :(
 		$_[2] =~ /\G\s*,\s*/gsc and parsewarnstd($_[2], "Comma not really right");
-		$_[2] =~ /\G\s*($Word)\s+/gsc or parsefail($_[2],"Node body","field name not found");
+		$_[2] =~ /\G\s*($Word)\b\s*/gsc or parsefail($_[2],"Node body","field name not found");
 		print "FIELD: '$1'\n"
 			if $VRML::verbose::parse;
 		my $f = $1;

@@ -1,13 +1,13 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 #
 # Config system idea from PDL
 #
 
-$VERSION = "0.10";
+$VERSION = "0.14";
 
 BEGIN{
  eval "use 5.004";
@@ -81,12 +81,13 @@ WriteMakefile(
     DEFINE => $VRML_CONFIG{OPENGL_DEFINE},
     INC => $VRML_CONFIG{OPENGL_INC},
     EXE_FILES => ['freewrl'],
+    MAN1PODS => { 'freewrl' => '$(INST_MAN1DIR)/freewrl.$(MAN1EXT)' },
     PL_FILES => {'freewrl.PL' => 'freewrl'},
 );
 
 sub MY::postamble {
 	'
-VRMLFunc.pm VRMLFunc.xs: VRMLC.pm VRMLFields.pm VRMLNodes.pm VRMLRend.pm
+VRMLFunc.pm VRMLFunc.xs: VRMLC.pm VRMLFields.pm VRMLNodes.pm VRMLRend.pm VRMLExtrusion.pm
 	$(PERL) VRMLC.pm
 '
 }

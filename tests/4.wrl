@@ -1,4 +1,9 @@
 #VRML V2.0 utf8
+# Copyright (C) 1998 Tuomas J. Lukka
+# DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
+# See the GNU Library General Public License (file COPYING in the distribution)
+# for conditions of use and redistribution.
+
 
 DEF TIMER TimeSensor 
   {cycleInterval 6 startTime 0 stopTime -1 enabled TRUE loop TRUE}

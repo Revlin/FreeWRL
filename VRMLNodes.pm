@@ -1,6 +1,6 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 # Default is exposedfield - third argument says what it is if otherwise:
@@ -47,24 +47,43 @@ now that the browser can get files from the internet.
 
 sub init_image {
 	my($name, $urlname, $t, $f, $scene) = @_;
-		my $purl = $t->{PURL} = $scene->get_url;
-		$purl =~ /^(.*\/)[^\/]+$/;
-		my $urls = $f->{$urlname};
-		if($#$urls == -1) {return}
-		my $url = $1.$f->{$urlname}[0]; # XXXX!!
+	my $purl = $t->{PURL} = $scene->get_url;
+	my $urls = $f->{$urlname};
+	if($#{$urls} == -1) {
+		$f->{__depth.$name} = 0;
+		$f->{__x.$name} = 0;
+		$f->{__y.$name} = 0;
+		$f->{__data.$name} = "";
+		return;
+	}
+	$urls->[0] =~ /\.(\w*)$/ or die("Suffixless image '$urls->[0]' (@$urls)?");
+	my $suffix = $1;
+	my $file = VRML::URL::get_relative($purl, $urls->[0], 1);
+	my ($hei,$wi,$dep,$dat);
+	if($suffix =~ /jpe?g/i) {
 		eval 'require VRML::JPEG';
 		if($@) {die("Cannot open image textures: '$@'")}
-		my ($hei,$wi,$dep,$dat);
-		print "Reading jpeg file '$url'\n";
+		print "Reading jpeg file '$file'\n";
 		$dat = "";
-		if(!VRML::JPEG::read_file($url,$dat,$dep,$hei,$wi)) {
+		if(!VRML::JPEG::read_file($file,$dat,$dep,$hei,$wi)) {
 			die("Couldn't read jpeg file");
 		}
-		$f->{__depth.$name} = $dep;
-		$f->{__x.$name} = $wi;
-		$f->{__y.$name} = $hei;
-		$f->{__data.$name} = $dat;
-	print"GOT IMAGE $urlname into $name ($dep $wi $hei)\n";
+	} elsif($suffix =~ /png/i) {
+		eval 'require VRML::PNG';
+		if($@) {die("Cannot open image textures: '$@'")}
+		print "Reading png file '$file'\n";
+		$dat = "";
+		if(!VRML::PNG::read_file($file,$dat,$dep,$hei,$wi)) {
+			die("Couldn't read png file");
+		}
+	} else {
+		die("Invalid image suffix: '$suffix'\n");
+	} 
+	$f->{__depth.$name} = $dep;
+	$f->{__x.$name} = $wi;
+	$f->{__y.$name} = $hei;
+	$f->{__data.$name} = $dat;
+	print"GOT IMAGE $urlname into $name [$file] ($dep $wi $hei)\n";
 }
 
 my $protono;
@@ -76,6 +95,8 @@ my %MAP = (
 	"out" => "eventOut"
 );
 
+# XXX When this changes, change Scene.pm: VRML::Scene::newp too --
+# the members must correspond
 sub new {
 	my($type,$name,$fields,$eventsubs) = @_;
 	my $this = bless {
@@ -97,7 +118,12 @@ sub new {
 				$this->{EventIns}{"set_".$_} = $_;
 			}
 		} else {
-			my $io = ucfirst $t;
+			my $io;
+			if($t =~ /[oO]ut$/) {
+				$io = Out;
+			} else {
+				$io = In;
+			}
 			$this->{Event.$io."s"}{$_} = $_;
 		}
 		if(!defined $t) {
@@ -145,6 +171,11 @@ sub new {
 	SphereSensor
 /;
 
+%VRML::Nodes::sensitive = map {($_,1)} qw/
+	ProximitySensor
+/;
+
+
 
 %VRML::Nodes = (
 # Internal structures, to store def and use in the right way
@@ -160,7 +191,7 @@ Shape => new VRML::NodeType ("Shape",
 Appearance => new VRML::NodeType ("Appearance",
 	{material => [SFNode,NULL],
 	 texture => [SFNode,NULL],
-	# texturetransform => [SFNode,NULL]
+	textureTransform => [SFNode,NULL]
 	 }
 ),
 
@@ -223,6 +254,10 @@ Normal => new VRML::NodeType("Normal",
 	{vector => [MFVec3f, []]}
 ),
 
+TextureCoordinate => new VRML::NodeType("TextureCoordinate",
+	{point => [MFVec2f, []]}
+),
+
 
 ElevationGrid => new VRML::NodeType("ElevationGrid",
 	{height => [MFFloat, []],
@@ -234,6 +269,9 @@ ElevationGrid => new VRML::NodeType("ElevationGrid",
 	 creaseAngle => [SFFloat, 0],
 	 color => [SFNode, NULL],
 	 normal => [SFNode, NULL],
+
+	 colorPerVertex => [SFBool, 1],
+	 normalPerVertex => [SFBool, 1],
 	}
 ),
 
@@ -345,6 +383,14 @@ Transform => new VRML::NodeType ("Transform",
 	},
 ),
 
+TextureTransform => new VRML::NodeType ("TextureTransform",
+	{center => [SFVec2f, [0,0]],
+	 rotation => [SFFloat, 0],
+	 scale => [SFVec2f, [1,1]],
+	 translation => [SFVec2f, [0,0]],
+	}
+),
+
 # Complete 
 Group => new VRML::NodeType("Group",
 	{children => [MFNode, []],
@@ -389,7 +435,7 @@ ScalarInterpolator => new VRML::NodeType("ScalarInterpolator",
 	},
 	{Initialize => sub {
 		my($t,$f) = @_;
-		$f->{value_changed} = 
+		$t->{Fields}->{value_changed} = 
 		 (defined $f->{keyValue}[0] ?
 		 	$f->{keyValue}[0] : 0);
 		return [$t, value_changed, $f->{keyValue}[0]];
@@ -436,7 +482,7 @@ OrientationInterpolator => new VRML::NodeType("OrientationInterpolator",
 	{Initialize => sub {
 		my($t,$f) = @_;
 		# XXX Correct?
-		$f->{value_changed} = ($f->{keyValue}[0] or [0,0,1,0]);
+		$t->{Fields}{value_changed} = ($f->{keyValue}[0] or [0,0,1,0]);
 		return ();
 		# return [$t, value_changed, $f->{keyValue}[0]];
 	 },
@@ -494,7 +540,7 @@ ColorInterpolator => new VRML::NodeType("ColorInterpolator",
     @x = 
 	{Initialize => sub {
 		my($t,$f) = @_;
-		$f->{value_changed} = ($f->{keyValue}[0] or [0,0,0]);
+		$t->{Fields}->{value_changed} = ($f->{keyValue}[0] or [0,0,0]);
 		return ();
 		# XXX DON'T DO THIS!
 		# return [$t, value_changed, $f->{keyValue}[0]];
@@ -556,7 +602,11 @@ CoordinateInterpolator => new VRML::NodeType("ColorInterpolator",
     @x = 
 	{Initialize => sub {
 		my($t,$f) = @_;
-		$f->{value_changed} = ($f->{keyValue}[0] or [0,0,0]);
+		# Can't do $f->{} = .. because that sends an event.
+		my $nkv = scalar(@{$f->{keyValue}}) / 
+				scalar(@{$f->{key}});
+		$t->{Fields}->{value_changed} = 
+		   ([@{$f->{keyValue}}[0..$nkv-1]] or []);
 		return ();
 		# XXX DON'T DO THIS!
 		# return [$t, value_changed, $f->{keyValue}[0]];
@@ -597,7 +647,7 @@ CoordinateInterpolator => new VRML::NodeType("ColorInterpolator",
 				}
 			}
 		}
-		print "SCALAR: NEW_VALUE $v ($k $kv $f->{set_fraction}, $k->[0] $k->[1] $k->[2] $kv->[0] $kv->[1] $kv->[2])\n"
+		print "CoordinateI: NEW_VALUE $v ($k $kv $f->{set_fraction}, $k->[0] $k->[1] $k->[2] $kv->[0] $kv->[1] $kv->[2])\n"
 			if $VRML::verbose::interp;
 		return [$t, value_changed, $v];
 	}
@@ -790,6 +840,7 @@ PlaneSensor => new VRML::NodeType("PlaneSensor",
 			$t->{OrigPoint} = $pos;
 			$f->{isActive} = 1;
 		} elsif($button eq "RELEASE") {
+			print "PLREL!\n";
 			undef $t->{OrigPoint};
 			$t->{isActive} = 0;
 			if($f->{autoOffset}) {
@@ -822,7 +873,7 @@ PlaneSensor => new VRML::NodeType("PlaneSensor",
 					}
 				}
 			}
-			print "TRC: @$tr\n";
+			print "TRC: (@$tr) (@$pos)\n";
 			$f->{translation_changed} = $tr;
 		}
 	}
@@ -919,18 +970,69 @@ SphereSensor => new VRML::NodeType("SphereSensor",
 	}
 ),
 
-
-
-NavigationInfo => new VRML::NodeType("NavigationInfo",
-	{type => [MFString, ""],
-	 headlight => [SFBool, 1],
-	 avatarSize => [MFFloat, [0.25, 1.6, 0.75]],
-	 visibilityLimit => [SFFloat, 0.0],
-	 set_bind => [SFBool, undef, eventIn],
-	 isBound => [SFBool, undef, eventOut],
-	 speed => [SFFloat, 1.0],
-	 } # Unimpl
+VisibilitySensor => new VRML::NodeType("VisibilitySensor",
+	{center => [SFVec3f, [0,0,0]],
+	 enabled => [SFBool, 1],
+	 size => [SFVec3f, [0,0,0]],
+	 enterTime => [SFTime, undef, out],
+	 exitTime => [SFTime, undef, out],
+	 isActive => [SFBool, undef, out],
+	},
+	{
+	Initialize => sub {
+		my($t,$f,$time,$scene) = @_;
+		if($f->{enabled}) {
+			return ([$t, enterTime, $time],
+				[$t, isActive, 1]);
+		}
+		return ();
+	}
+	}
 ),
+
+ProximitySensor => new VRML::NodeType("ProximitySensor",
+	{center => [SFVec3f, [0,0,0]],
+	 size => [SFVec3f, [0,0,0]],
+	 enabled => [SFBool, 1],
+	 enterTime => [SFTime, undef, out],
+	 exitTime => [SFTime, undef, out],
+	 isActive => [SFBool, undef, out],
+	 position_changed => [SFVec3f, undef, out],
+	 orientation_changed => [SFRotation, undef, out],
+    # These fields are used for the info.
+         __hit => [SFInt32, 0],
+	 __t1 => [SFVec3f, [10000000,0,0]],
+	 __t2 => [SFRotation, [0,1,0,0]],
+	},
+	{
+	 ClockTick => sub {
+	 	my($t,$f,$tick) = @_;
+	#	print "PRCT: '$f->{enabled}' '$t->{BackEnd}'\n"
+	#		if($VRML::verbose::prox);
+		return if !$f->{enabled};
+		return if !$t->{BackEnd};
+		# Ugly - should abstract
+		my $r = $t->{BackEnd}->get_proximitysensor_stuff($t->{BackNode});
+		if($VRML::verbose::prox) {
+			print "PROX: $r->[0] ($r->[1][0] $r->[1][1] $r->[1][2]) ($r->[2][0] $r->[2][1] $r->[2][2] $r->[2][3])\n";
+		}
+		if($r->[0]) {
+			if(!$f->{isActive})  {
+				$f->{isActive} = 1;
+				$f->{enterTime} = $tick;
+			}
+			$f->{position_changed} = $r->[1];
+			$f->{orientation_changed} = $r->[2];
+		} else {
+			if($f->{isActive}) {
+				$f->{isActive} = 0;
+				$f->{exitTime} = $tick;
+			}
+		}
+	 }
+	}
+),
+
 
 DirectionalLight => new VRML::NodeType("DirectionalLight",
 	{ambientIntensity => [SFFloat, 0],
@@ -938,6 +1040,34 @@ DirectionalLight => new VRML::NodeType("DirectionalLight",
 	 direction => [SFVec3f, [0,0,-1]],
 	 intensity => [SFFloat, 1],
 	 on => [SFBool, 1]
+	}
+),
+
+PointLight => new VRML::NodeType("DirectionalLight",
+	{ambientIntensity => [SFFloat, 0],
+	 color => [SFColor, [1,1,1]],
+	 direction => [SFVec3f, [0,0,-1]],
+	 intensity => [SFFloat, 1],
+	 on => [SFBool, 1],
+
+	 attenuation => [SFVec3f, [1,0,0]],
+	 location => [SFVec3f, [0,0,0]],
+	 radius => [SFFloat, 100],
+	}
+),
+
+SpotLight => new VRML::NodeType("DirectionalLight",
+	{ambientIntensity => [SFFloat, 0],
+	 color => [SFColor, [1,1,1]],
+	 direction => [SFVec3f, [0,0,-1]],
+	 intensity => [SFFloat, 1],
+	 on => [SFBool, 1],
+
+	 attenuation => [SFVec3f, [1,0,0]],
+	 beamWidth => [SFFloat, 1.570796],
+	 cutOffAngle => [SFFloat, 0.785398],
+	 location => [SFVec3f, [0,0,0]],
+	 radius => [SFFloat, 100],
 	}
 ),
 
@@ -983,25 +1113,37 @@ Viewpoint => new VRML::NodeType("Viewpoint",
 	{
 	Initialize => sub {
 		my($t,$f) = @_;
-		if($t->{Priv}{initbound}) {
-			print "SEND_INITBOUND!!!\n"
-				if $VRML::verbose;
-			return [$t, isBound, 1];
-		}
 		return ();
 	},
 	WhenBound => sub {
 		my($t,$scene,$revealed) = @_;
-		print "VP_BOUND!\n";
+		print "VP_BOUND!\n" if $VRML::verbose::bind;
 		$t->{BackEnd}->bind_viewpoint($t,
 			($revealed?$t->{VP_Info}:undef));
 	},
 	WhenUnBound => sub {
 		my($t,$scene) = @_;
-		print "VP_UNBOUND!\n";
+		print "VP_UNBOUND!\n" if $VRML::verbose::bind;
 		$t->{VP_Info} = $t->{BackEnd}->unbind_viewpoint($t);
 	}
 	}
+),
+
+NavigationInfo => new VRML::NodeType("NavigationInfo",
+	{type => [MFString, ""],
+	 headlight => [SFBool, 1],
+	 avatarSize => [MFFloat, [0.25, 1.6, 0.75]],
+	 visibilityLimit => [SFFloat, 0.0],
+	 set_bind => [SFBool, undef, eventIn],
+	 isBound => [SFBool, undef, eventOut],
+	 speed => [SFFloat, 1.0],
+	 },
+	{
+	 	WhenBound => sub {
+			my($t) = @_;
+			$t->{BackEnd}->bind_navi_info($t);
+		},
+	},
 ),
 
 # Complete
@@ -1014,13 +1156,13 @@ Script => new VRML::NodeType("Script",
 	{
 		Initialize => sub {
 			my($t,$f,$time,$scene) = @_;
-			print "ScriptInit $_[0] $_[1]!!\n";
-			print "Parsing script\n";
+			print "ScriptInit $_[0] $_[1]!!\n" if $VRML::verbose::script;
+			print "Parsing script\n" if $VRML::verbose::script;
 			my $h;
 			my $Browser = $scene->get_browser();
 			for(@{$f->{url}}) {
 				my $str = $_;
-				print "TRY $str\n";
+				print "TRY $str\n" if $VRML::verbose::script;
 				if(s/^perl_tjl_xxx://) {
 					check_perl_script();
 					$h = eval "({$_})";
@@ -1030,11 +1172,11 @@ Script => new VRML::NodeType("Script",
 					last;
 				} elsif(s/^perl_tjl_xxx1://) {
 					{
-					print "XXX1 script\n";
+					print "XXX1 script\n" if $VRML::verbose::script;
 					check_perl_script();
 					my $t = $t->{RFields};
 					$h = eval "({$_})";
-					print "Evaled: $h\n";
+					print "Evaled: $h\n" if $VRML::verbose::script;
 					if($@) {
 						die "Inv script '$@'"
 					}
@@ -1066,11 +1208,11 @@ Script => new VRML::NodeType("Script",
 			if(!defined $h and !defined $t->{J}) {
 				die "Didn't found a valid perl_tjl_xxx(1) or java script";
 			}
-			print "GOT EVS: ",(join ',',keys %$h),"\n";
+			print "GOT EVS: ",(join ',',keys %$h),"\n" if $VRML::verbose::script;
 			$t->{ScriptScript} = $h;
 			my $s;
 			if(($s = $t->{ScriptScript}{"initialize"})) {
-				print "CALL $s\n"
+				print "CALL $s\n if $VRML::verbose::script"
 				 if $VRML::verbose::script;
 				return &{$s}();
 			} elsif($t->{J}) {
@@ -1079,7 +1221,7 @@ Script => new VRML::NodeType("Script",
 			return ();
 		},
 		url => sub {
-			print "ScriptURL $_[0] $_[1]!!\n";
+			print "ScriptURL $_[0] $_[1]!!\n" if $VRML::verbose::script;
 			die "URL setting not enabled";
 		},
 		__any__ => sub {
@@ -1125,32 +1267,21 @@ Inline => new VRML::NodeType("Inline",
 		my($t,$f,$time,$scene) = @_;
 		# XXXXXX!!
 		my $purl = $scene->get_url();
-		my @s = @{$f->{url}};
-		my $p;
-		for(@s) {
-			my $s = $purl;
-			$s =~ s/[^\/]+$/$_/;
-			if(-e $s) {
-				$p = $scene->new_proto("__proto".$protono++);
-				my $t;
-				{local $/; undef $/;
-				open F, $s or die("Cannot open file '$s'");
-				$t = <F>;
-				close F;
-				}
-				print "LOAD_FILE $s $p $t\n";
-				VRML::Parser::parse($p, $t);
-				last;
-			} else {
-				warn("Couldn't load '$s'");
-			}
-		}
+
+		my $urls = $f->{url};
+		my ($text,$url) = VRML::URL::get_relative($purl, $urls->[0]);
+
+		$p = $scene->new_proto("__proto".$protono++);
+		$p->set_url($url);
+		VRML::Parser::parse($p, $text);
+
 		if(!defined $p) {
 			die("Inline not found");
 		}
 		$t->{ProtoExp} = $p;
 		$t->{ProtoExp}->set_parentnode($t);
 		$t->{ProtoExp}->make_executable();
+		$t->{ProtoExp}{IsInline} = 1;
 		$t->{IsProto} = 1;
 		return ();
 	}

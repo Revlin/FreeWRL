@@ -1,4 +1,8 @@
-#VRML v2.0 utf8
+#VRML V2.0 utf8
+# Copyright (C) 1998 Tuomas J. Lukka
+# DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
+# See the GNU Library General Public License (file COPYING in the distribution)
+# for conditions of use and redistribution.
 
 # Chain of boxes
 
@@ -16,7 +20,7 @@ DEF GR Transform {
 		 }
 		}
 		geometry Text { string [
-		"Growth"
+		"Dynamic creation"
 		]}
 	   }
 	]
@@ -28,6 +32,36 @@ DEF CRS Script {
 	field MFNode onod []
 	field SFInt32 count 0
 	url [
+	"javascript:
+	    function tick(val,time) {
+		a = count++;
+		if(a<3) {return 0;};
+		a -= 3;
+		n = Browser.createVrmlFromString(
+\"Shape { appearance Appearance { material Material { diffuseColor 0.8 0 0 } } geometry Box { size 0.8 0.8 0.8 } } \"
+		);
+		nod = n;
+	   }
+		// function tick {
+		// 	koo = Browser.createVrmlFromString(
+		// 		\"Transform {
+		// 		  translation $c 0 0
+		// 		  children [
+		// 		   Shape {
+		// 			appearance Appearance {
+		// 			 material Material {
+		// 			 	diffuseColor 0.8 0 0
+		// 			 }
+		// 			}
+		// 			geometry Box { size 0.8 0.8 0.8 }
+		// 		   }
+		// 		  ]
+		// 		 } \"
+		// 	);
+		// 	onod[onod.length] = koo[0];
+		// 	nod=onod;
+		// }
+	"
 	"perl_tjl_xxx1:
 		tick => sub {
 			my $c = $t->{count} ++;

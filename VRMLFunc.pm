@@ -8,31 +8,10 @@ sub load_data {
 	my $n = \%VRML::CNodes;
  {
 		my $s = '';
-		my $v = get_Background_offsets($s);
-		@{$n->{Background}{Offs}}{"__y_left","__data_left","__depth_back","backUrl","__depth_top","topUrl","__y_back","__depth_bottom","__data_back","__x_top","bottomUrl","__y_top","__y_bottom","bindTime","__data_bottom","__depth_right","__x_right","isBound","__y_right","groundAngle","skyColor","__data_front","__x_left","__x_back","set_bind","__data_top","__x_bottom","groundColor","rightUrl","__data_right","__depth_front","frontUrl","__depth_left","leftUrl","skyAngle","__x_front","__y_front","_end_"} =
+		my $v = get_PointLight_offsets($s);
+		@{$n->{PointLight}{Offs}}{"radius","location","direction","attenuation","on","color","ambientIntensity","intensity","_end_"} =
 			unpack("i*",$s);
-		$n->{Background}{Virt} = $v;
- }
-	 {
-		my $s = '';
-		my $v = get_Viewpoint_offsets($s);
-		@{$n->{Viewpoint}{Offs}}{"fieldOfView","description","isBound","position","set_bind","bindTime","jump","orientation","_end_"} =
-			unpack("i*",$s);
-		$n->{Viewpoint}{Virt} = $v;
- }
-	 {
-		my $s = '';
-		my $v = get_Cone_offsets($s);
-		@{$n->{Cone}{Offs}}{"height","bottomRadius","side","bottom","_end_"} =
-			unpack("i*",$s);
-		$n->{Cone}{Virt} = $v;
- }
-	 {
-		my $s = '';
-		my $v = get_Text_offsets($s);
-		@{$n->{Text}{Offs}}{"fontStyle","__rendersub","length","maxExtent","string","_end_"} =
-			unpack("i*",$s);
-		$n->{Text}{Virt} = $v;
+		$n->{PointLight}{Virt} = $v;
  }
 	 {
 		my $s = '';
@@ -85,31 +64,10 @@ sub load_data {
  }
 	 {
 		my $s = '';
-		my $v = get_Group_offsets($s);
-		@{$n->{Group}{Offs}}{"children","bboxCenter","bboxSize","_end_"} =
-			unpack("i*",$s);
-		$n->{Group}{Virt} = $v;
- }
-	 {
-		my $s = '';
 		my $v = get_ElevationGrid_offsets($s);
-		@{$n->{ElevationGrid}{Offs}}{"zDimension","normal","height","creaseAngle","solid","xSpacing","xDimension","zSpacing","color","_end_"} =
+		@{$n->{ElevationGrid}{Offs}}{"zDimension","colorPerVertex","height","normal","creaseAngle","solid","xSpacing","xDimension","normalPerVertex","color","zSpacing","_end_"} =
 			unpack("i*",$s);
 		$n->{ElevationGrid}{Virt} = $v;
- }
-	 {
-		my $s = '';
-		my $v = get_Material_offsets($s);
-		@{$n->{Material}{Offs}}{"transparency","emissiveColor","shininess","diffuseColor","specularColor","ambientIntensity","_end_"} =
-			unpack("i*",$s);
-		$n->{Material}{Virt} = $v;
- }
-	 {
-		my $s = '';
-		my $v = get_Appearance_offsets($s);
-		@{$n->{Appearance}{Offs}}{"texture","material","_end_"} =
-			unpack("i*",$s);
-		$n->{Appearance}{Virt} = $v;
  }
 	 {
 		my $s = '';
@@ -117,13 +75,6 @@ sub load_data {
 		@{$n->{Extrusion}{Offs}}{"convex","scale","beginCap","creaseAngle","solid","endCap","orientation","ccw","crossSection","spine","_end_"} =
 			unpack("i*",$s);
 		$n->{Extrusion}{Virt} = $v;
- }
-	 {
-		my $s = '';
-		my $v = get_Shape_offsets($s);
-		@{$n->{Shape}{Offs}}{"appearance","geometry","_end_"} =
-			unpack("i*",$s);
-		$n->{Shape}{Virt} = $v;
  }
 	 {
 		my $s = '';
@@ -138,6 +89,90 @@ sub load_data {
 		@{$n->{ImageTexture}{Offs}}{"__data","url","__depth","repeatS","repeatT","__x","__y","_end_"} =
 			unpack("i*",$s);
 		$n->{ImageTexture}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_TextureCoordinate_offsets($s);
+		@{$n->{TextureCoordinate}{Offs}}{"point","_end_"} =
+			unpack("i*",$s);
+		$n->{TextureCoordinate}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_IndexedFaceSet_offsets($s);
+		@{$n->{IndexedFaceSet}{Offs}}{"texCoordIndex","normalIndex","convex","colorPerVertex","coord","colorIndex","texCoord","normal","creaseAngle","solid","ccw","coordIndex","color","_end_"} =
+			unpack("i*",$s);
+		$n->{IndexedFaceSet}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Background_offsets($s);
+		@{$n->{Background}{Offs}}{"__y_left","__data_left","__depth_back","backUrl","__depth_top","topUrl","__y_back","__depth_bottom","__data_back","__x_top","bottomUrl","__y_top","__y_bottom","bindTime","__data_bottom","__depth_right","__x_right","isBound","__y_right","groundAngle","skyColor","__data_front","__x_left","__x_back","set_bind","__data_top","__x_bottom","groundColor","rightUrl","__data_right","__depth_front","frontUrl","__depth_left","leftUrl","skyAngle","__x_front","__y_front","_end_"} =
+			unpack("i*",$s);
+		$n->{Background}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Text_offsets($s);
+		@{$n->{Text}{Offs}}{"fontStyle","__rendersub","length","maxExtent","string","_end_"} =
+			unpack("i*",$s);
+		$n->{Text}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Cone_offsets($s);
+		@{$n->{Cone}{Offs}}{"height","bottomRadius","side","bottom","_end_"} =
+			unpack("i*",$s);
+		$n->{Cone}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Viewpoint_offsets($s);
+		@{$n->{Viewpoint}{Offs}}{"fieldOfView","description","isBound","position","set_bind","bindTime","jump","orientation","_end_"} =
+			unpack("i*",$s);
+		$n->{Viewpoint}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_TextureTransform_offsets($s);
+		@{$n->{TextureTransform}{Offs}}{"rotation","scale","center","translation","_end_"} =
+			unpack("i*",$s);
+		$n->{TextureTransform}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Group_offsets($s);
+		@{$n->{Group}{Offs}}{"children","bboxCenter","bboxSize","_end_"} =
+			unpack("i*",$s);
+		$n->{Group}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_ProximitySensor_offsets($s);
+		@{$n->{ProximitySensor}{Offs}}{"center","__hit","__t1","__t2","orientation_changed","isActive","exitTime","size","enabled","enterTime","position_changed","_end_"} =
+			unpack("i*",$s);
+		$n->{ProximitySensor}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Material_offsets($s);
+		@{$n->{Material}{Offs}}{"transparency","emissiveColor","shininess","diffuseColor","specularColor","ambientIntensity","_end_"} =
+			unpack("i*",$s);
+		$n->{Material}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Appearance_offsets($s);
+		@{$n->{Appearance}{Offs}}{"texture","textureTransform","material","_end_"} =
+			unpack("i*",$s);
+		$n->{Appearance}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Shape_offsets($s);
+		@{$n->{Shape}{Offs}}{"appearance","geometry","_end_"} =
+			unpack("i*",$s);
+		$n->{Shape}{Virt} = $v;
  }
 	 {
 		my $s = '';
@@ -169,13 +204,6 @@ sub load_data {
  }
 	 {
 		my $s = '';
-		my $v = get_IndexedFaceSet_offsets($s);
-		@{$n->{IndexedFaceSet}{Offs}}{"texCoordIndex","normalIndex","convex","colorPerVertex","coord","colorIndex","texCoord","normal","creaseAngle","solid","ccw","coordIndex","color","_end_"} =
-			unpack("i*",$s);
-		$n->{IndexedFaceSet}{Virt} = $v;
- }
-	 {
-		my $s = '';
 		my $v = get_Transform_offsets($s);
 		@{$n->{Transform}{Offs}}{"rotation","center","scaleOrientation","bboxSize","scale","children","bboxCenter","translation","_end_"} =
 			unpack("i*",$s);
@@ -183,10 +211,10 @@ sub load_data {
  }
 	 {
 		my $s = '';
-		my $v = get_Color_offsets($s);
-		@{$n->{Color}{Offs}}{"color","_end_"} =
+		my $v = get_SpotLight_offsets($s);
+		@{$n->{SpotLight}{Offs}}{"direction","beamWidth","ambientIntensity","intensity","radius","location","attenuation","on","cutOffAngle","color","_end_"} =
 			unpack("i*",$s);
-		$n->{Color}{Virt} = $v;
+		$n->{SpotLight}{Virt} = $v;
  }
 	 {
 		my $s = '';
@@ -194,6 +222,13 @@ sub load_data {
 		@{$n->{LOD}{Offs}}{"level","center","range","_end_"} =
 			unpack("i*",$s);
 		$n->{LOD}{Virt} = $v;
+ }
+	 {
+		my $s = '';
+		my $v = get_Color_offsets($s);
+		@{$n->{Color}{Offs}}{"color","_end_"} =
+			unpack("i*",$s);
+		$n->{Color}{Virt} = $v;
  }
 	
 }

@@ -23,4 +23,4 @@ public SFBool(String s) throws Exception {
 	}public boolean getValue() {return v;}
 public void setValue(ConstSFBool f) {v = f.getValue(); value_touched();}
 		public void setValue(SFBool f) {v = f.getValue(); value_touched(); }
-public String toString() {if(v) return "1"; else return "0";}public Object clone() {SFBool _x = new SFBool(v); return _x;}}
+public String toString() {return (v? "1": "0");}public Object clone() {SFBool _x = new SFBool(v); return _x;}}

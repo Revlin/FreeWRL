@@ -1,6 +1,6 @@
 # Copyright (C) 1998 Tuomas J. Lukka
 # DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
-# See the GNU General Public License (file COPYING in the distribution)
+# See the GNU Library General Public License (file COPYING in the distribution)
 # for conditions of use and redistribution.
 
 
@@ -91,9 +91,11 @@ sub set_field_be {
 		$value = [map {$_->{CNode}} @{$value}];
 	}
 	my $ft = $VRML::Nodes{$type}{FieldTypes}{$field};
+	my $fk = $VRML::Nodes{$type}{FieldKinds}{$field};
+	# if($fk !~ /[fF]ield$/ and !defined $value) {return}
 	print "SETS: $node $type $field '$value' (",(
 		"ARRAY" eq ref $value ? join ',',@$value : $value ),") $ft $o\n"
-		if $VRML::verbose::be;
+		if $VRML::verbose::be && $field ne "__data";
 	&{"VRML::VRMLFunc::set_offs_$ft"}(
 		$node, $o, 
 		$value

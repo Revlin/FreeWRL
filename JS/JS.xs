@@ -14,7 +14,7 @@
 #define STACK_CHUNK_SIZE 8192
 
 
-static int verbose = 1;
+static int verbose = 0;
 
 static JSRuntime *rt;
 
@@ -64,7 +64,7 @@ browser_createVrmlFromString(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -75,7 +75,7 @@ browser_createVrmlFromString(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 		PUTBACK;
 		count = perl_call_method("brow_createVrmlFromString", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -106,7 +106,7 @@ browser_setDescription(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -117,7 +117,7 @@ browser_setDescription(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		PUTBACK;
 		count = perl_call_method("brow_setDescription", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -148,7 +148,7 @@ browser_getName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -159,7 +159,7 @@ browser_getName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		PUTBACK;
 		count = perl_call_method("brow_getName", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -190,7 +190,7 @@ browser_deleteRoute(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -201,7 +201,7 @@ browser_deleteRoute(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		PUTBACK;
 		count = perl_call_method("brow_deleteRoute", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -232,7 +232,7 @@ browser_loadURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -243,7 +243,7 @@ browser_loadURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		PUTBACK;
 		count = perl_call_method("brow_loadURL", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -274,7 +274,7 @@ browser_replaceWorld(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -285,7 +285,7 @@ browser_replaceWorld(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 		PUTBACK;
 		count = perl_call_method("brow_replaceWorld", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -316,7 +316,7 @@ browser_getCurrentSpeed(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -327,7 +327,7 @@ browser_getCurrentSpeed(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
 		PUTBACK;
 		count = perl_call_method("brow_getCurrentSpeed", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -358,7 +358,7 @@ browser_getVersion(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -369,7 +369,7 @@ browser_getVersion(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 		PUTBACK;
 		count = perl_call_method("brow_getVersion", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -400,7 +400,7 @@ browser_addRoute(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -411,7 +411,7 @@ browser_addRoute(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		PUTBACK;
 		count = perl_call_method("brow_addRoute", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -442,7 +442,7 @@ browser_getCurrentFrameRate(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -453,7 +453,7 @@ browser_getCurrentFrameRate(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
 		PUTBACK;
 		count = perl_call_method("brow_getCurrentFrameRate", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -484,7 +484,7 @@ browser_getWorldURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -495,7 +495,7 @@ browser_getWorldURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		PUTBACK;
 		count = perl_call_method("brow_getWorldURL", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -526,7 +526,7 @@ browser_createVrmlFromURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 		sprintf(buffer,"__arg%d",i);
 		JS_SetProperty(cx,obj,buffer,argv+i);
 	}
-	printf("Calling method with sv %d (%s)\n",brow->js_sv,
+	if(verbose) printf("Calling method with sv %d (%s)\n",brow->js_sv,
 		SvPV(brow->js_sv,na));
 	{
 		dSP;
@@ -537,7 +537,7 @@ browser_createVrmlFromURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 		PUTBACK;
 		count = perl_call_method("brow_createVrmlFromURL", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -601,7 +601,7 @@ double runscript(void *cxp, void *glo, char *script, SV*r) {
 	jsdouble d;
 	JSString *strval;
 	char *strp;
-	printf("Running script '%s'\n",script);
+	if(verbose) printf("Running script '%s'\n",script);
 
 	ok = JS_EvaluateScript(cx, globalObj, script, strlen(script),
 		filename, lineno, &rval);
@@ -665,18 +665,22 @@ void set_SFColor(void *p, SV *sv_) {
 		SV **b;
 		int i;
 		if(!SvROK(sv_)) {
-			die("Help! SFColor without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! SFColor without being arrayref");
-		}
-		a = (AV *) SvRV(sv_);
-		for(i=0; i<3; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			(ptr->v).c[0] = 0;
+			(ptr->v).c[1] = 0;
+			(ptr->v).c[2] = 0;
+			/* die("Help! SFColor without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! SFColor without being arrayref");
 			}
-			(ptr->v).c[i] = SvNV(*b);
+			a = (AV *) SvRV(sv_);
+			for(i=0; i<3; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				(ptr->v).c[i] = SvNV(*b);
+			}
 		}
 	}
 	
@@ -760,9 +764,9 @@ assign_SFColor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     JSObject *ofoo;
     if (!JS_InstanceOf(cx, obj, &cls_SFColor, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK SFColor %d\n",argc);
+    if(verbose) printf("ASSIGN HACK SFColor %d\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o,&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_SFColor, argv)) {
@@ -780,7 +784,7 @@ assign_SFColor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     	fptr, fptr->v.c[0],fptr->v.c[1],fptr->v.c[2]);
  */
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\n");
+    if(verbose) printf("Assgn: true\n");
     return JS_TRUE;
 }
 
@@ -792,7 +796,7 @@ touched_SFColor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     if (!JS_InstanceOf(cx, obj, &cls_SFColor, argv))
         return JS_FALSE;
     t = ptr->touched; ptr->touched = 0;
-    printf("TOUCHED WAS %d\n",t);
+    if(verbose) printf("TOUCHED WAS %d\n",t);
     *rval = INT_TO_JSVAL(t);
     return JS_TRUE;
 }
@@ -821,17 +825,17 @@ cons_SFColor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
      */
       {
      	
-			printf("CONSTRUCTING: GOT %d args\n",argc);
+			if(verbose) printf("CONSTRUCTING: GOT %d args\n",argc);
 			if(argc==0) {
 				(ptr->v).c[0] = 0; (ptr->v).c[1] = 0; (ptr->v).c[2] = 0;;
 				return JS_TRUE;
 			}
 			if(JS_ConvertArguments(cx, argc, argv, "d d d",
 				&(pars[0]),&(pars[1]),&(pars[2])) == JS_FALSE) {
-					printf("Convarg: false\n");
+					if(verbose) printf("Convarg: false\n");
 					return JS_FALSE;
 			};
-			printf("CONSARGS: %f %f %f\n",pars[0],pars[1],pars[2]);
+			if(verbose) printf("CONSARGS: %f %f %f\n",pars[0],pars[1],pars[2]);
 			{
 				(ptr->v).c[0] = pars[0]; (ptr->v).c[1] = pars[1]; (ptr->v).c[2] = pars[2];;
 			}
@@ -880,18 +884,22 @@ void set_SFVec3f(void *p, SV *sv_) {
 		SV **b;
 		int i;
 		if(!SvROK(sv_)) {
-			die("Help! SFColor without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! SFColor without being arrayref");
-		}
-		a = (AV *) SvRV(sv_);
-		for(i=0; i<3; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			(ptr->v).c[0] = 0;
+			(ptr->v).c[1] = 0;
+			(ptr->v).c[2] = 0;
+			/* die("Help! SFColor without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! SFColor without being arrayref");
 			}
-			(ptr->v).c[i] = SvNV(*b);
+			a = (AV *) SvRV(sv_);
+			for(i=0; i<3; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				(ptr->v).c[i] = SvNV(*b);
+			}
 		}
 	}
 	
@@ -975,9 +983,9 @@ assign_SFVec3f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     JSObject *ofoo;
     if (!JS_InstanceOf(cx, obj, &cls_SFVec3f, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK SFVec3f %d\n",argc);
+    if(verbose) printf("ASSIGN HACK SFVec3f %d\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o,&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_SFVec3f, argv)) {
@@ -995,7 +1003,7 @@ assign_SFVec3f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     	fptr, fptr->v.c[0],fptr->v.c[1],fptr->v.c[2]);
  */
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\n");
+    if(verbose) printf("Assgn: true\n");
     return JS_TRUE;
 }
 
@@ -1007,7 +1015,7 @@ touched_SFVec3f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     if (!JS_InstanceOf(cx, obj, &cls_SFVec3f, argv))
         return JS_FALSE;
     t = ptr->touched; ptr->touched = 0;
-    printf("TOUCHED WAS %d\n",t);
+    if(verbose) printf("TOUCHED WAS %d\n",t);
     *rval = INT_TO_JSVAL(t);
     return JS_TRUE;
 }
@@ -1018,7 +1026,7 @@ touched_SFVec3f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_SFVec3f, argv))
 			return JS_FALSE;
-		     printf("METHOD: subtract SFVec3f\n");
+		     if(verbose) printf("METHOD: subtract SFVec3f\n");
 		    {
 			
 JSObject *ret;
@@ -1029,7 +1037,7 @@ JSObject *ret;
 		TJL_SFVec3f *vec2;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "o",&v2) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
 	    if (!JS_InstanceOf(cx, v2, &cls_SFVec3f, argv)) {
@@ -1053,7 +1061,7 @@ JSObject *ret;
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_SFVec3f, argv))
 			return JS_FALSE;
-		     printf("METHOD: normalize SFVec3f\n");
+		     if(verbose) printf("METHOD: normalize SFVec3f\n");
 		    {
 			
 	JSObject *ret;
@@ -1062,7 +1070,7 @@ JSObject *ret;
 		TJL_SFVec3f *vec1;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "") == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
 	    proto = JS_GetPrototype(cx, obj);
@@ -1082,7 +1090,7 @@ JSObject *ret;
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_SFVec3f, argv))
 			return JS_FALSE;
-		     printf("METHOD: add SFVec3f\n");
+		     if(verbose) printf("METHOD: add SFVec3f\n");
 		    {
 			
 JSObject *ret;
@@ -1093,7 +1101,7 @@ JSObject *ret;
 		TJL_SFVec3f *vec2;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "o",&v2) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
 	    if (!JS_InstanceOf(cx, v2, &cls_SFVec3f, argv)) {
@@ -1117,7 +1125,7 @@ JSObject *ret;
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_SFVec3f, argv))
 			return JS_FALSE;
-		     printf("METHOD: length SFVec3f\n");
+		     if(verbose) printf("METHOD: length SFVec3f\n");
 		    {
 			
 	jsdouble result;
@@ -1127,7 +1135,7 @@ JSObject *ret;
 		TJL_SFVec3f *vec1;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "") == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
 	    proto = JS_GetPrototype(cx, obj);
@@ -1145,7 +1153,7 @@ result = sqrt((*vec1).v.c[0]*(*vec1).v.c[0]+(*vec1).v.c[1]*(*vec1).v.c[1]+(*vec1
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_SFVec3f, argv))
 			return JS_FALSE;
-		     printf("METHOD: cross SFVec3f\n");
+		     if(verbose) printf("METHOD: cross SFVec3f\n");
 		    {
 			
 JSObject *ret;
@@ -1156,7 +1164,7 @@ JSObject *ret;
 		TJL_SFVec3f *vec2;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "o",&v2) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
 	    if (!JS_InstanceOf(cx, v2, &cls_SFVec3f, argv)) {
@@ -1190,7 +1198,7 @@ JSObject *ret;
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_SFVec3f, argv))
 			return JS_FALSE;
-		     printf("METHOD: negate SFVec3f\n");
+		     if(verbose) printf("METHOD: negate SFVec3f\n");
 		    {
 			
 	JSObject *ret;
@@ -1199,7 +1207,7 @@ JSObject *ret;
 		TJL_SFVec3f *vec1;
 		TJL_SFVec3f *res;
 	if(JS_ConvertArguments(cx, argc, argv, "") == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
 	    proto = JS_GetPrototype(cx, obj);
@@ -1240,17 +1248,17 @@ cons_SFVec3f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
      */
       {
      	
-			printf("CONSTRUCTING: GOT %d args\n",argc);
+			if(verbose) printf("CONSTRUCTING: GOT %d args\n",argc);
 			if(argc==0) {
 				(ptr->v).c[0] = 0; (ptr->v).c[1] = 0; (ptr->v).c[2] = 0;;
 				return JS_TRUE;
 			}
 			if(JS_ConvertArguments(cx, argc, argv, "d d d",
 				&(pars[0]),&(pars[1]),&(pars[2])) == JS_FALSE) {
-					printf("Convarg: false\n");
+					if(verbose) printf("Convarg: false\n");
 					return JS_FALSE;
 			};
-			printf("CONSARGS: %f %f %f\n",pars[0],pars[1],pars[2]);
+			if(verbose) printf("CONSARGS: %f %f %f\n",pars[0],pars[1],pars[2]);
 			{
 				(ptr->v).c[0] = pars[0]; (ptr->v).c[1] = pars[1]; (ptr->v).c[2] = pars[2];;
 			}
@@ -1300,18 +1308,23 @@ void set_SFRotation(void *p, SV *sv_) {
 		SV **b;
 		int i;
 		if(!SvROK(sv_)) {
-			die("Help! SFRotation without being ref");
-		}
-		if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
-			die("Help! SFRotation without being arrayref");
-		}
-		a = (AV *) SvRV(sv_);
-		for(i=0; i<4; i++) {
-			b = av_fetch(a, i, 1); /* LVal for easiness */
-			if(!b) {
-				die("Help: SFColor b == 0");
+			(ptr->v).r[0] = 0;
+			(ptr->v).r[1] = 1;
+			(ptr->v).r[2] = 0;
+			(ptr->v).r[3] = 0;
+			/* die("Help! SFRotation without being ref"); */
+		} else {
+			if(SvTYPE(SvRV(sv_)) != SVt_PVAV) {
+				die("Help! SFRotation without being arrayref");
 			}
-			(ptr->v).r[i] = SvNV(*b);
+			a = (AV *) SvRV(sv_);
+			for(i=0; i<4; i++) {
+				b = av_fetch(a, i, 1); /* LVal for easiness */
+				if(!b) {
+					die("Help: SFColor b == 0");
+				}
+				(ptr->v).r[i] = SvNV(*b);
+			}
 		}
 	}
 	
@@ -1398,9 +1411,9 @@ assign_SFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     JSObject *ofoo;
     if (!JS_InstanceOf(cx, obj, &cls_SFRotation, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK SFRotation %d\n",argc);
+    if(verbose) printf("ASSIGN HACK SFRotation %d\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o,&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_SFRotation, argv)) {
@@ -1418,7 +1431,7 @@ assign_SFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     	fptr, fptr->v.c[0],fptr->v.c[1],fptr->v.c[2]);
  */
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\n");
+    if(verbose) printf("Assgn: true\n");
     return JS_TRUE;
 }
 
@@ -1430,7 +1443,7 @@ touched_SFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
     if (!JS_InstanceOf(cx, obj, &cls_SFRotation, argv))
         return JS_FALSE;
     t = ptr->touched; ptr->touched = 0;
-    printf("TOUCHED WAS %d\n",t);
+    if(verbose) printf("TOUCHED WAS %d\n",t);
     *rval = INT_TO_JSVAL(t);
     return JS_TRUE;
 }
@@ -1441,7 +1454,7 @@ touched_SFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_SFRotation, argv))
 			return JS_FALSE;
-		     printf("METHOD: multVec SFRotation\n");
+		     if(verbose) printf("METHOD: multVec SFRotation\n");
 		    {
 			
 
@@ -1453,7 +1466,7 @@ touched_SFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 		TJL_SFVec3f *vfrom;
 		TJL_SFVec3f *vto;
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
 	    if (!JS_InstanceOf(cx, o, &cls_SFVec3f, argv)) {
@@ -1478,10 +1491,12 @@ touched_SFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 		vto->v.c[0] = vfrom->v.c[0] + s * c1[0] + (1-c)*c2[0];
 		vto->v.c[1] = vfrom->v.c[1] + s * c1[1] + (1-c)*c2[1];
 		vto->v.c[2] = vfrom->v.c[2] + s * c1[2] + (1-c)*c2[2];
+		/*
 		printf("ROT MULTVEC (%f %f %f : %f) (%f %f %f) -> (%f %f %f)\n",
 			rfrom->v.r[0], rfrom->v.r[1], rfrom->v.r[2], rfrom->v.r[3],
 			vfrom->v.c[0], vfrom->v.c[1], vfrom->v.c[2],
 			vto->v.c[0], vto->v.c[1], vto->v.c[2]);
+		*/
 	
 		}
 	    *rval = OBJECT_TO_JSVAL(ro);
@@ -1497,7 +1512,7 @@ touched_SFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 		{
 		    if (!JS_InstanceOf(cx, obj, &cls_SFRotation, argv))
 			return JS_FALSE;
-		     printf("METHOD: inverse SFRotation\n");
+		     if(verbose) printf("METHOD: inverse SFRotation\n");
 		    {
 			
 		JSObject *o;
@@ -1591,12 +1606,14 @@ cons_SFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		v12dp /= v1len * v2len;
 		(ptr->v).r[3] = 
 			atan2(sqrt(1-v12dp*v12dp),v12dp);
+		/* 
 		printf("V12cons: (%f %f %f) (%f %f %f) %f %f %f (%f %f %f : %f)
 ",
 			vec1->v.c[0], vec1->v.c[1], vec1->v.c[2],
 			vec2->v.c[0], vec2->v.c[1], vec2->v.c[2],
 			v1len, v2len, v12dp, 
 			(ptr->v).r[0], (ptr->v).r[1], (ptr->v).r[2], (ptr->v).r[3]);
+		*/
 	} else if(JS_ConvertArguments(cx,argc,argv,"o d",
 		&ob1,&(pars[0])) == JS_TRUE) {
 		TJL_SFVec3f *vec;
@@ -1643,13 +1660,13 @@ addprop_MFColor(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF %d addprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d addprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(!JSVAL_IS_INT(id)){ 
@@ -1657,7 +1674,7 @@ addprop_MFColor(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	}
 	if(!JS_GetProperty(cx,obj,"length",&v)) {die("MF lenval");}
 	len = JSVAL_TO_INT(v);
-	printf("MF addprop %d %d\n",ind,len);
+	if(verbose) printf("MF addprop %d %d\n",ind,len);
 	if(ind >= len) {
 		len = ind+1;
 		v = INT_TO_JSVAL(len);
@@ -1676,13 +1693,13 @@ setprop_MFColor(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char *p;
 	str = JS_ValueToString(cx, id);
 	p = JS_GetStringBytes(str);
-	printf("JS MF %d setprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d setprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(JSVAL_IS_INT(id)) {
@@ -1737,9 +1754,9 @@ assign_MFColor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     JSObject *o;
     if (!JS_InstanceOf(cx, obj, &cls_MFColor, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK MFColor %d\n",argc);
+    if(verbose) printf("ASSIGN HACK MFColor %d\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_MFColor, argv)) {
@@ -1760,7 +1777,7 @@ assign_MFColor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     }
 
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\n");
+    if(verbose) printf("Assgn: true\n");
     return JS_TRUE;
 }
 
@@ -1789,13 +1806,13 @@ addprop_MFVec3f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF %d addprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d addprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(!JSVAL_IS_INT(id)){ 
@@ -1803,7 +1820,7 @@ addprop_MFVec3f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	}
 	if(!JS_GetProperty(cx,obj,"length",&v)) {die("MF lenval");}
 	len = JSVAL_TO_INT(v);
-	printf("MF addprop %d %d\n",ind,len);
+	if(verbose) printf("MF addprop %d %d\n",ind,len);
 	if(ind >= len) {
 		len = ind+1;
 		v = INT_TO_JSVAL(len);
@@ -1822,13 +1839,13 @@ setprop_MFVec3f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char *p;
 	str = JS_ValueToString(cx, id);
 	p = JS_GetStringBytes(str);
-	printf("JS MF %d setprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d setprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(JSVAL_IS_INT(id)) {
@@ -1883,9 +1900,9 @@ assign_MFVec3f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     JSObject *o;
     if (!JS_InstanceOf(cx, obj, &cls_MFVec3f, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK MFVec3f %d\n",argc);
+    if(verbose) printf("ASSIGN HACK MFVec3f %d\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_MFVec3f, argv)) {
@@ -1906,7 +1923,7 @@ assign_MFVec3f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     }
 
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\n");
+    if(verbose) printf("Assgn: true\n");
     return JS_TRUE;
 }
 
@@ -1935,13 +1952,13 @@ addprop_MFRotation(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF %d addprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d addprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(!JSVAL_IS_INT(id)){ 
@@ -1949,7 +1966,7 @@ addprop_MFRotation(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	}
 	if(!JS_GetProperty(cx,obj,"length",&v)) {die("MF lenval");}
 	len = JSVAL_TO_INT(v);
-	printf("MF addprop %d %d\n",ind,len);
+	if(verbose) printf("MF addprop %d %d\n",ind,len);
 	if(ind >= len) {
 		len = ind+1;
 		v = INT_TO_JSVAL(len);
@@ -1968,13 +1985,13 @@ setprop_MFRotation(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char *p;
 	str = JS_ValueToString(cx, id);
 	p = JS_GetStringBytes(str);
-	printf("JS MF %d setprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d setprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(JSVAL_IS_INT(id)) {
@@ -2029,9 +2046,9 @@ assign_MFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     JSObject *o;
     if (!JS_InstanceOf(cx, obj, &cls_MFRotation, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK MFRotation %d\n",argc);
+    if(verbose) printf("ASSIGN HACK MFRotation %d\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_MFRotation, argv)) {
@@ -2052,7 +2069,7 @@ assign_MFRotation(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     }
 
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\n");
+    if(verbose) printf("Assgn: true\n");
     return JS_TRUE;
 }
 
@@ -2081,13 +2098,13 @@ addprop_MFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF %d addprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d addprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(!JSVAL_IS_INT(id)){ 
@@ -2095,7 +2112,7 @@ addprop_MFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	}
 	if(!JS_GetProperty(cx,obj,"length",&v)) {die("MF lenval");}
 	len = JSVAL_TO_INT(v);
-	printf("MF addprop %d %d\n",ind,len);
+	if(verbose) printf("MF addprop %d %d\n",ind,len);
 	if(ind >= len) {
 		len = ind+1;
 		v = INT_TO_JSVAL(len);
@@ -2114,13 +2131,13 @@ setprop_MFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char *p;
 	str = JS_ValueToString(cx, id);
 	p = JS_GetStringBytes(str);
-	printf("JS MF %d setprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d setprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(JSVAL_IS_INT(id)) {
@@ -2175,9 +2192,9 @@ assign_MFNode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     JSObject *o;
     if (!JS_InstanceOf(cx, obj, &cls_MFNode, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK MFNode %d\n",argc);
+    if(verbose) printf("ASSIGN HACK MFNode %d\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_MFNode, argv)) {
@@ -2198,7 +2215,7 @@ assign_MFNode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     }
 
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\n");
+    if(verbose) printf("Assgn: true\n");
     return JS_TRUE;
 }
 
@@ -2227,13 +2244,13 @@ addprop_MFString(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	   !strcmp(p,"assign") || !strcmp(p,"__touched_flag")) {
 		return JS_TRUE;
 	}
-	printf("JS MF %d addprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d addprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(!JSVAL_IS_INT(id)){ 
@@ -2241,7 +2258,7 @@ addprop_MFString(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	}
 	if(!JS_GetProperty(cx,obj,"length",&v)) {die("MF lenval");}
 	len = JSVAL_TO_INT(v);
-	printf("MF addprop %d %d\n",ind,len);
+	if(verbose) printf("MF addprop %d %d\n",ind,len);
 	if(ind >= len) {
 		len = ind+1;
 		v = INT_TO_JSVAL(len);
@@ -2260,13 +2277,13 @@ setprop_MFString(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char *p;
 	str = JS_ValueToString(cx, id);
 	p = JS_GetStringBytes(str);
-	printf("JS MF %d setprop '%s'\n",obj,p);
+	if(verbose) printf("JS MF %d setprop '%s'\n",obj,p);
 	{
 		JSString *str;
 		char *p;
 		str = JS_ValueToString(cx, *vp);
 		p = JS_GetStringBytes(str);
-		printf("JS MF APVAL '%s'
+		if(verbose) printf("JS MF APVAL '%s'
 ",p);
 	}
 	if(JSVAL_IS_INT(id)) {
@@ -2321,9 +2338,9 @@ assign_MFString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     JSObject *o;
     if (!JS_InstanceOf(cx, obj, &cls_MFString, argv))
         return JS_FALSE;
-    printf("ASSIGN HACK MFString %d\n",argc);
+    if(verbose) printf("ASSIGN HACK MFString %d\n",argc);
 	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
-			printf("Convarg: false\n");
+			if(verbose) printf("Convarg: false\n");
 			return JS_FALSE;
 	};
     if (!JS_InstanceOf(cx, o, &cls_MFString, argv)) {
@@ -2344,7 +2361,7 @@ assign_MFString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     }
 
     *rval = OBJECT_TO_JSVAL(obj); 
-    printf("Assgn: true\n");
+    if(verbose) printf("Assgn: true\n");
     return JS_TRUE;
 }
 
@@ -2374,7 +2391,7 @@ cons_SFNode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		p = JS_GetStringBytes(str);
 		/* Hidden two-arg constructor: we construct it using
 		 * an id... */
-		printf("CONS_SFNODE: '%s'
+		if(verbose) printf("CONS_SFNODE: '%s'
 ",p);
 		if(!JS_DefineProperty(cx,obj,"__id",argv[1],
 			NULL,NULL,JSPROP_PERMANENT)) {
@@ -2403,7 +2420,7 @@ setprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	JS_SetProperty(cx, globalObj, "__node", &v);
 	JS_SetProperty(cx, globalObj, "__prop", &id);
 	JS_SetProperty(cx, globalObj, "__val", vp);
-	printf("SFNode setprop 
+	if(verbose) printf("SFNode setprop 
 ");
 		ENTER;
 		SAVETMPS;
@@ -2412,7 +2429,7 @@ setprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		PUTBACK;
 		count = perl_call_method("node_setprop", G_SCALAR);
 		if(count) {
-			printf("Got return %f\n",POPn);
+			if(verbose) printf("Got return %f\n",POPn);
 		}
 		PUTBACK;
 		FREETMPS;
@@ -2423,7 +2440,7 @@ setprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool
 getprop_SFNode(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	printf("SFNode getprop 
+	if(verbose) printf("SFNode getprop 
 ");
 	return JS_TRUE;
 }
@@ -2530,7 +2547,11 @@ void load_classes(JSContext *cx, JSObject *globalObj, SV *jssv) {
 }
 
 void errorrep(JSContext *cx, const char *message, JSErrorReport *report) {
-	fprintf(stderr,"JS ERROR: %s\n", message);
+/* This reports even stupid errors, like when using wrong number
+ * of arguments for constructor which has variable numbers.
+ * XXX FIX
+ */
+	/* fprintf(stderr,"JS ERROR: %s\n", message); */
 }
 
 static JSBool 
@@ -2538,7 +2559,7 @@ set_touchable(JSContext *cx, JSObject *obj, jsval id, jsval *vp) {
 	char *n = JS_GetStringBytes(JSVAL_TO_STRING(id));
 	char buffer[100];
 	jsval v;
-	printf("SET_TOUCHABLE %s\n",n);
+	if(verbose) printf("SET_TOUCHABLE %s\n",n);
 	sprintf(buffer,"_%s_touched",n);
 	v = INT_TO_JSVAL(1);
 	JS_SetProperty(cx, obj, buffer, &v);
@@ -2548,6 +2569,12 @@ set_touchable(JSContext *cx, JSObject *obj, jsval id, jsval *vp) {
 
 MODULE=VRML::JS	PACKAGE=VRML::JS
 PROTOTYPES: ENABLE
+
+void
+set_verbose(v)
+	int v;
+CODE:
+	verbose = v;
 
 void 
 init()
@@ -2600,11 +2627,11 @@ CODE:
     JSObject *globalObj = p; 
     jsval rval;
     int ok;
-    printf("Addasgn eval '%s'\n",str);
+    if(verbose) printf("Addasgn eval '%s'\n",str);
 	ok = JS_EvaluateScript(cx, globalObj, str, strlen(str),
 		"bar", 15, &rval);
 	if(!ok) { printf("SCRFAIL\n"); die("Addasgn script fail"); }
-    printf("Addasgn eval ok \n",str);
+    if(verbose) printf("Addasgn eval ok \n",str);
         JS_DefineProperty(cx, globalObj, name, rval,
                   NULL, NULL, 0 | JSPROP_ASSIGNHACK | JSPROP_PERMANENT ); /* */
 
@@ -2624,7 +2651,7 @@ CODE:
 		INT_TO_JSVAL(0), 
 		NULL, set_touchable,  0 | JSPROP_PERMANENT);
 	if(!ok) {die("Addwatch script fail");}
-	printf("SET_TOUCHABLE INIT %s\n",name);
+	if(verbose) printf("SET_TOUCHABLE INIT %s\n",name);
 	sprintf(buffer,"_%s_touched",name);
 	v = INT_TO_JSVAL(1);
 	JS_SetProperty(cx, globalObj, buffer, &v);
