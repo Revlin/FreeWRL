@@ -1,0 +1,167 @@
+# Copyright (C) 1998 Tuomas J. Lukka
+# DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
+# See the GNU General Public License (file COPYING in the distribution)
+# for conditions of use and redistribution, EXCEPT on the files 
+# which belong under the mozilla public license.
+
+Welcome to a developer-alpha release of VRML::Browser.
+
+Currently, only simple things are implemented - however, my hope
+is that I have implemented enough simple things so that adding
+the complicated things will not be too much work after this.
+
+DO NOT EXPECT YOUR COMPLICATED WORLD TO WORK!
+If your world doesn't expect *much* more than the browser provides
+right now, please send me a copy -- I'll make it work in the next
+version. 
+
+Textures are probably the last thing I'm going to make really well --
+if you want to change that, buy me a computer with Linux-supported
+3D acceleration for textures and you'll find them working in the next
+release ;) ;) -- or just fix the implementation yourself.
+
+See the file INSTALL for how to compile this program.
+
+After installation, try
+
+	./browse tests/1.wrl
+
+(the file browse is the perl script which starts the browser -- if
+there is a problem ("file not found"), try
+
+	perl browse tests/1.wrl
+
+or change the first line of "browse" to find your perl binary).
+
+This should open a new window with a view of the VRML world in question.
+
+Use the first and third button of your mouse (while moving your mouse)
+to move around.
+
+To change viewers between walk and examine, press 'w' or 'e' in 
+the browser window.
+
+E-mail any comments, questions & patches to me at lukka@fas.harvard.edu
+
+	Tuomas J. Lukka
+
+P.s. I am available for employment after july 1999 - email me if your
+university or company is interested. I would like to be able 
+at the same time to continue free software development and research.
+
+Also, if your company wants to use this code with a different license,
+contact me -- I can give you a different license in exchange for money.
+
+-----------------
+V0.06 - solidification:
+ - input of SFColor etc. to javascript
+ - output of floats etc. from javascript
+ - numerous other bugfixes for javascript...
+ - beginnings of the browser object in Perl
+ - add OpenGL includes/defines for other makefiles as well..
+ - Text should possibly be compatible with FreeType-1.1 now...
+ - Fly mode, with key controls a la Descent(TM)!! Press 'D'
+   when browsing and then use a,z and 789uiojklp; (the keys
+   that are the numpad on my laptop ;) to move. If someone
+   wants to send a patch to make the keys configurable, I'd be 
+   delighted ( I don't want to spend time on that right now, I 
+   have more important matters in this to do.. )
+ - much faster MFFloat parsing -- similar speedups for other fields
+   are just a matter of doing it..
+ - various speed improvements
+ - fixed use of display lists to actually work (blush)..
+
+V0.05 - details...
+ - Switch
+ - LOD
+ - face culling -> double speedup sometimes
+ - DirectionalLight
+ - PlaneSensor
+ - SphereSensor
+ - better support for bindable nodes
+ - dummy Anchor ( == group )
+ - add many missing fields (as dummies) to nodes
+
+V0.04
+Quick release, due to notification from Thomas Dudziak that
+I had missed important files from the .tar.gz file. Oops...
+ - Text!!!!!!! With FreeType library
+ - Background basics (skyColor, skyAngle)
+ - VRMLC -> VRMLC+VRMLRend - split to smaller files
+ - Bindable nodes -- see nodes/Background2.wrl for what works now
+
+V0.03 "filling in some blanks"
+ - MFColor and other field types for javascript -- now able
+   to run VRML97 spec example D.14!!
+
+
+V0.02 "some things about *most* features work"
+THIS RELEASE IS ESPECIALLY UNSTABLE - LOTS OF CODE HAS BEEN ADDED 
+AND LOTS OF NEW FEATURES ARE SEMI-IMPLEMENTED. THERE ARE PROOF-OF-PRINCIPLE
+JAVA AND JAVASCRIPT SCRIPTS BUT MOST OF THOSE SCRIPTING INTERFACES
+ARE STILL UNIMPLEMENTED. THE PROOF-OF-PRINCIPLE SCRIPTS CAN BE FOUND
+IN THE DIRECTORY jt/.
+
+THE BROWSER IS STILL FAR FROM SPEC COMPLIANCE -- A LOT NEEDS TO BE DONE.
+IF YOU ARE NOT ABLE TO PROGRAM, DO NOT EXPECT TO BE ABLE TO USE THIS
+BROWSER YET. THIS RELEASE IS PRIMARILY MADE TO ATTRACT POTENTIAL
+DEVELOPERS TO HACK ON THE CODE.
+
+ WHAT EXTRA IS SUPPOSED TO WORK NOW
+  - simple scripting in complex languages (java,javascript)
+    (warning: this is very immature so far - it's my first ever java
+    program and I've only been at it for a couple of days. You have to
+    make a named pipes in the current directory with the name '.javapipep'
+    and '.javapipej', with the command "mknod .javapipep p" or the equivalent
+    on your system).
+    For javascript, you'll need to hack it to compile yourself - I'll
+    try to provide a better make system later.
+  - simple complex uses of simple sensor (touchsensor hitpoint,
+    although only for primitives yet (no indexedfaceset :(...))
+    This is by raycasting now, see VRMLC.pm
+  - simple textures: jpg only, and only 2**n * 2**n.
+    also, most texture mappings of nodes are not yet correct
+  - Extrusion, ElevationGrid
+  - Billboard
+  - Browser: die if file not openable
+  - Parser: accept ROUTE et al in more contexts 
+  - CoordinateInterpolator
+  - IndexedLineSet and PointSet
+  - Shape with appearance==NULL
+  - Color, Normal
+  - more fields for supported nodes
+  - Inline (preliminary)
+  - beautify tests/ a little
+ WHAT STILL DOES NOT WORK
+  - more complicated things of any particular kind:
+    - sensors
+    - extrusions which are collinear
+    - ...
+
+SPECIFICALLY: FOR SCRIPTS IN JAVA/JAVASCRIPT:
+ Eventin floats work and eventout colors work, not much else.
+ Of course, this will be very easy to expand later (next version I hope
+ to have MFthings and everything except Nodes.
+
+ These scripting implementations are to be considered very preliminary and 
+ just proof-of-principles.
+
+ Especially the javascript interface is VERY UGLY. And contains
+ unfinished code.
+
+V0.01 "some things work"
+ WHAT IS SUPPOSED TO WORK
+  - simple primitives (box, cone, cylinder, sphere, indexedfaceset*)
+  - simple sensors (touchsensor, timesensor)
+  - simple languages (perl)
+  - simple nodes (scalarinterpolator,...)
+  - simple structures (PROTO, USE/DEF)
+ WHAT IS NOT YET IMPLEMENTED
+  - complex geometries (elevationgrid, extrusion)
+  - complex sensors (cylindersensor etc)
+  - complex languages (java, javascript)
+  - complex nodes (switch, lod...)
+  - complex structures (anchor, externproto...)
+
+(* indexedfaceset only partly implemented)
+

@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+# Copyright (C) 1998 Tuomas J. Lukka
+# DISTRIBUTED WITH NO WARRANTY, EXPRESS OR IMPLIED.
+# See the GNU General Public License (file COPYING in the distribution)
+# for conditions of use and redistribution.
+
+use blib;
+use Carp;
+$SIG{__DIE__} = sub {print Carp::longmess(@_);die;};
+
+# use VRML::Browser;
+
+my @verb = @ARGV[1..$#ARGV];
+
+sub verb {return !!grep {$_ eq $_[0] or $_ eq "all"} @verb}
+sub verbn {return !!grep {$_ eq $_[0]} @verb}
+
+# Turn these switches on if you are debugging
+$VRML::verbose = verb all;
+$VRML::verbose::be = verb be;
+$VRML::verbose::events = verb ev;
+$VRML::verbose::script = verb scr ;  
+$VRML::verbose::glsens = verb glsens;  # GL sensor code
+$VRML::verbose::tief = verb "tie";    # The tied RFields-hash
+$VRML::verbose::timesens = verb "time";
+$VRML::verbose::interp = verb "interp"; # interpolators
+$VRML::verbose::text = verbn "text"; # interpolators
+$VRML::verbose::rend = verb "rend";
+
+if($VRML::verbose::text) {
+	eval 'require VRML::Text; VRML::Text::set_verbose(1);'
+}
+
+require 'Browser.pm';
+
+$b = new VRML::Browser(); # By default creates front- and back-ends.
+
+$b->load_file($ARGV[0]);
+
+VRML::VRMLFunc::set_divs(10,10);
+$b->eventloop();
+
+

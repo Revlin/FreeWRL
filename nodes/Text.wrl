@@ -1,0 +1,8 @@
+
+Shape {
+	appearance Appearance {material Material {diffuseColor 0.8 0 0}}
+#	geometry Text { string ["IdV"] }
+	geometry Text { string ["Hello World!", "Welt, gute Nacht!",
+		"abcdefghijklmnopqrstuvwxyz",
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"] }
+}

@@ -1,0 +1,23 @@
+#VRML V2.0 utf8
+#
+
+# Browser object in Perl: test 
+
+Shape {
+	appearance Appearance {material Material {diffuseColor 0.8 0 0}}
+	geometry DEF T Text {  }
+}
+
+DEF S Script {
+	eventOut MFString str
+	url "perl_tjl_xxx1:
+	  initialize => sub {
+	  	print 'S Init
+';
+	  	$t->{str} = [Name, $Browser->getName];
+	  }
+	"
+}
+
+
+ROUTE S.str TO T.string

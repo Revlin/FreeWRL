@@ -1,0 +1,65 @@
+
+
+# XXX Should make this more visible...
+
+# One green sphere
+Transform {
+	translation -2 0 0
+	children [
+		Shape {
+			geometry Cylinder { }
+			appearance Appearance {material Material {diffuseColor 0 0.8 0}}
+		}
+	]
+}
+
+# Narrow tall cone
+Transform {
+	translation 0 0 0
+	children [
+		Shape {
+			geometry Cylinder { radius 0.3 height 4 side FALSE }
+			appearance Appearance {material Material {diffuseColor 0.4 0 0.4}}
+		}
+	]
+}
+
+# Narrow tall cone without bottom
+Transform {
+	translation -0.6 0 0
+	children [
+		Shape {
+			geometry Cylinder { radius 0.3 height 4 
+				bottom FALSE }
+			appearance Appearance {material Material {diffuseColor 0.4 0 0.4}}
+		}
+	]
+}
+
+# Narrow tall cone without side
+Transform {
+	translation 0.6 0 0
+	children [
+		Shape {
+			geometry Cylinder { radius 0.3 height 4 
+				top FALSE }
+			appearance Appearance {material Material {diffuseColor 0.4 0 0.4}}
+		}
+	]
+}
+
+# Textured cone
+Transform {
+	translation 2 0 0
+	children [
+		Shape {
+			geometry Cylinder { }
+			appearance Appearance {
+				texture ImageTexture {url "tex.jpg"}
+			}
+		}
+	]
+}
+
+
+
