@@ -65,11 +65,16 @@ sub add_route {
 	push @{$this->{Route}{$fn}{$ff}}, [$tn, $tf]
 }
 
-sub add_is {
+sub add_is_out {
+	my($this,$pn, $pf, $cn, $cf) = @_;
+	$this->{PIsN}{$pn} = $pn;
+	$this->{CIs}{$cn}{$cf} = [$pn,$pf];
+}
+
+sub add_is_in {
 	my($this,$pn, $pf, $cn, $cf) = @_;
 	$this->{PIsN}{$pn} = $pn;
 	push @{$this->{PIs}{$pn}{$pf}}, [$cn,$cf];
-	$this->{CIs}{$cn}{$cf} = [$pn,$pf];
 }
 
 # get_firstevent returns [$node, fieldName, value]
@@ -77,6 +82,7 @@ sub propagate_events {
 	my($this,$timestamp,$be,$scene) = @_;
 	my @e;
 	my @ne;
+	my @te;
 	my %sent; # to prevent sending twice, always set bit here
 	for(values %{$this->{First}}) {
 		# print "GETFIRST $_\n" if $VRML::verbose::events;
@@ -91,13 +97,15 @@ sub propagate_events {
 	}
 	my $n = scalar @e;
 	push @e, @{$this->{Queue}};
+	push @te, @{$this->{ToQueue}};
 	$this->{Mouse} = [];
 	print "GOT ",scalar(@e)," FIRSTEVENTS ($n n/q)\n" if $VRML::verbose::events;
 	while(1) {
 		my %ep; # All nodes for which ep must be called
 		# Propagate our events as long as they last
-		while(@e) {
+		while(@e || @te) {
 			$this->{Queue} = [];
+			$this->{ToQueue} = [];
 			@ne = ();
 			for my $e (@e) {
 				if($VRML::verbose::events) {
@@ -114,25 +122,62 @@ sub propagate_events {
 					   $_->[0]->receive_event($_->[1],
 							$e->[2],$timestamp);
 					$ep{$_->[0]} = $_->[0];
+					# Was this event routed to someone
+					# who has children?
 					for(@{$this->{PIs}{$_->[0]}{$_->[1]}}) {
 						print "P_IS: send to $_\n"
 						 if $VRML::verbose::events;
-						push @ne, 
-						    $_->[0]->receive_event($_->[1],
-							$e->[2], $timestamp);
-						$ep{$_->[0]} = $_->[0];
+						my $fk = $_->[0]->{Type}{FieldKinds}{$_->[1]};
+						if(!defined $fk) {die("Fieldkind getting")}
+						if($fk eq "eventIn" or 
+						   $fk eq "exposedField") {
+							push @ne, 
+							    $_->[0]->receive_event($_->[1],
+								$e->[2], $timestamp);
+							$ep{$_->[0]} = $_->[0];
+						}
 					}
 				}
 				my $c;
+				# Was this eventOut a child of someone?
 				if($c = $this->{CIs}{$e->[0]}{$e->[1]}) {
 					print "CHILD_IS! Send from P\n"
 					 if $VRML::verbose::events;
-					push @ne, [
-						$c->[0], $c->[1], $e->[2]
-					];
+					# Check that it is not a field
+					# or eventIn!
+					my $fk = $c->[0]->{Type}{FieldKinds}{$c->[1]};
+					if(!defined $fk) {die("Fieldkind getting")}
+					if($fk eq "eventOut" or 
+					   $fk eq "exposedField") {
+						push @ne, [
+							$c->[0], $c->[1], $e->[2]
+						];
+					}
 				}
 			}
+			for (@te) {
+					push @ne, 
+					   $_->[0]->receive_event($_->[1],
+							$_->[2],$timestamp);
+					$ep{$_->[0]} = $_->[0];
+					# Was this event routed to someone
+					# who has children?
+					for(@{$this->{PIs}{$_->[0]}{$_->[1]}}) {
+						print "P_IS: send to $_\n"
+						 if $VRML::verbose::events;
+						my $fk = $_->[0]->{Type}{FieldKinds}{$_->[1]};
+						if(!defined $fk) {die("Fieldkind getting")}
+						if($fk eq "eventIn" or 
+						   $fk eq "exposedField") {
+							push @ne, 
+							    $_->[0]->receive_event($_->[1],
+								$_->[2], $timestamp);
+							$ep{$_->[0]} = $_->[0];
+						}
+					}
+			}
 			@e = (@ne,@{$this->{Queue}});
+			@te = @{$this->{ToQueue}};
 		}
 		$this->{Queue} = [];
 		@ne = ();
@@ -152,11 +197,18 @@ sub propagate_events {
 	}
 }
 
+# This puts an event coming FROM node 
 sub put_event {
 	my($this,$node,$field,$value) = @_;
 	print "Put_event $node $node->{TypeName} $field $value\n"
 		if $VRML::verbose::events;
 	push @{$this->{Queue}}, [$node, $field, $value];
+}
+
+# This sends an event TO node
+sub send_event_to {
+	my($this,$node,$field,$value) = @_;
+	push @{$this->{ToQueue}}, [$node, $field, $value];
 }
 
 sub put_events {

@@ -1,40 +1,57 @@
-- separate RFields into eventIns, eventOuts and fields
+Stuff to do, easy ones first, more intricate ones later.
 
-- as_string: ensure DEF/USE ordering correct-- how?
+- install colormap optional!
 
-- EAI : see ARCHITECTURE for how to
-
-
-- fix bindable nodes' loading so that the correct nodes get bound..
-- use timestamps for changes in nodes, for use with event routes
-  and display lists
-- multithreading: load & execute?
-- binding nodes properly (was already done once but the event revamp
-  undid it
-- timesensor should ignore events when active.
 - smooth normals
-- fix bindable node loading: inside prototype instances!
-
-- use one-sided polygons for primitives -> faster rendering
 
 - smoother truetype: actually do bezier points..
 
 - text justification 
 
-- use libpng
-- texture resizing
+- Billboard: 0 0 0 is not correct ??
 
 - proper reaction to sensor disabling while active
 
-- PlaneSensor: limits.
-- SphereSensor: virtual sphere stays, may not move with coordinate
-  motions -- ????? What does it mean e.g. when the user moves?
+- Extrusion, solid=TRUE...??? Straight spine cases
+
+- use libpng
+
+- texture resizing
+
+- elevationgrid triangulation: choose diagonal nicer.
+
+- correct primitive texturing coordinates
+
+- viewpoint: transfer stuff to Viewer
+
+- key remapping.
 
 - Anchor: make it do something..
 
-- Billboard: 0 0 0 is not correct
+- lights properly
 
-- Extrusion, solid=TRUE...???
+- viewpoints with jump false
+
+- SphereSensor: virtual sphere stays, may not move with coordinate
+  motions -- ????? What does it mean e.g. when the user moves?
+
+- as_string: ensure DEF/USE ordering correct-- how?
+
+- JavaScript: rest of support. 
+  Remember to do node.thing.thang correctly in the same way as 
+  the parameters of the node itself -- but have to notice the events
+  immediately. Hmmm...
+
+- Collision, ground following, gravity
+
+- EAI : see ARCHITECTURE for how to
+
+- fix bindable nodes' loading so that the correct nodes get bound..
+  nodes inside protos don't currently count.
+
+- separate RFields into eventIns, eventOuts and fields
+
+- multithreading: load & execute?
 
 - SOFTREFS!!!
 
@@ -48,24 +65,9 @@
 - nonconvex polygons (sourcebook ch13 fig13 (fitting ;) )
 - smooth normals (sourcebook ch13 fig15)
 - smooth elevationgrid (ch14 fig2)
-- elevationgrid triangulation: choose diagonal nicer.
 - elevationgrid: is the sourcebook ch14fig3 wrong? I think x and z reversed
 - extrusion : collinear
   - check extrusion: e.g. ch.15 fig17 produces completely different results. 
     I think they are wrong...
-- correct primitive texturing coordinates
 - normals (19);
 
-
-- sunos5.6 config == earlier (in email)
-
-1. > Minor niggle - include path for GL/ stuff does not get used when
-> compiling VRMLfunc.c. Compiled by hand to get around this.
->
-		>
-	>
-	. you ought to mention in INSTALLATION for the completely boneheaded
-> user like me that to actually see something happen:
->
-> perl browse tests/1.wrl
->

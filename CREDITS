@@ -1,4 +1,8 @@
-What stuff I have included in the distribution that is not mine:
+What code in the distribution is not mine (if I have left something
+out, contact me as soon as possible at lukka@fas.harvard.edu - I really
+want no-one to be left out accidentally):
 
- - Mozilla JS (http://www.mozilla.com)
+ - Mozilla JS (http://www.mozilla.com) (JS/js)
 
+ - John Breen's new WALK viewer (Viewer.pm, VRML::Viewer::Walk) + 
+   Viewer handle RELEASE 

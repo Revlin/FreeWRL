@@ -346,6 +346,7 @@ print <<'END';
                 'height'=> 500,
                 'parent'=> 0,
                 'mask'  => StructureNotifyMask,
+		'cmap' => 1,
                 'attributes'=> [GLX_RGBA],
         );
 sub glpOpenWindow {
@@ -359,7 +360,7 @@ sub glpOpenWindow {
                 $p{$k} = $a{$k};
         }
         glpcOpenWindow($p{x},$p{y},$p{width},$p{height},
-                       $p{parent},$p{'mask'},
+                       $p{parent},$p{'mask'},$p{'cmap'},
                        @{$p{attributes}});
 }
 1;
@@ -449,13 +450,14 @@ PROTOTYPES: DISABLE
 
 
 void
-glpcOpenWindow(x,y,w,h,pw,event_mask, ...)
+glpcOpenWindow(x,y,w,h,pw,event_mask, setcmap,  ...)
 	int	x
 	int	y
 	int	w
 	int	h
 	int	pw
 	long	event_mask
+	int setcmap
 	CODE:
 	{
 	    XEvent event;
@@ -494,7 +496,8 @@ glpcOpenWindow(x,y,w,h,pw,event_mask, ...)
 		    win = XCreateWindow(dpy, pwin, 
 					x, y, w, h,
 					0, vi->depth, InputOutput, vi->visual,
-					CWBorderPixel|CWColormap|CWEventMask, &swa);
+					CWBorderPixel|
+					 (setcmap?CWColormap:0)|CWEventMask, &swa);
 		    if(!win) {
 			fprintf(stderr, "No Window\n");
 			exit(-1);
@@ -593,11 +596,12 @@ glpXNextEvent(d=dpy)
 				break;
 			case KeyPress:
 			case KeyRelease:
-				EXTEND(sp,2);
+				EXTEND(sp,3);
 				PUSHs(sv_2mortal(newSViv(event.type)));
 				XLookupString(&event.xkey,buf,sizeof(buf),&ks,0);
 				buf[0]=(char)ks;buf[1]='\0';
 				PUSHs(sv_2mortal(newSVpv(buf,1)));
+				PUSHs(sv_2mortal(newSViv(event.xkey.state)));
 				break;
 			case ButtonPress:
 			case ButtonRelease:

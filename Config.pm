@@ -11,6 +11,6 @@
 	JPEG_INC	=>	"",
 	JPEG_LIBS	=>	"\-ljpeg",
 	OPENGL_DEFINE	=>	"",
-VERSION => "0.08"
+VERSION => "0.10"
 );
 1;

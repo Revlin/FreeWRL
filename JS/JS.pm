@@ -77,6 +77,8 @@ sub new {
 			warn("INVALID FIELDKIND '$_' for $node->{TypeName}");
 		}
 	}
+	# Ignore all events we may have sent while building
+	$this->gathersent(1);
 	return $this;
 }
 
@@ -119,7 +121,7 @@ sub sendeventsproc {
 }
 
 sub gathersent {
-	my($this) = @_;
+	my($this, $ignore) = @_;
 	my $node = $this->{Node};
 	my $t = $node->{Type};
 	my @k = keys %{$t->{Defaults}};
@@ -135,16 +137,20 @@ sub gathersent {
 			if($type =~ /^MF/) {
 				$v = runscript($this->{CX},$this->{GLO},
 					"$_.__touched_flag",$rs);
+				runscript($this->{CX},$this->{GLO},
+					"$_.__touched_flag = 0",$rs);
 			} elsif($Types{$ftyp}) {
 				$v = runscript($this->{CX},$this->{GLO},
 					"_${_}_touched",$rs);
+				runscript($this->{CX},$this->{GLO},
+					"_${_}_touched = 0",$rs);
 				# print "SIMP_TOUCH $v\n";
 			} else {
 				$v = runscript($this->{CX},$this->{GLO},
 					"$_.__touched()",$rs);
 			}
 			print "GOT $v $rs $_\n";
-			if($v) {
+			if($v && !$ignore) {
 				push @a, [$node, $_,
 					$this->get_prop($type,$_)];
 			}

@@ -5,20 +5,34 @@
 
 # Parser.pm -- implement a VRML parser
 #  
-require 'VRML/VRMLNodes.pm';
-require 'VRML/VRMLFields.pm';
 
 use strict vars;
 
 package VRML::Error;
-use vars qw/@ISA @EXPORT $Word/;
+use vars qw/@ISA @EXPORT $Word $Float $Integer/;
 require Exporter;
 @ISA=qw/Exporter/;
 
-@EXPORT=qw/parsefail parsewarnstd $Word/;
+@EXPORT=qw/parsefail parsewarnstd $Word $Float $Integer/;
 
 # Define the RE for a VRML word.
 $Word = q|[^-+0-9"'#,\.\[\]\\{}\0-\x20][^"'#,\.\{\}\\{}\0-\x20]*|;
+
+# Spec:
+# ([+/-]?(
+#         (
+#           ([0-9]+(\.)?)
+#          |([0-9]*\.[0-9]+)
+#         )
+#         ([eE][+\-]?[0-9]+)?
+#         )
+#        ) 
+# XXX This is correct but might be too slow...
+# $Float = q~[+-]?(?:[0-9]+\.?|[0-9]*\.[0-9]+)(?:[eE][+-]?[0-9]+)?~
+$Float = q~[\deE+\-\.]+~;
+
+# ([+\-]?(([0-9]+)|(0[xX][0-9a-fA-F]+))) 
+$Integer = q~[\da-fA-FxX+\-]~;
 
 sub parsefail {
 	my $p = pos $_[0];
@@ -34,6 +48,9 @@ sub parsewarnstd {
 	my $textb = substr($_[0],$p-$n,$n);
 	warn("Parse warning: nonstandard feature: '$textb': $_[1]");
 }
+
+require 'VRML/VRMLNodes.pm';
+require 'VRML/VRMLFields.pm';
 
 package VRML::Parser;
 use vars qw/$Word/;
@@ -212,15 +229,17 @@ sub parse {
 		return "NULL";
 	}
 	if($nt eq "DEF") {
-		$_[2] =~ /\G\s*($Word)\b/ogs or parsefail($_[2],"DEF defname");
-		my $dn = $1;
-		print "DEF $dn\n"
+		$_[2] =~ /\G\s*($Word)\b/ogsc or parsefail($_[2],
+			"DEF must be followed by a defname");
+		my $defname = $1;
+		print "DEF $defname\n"
 			if $VRML::verbose::parse;
 		my $node = VRML::Field::SFNode->parse($scene,$_[2]);
-		return $scene->new_def($dn, $node);
+		return $scene->new_def($defname, $node);
 	} 
 	if($nt eq "USE") {
-		$_[2] =~ /\G\s*($Word)\b/ogs or parsefail($_[2],"USE defname");
+		$_[2] =~ /\G\s*($Word)\b/ogsc or parsefail($_[2],
+			"USE must be followed by a defname");
 		my $dn = $1;
 		print "USE $dn\n"
 			if $VRML::verbose::parse;

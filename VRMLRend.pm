@@ -4,6 +4,15 @@
 # for conditions of use and redistribution.
 
 
+#######################################################################
+#######################################################################
+#######################################################################
+#
+# Rend --
+#  actually render the node
+#
+#
+
 # Rend = real rendering
 %RendC = (
 # XXX Tex coords wrong :(
@@ -648,8 +657,16 @@ Background => '
 
 );
 
-# Prep = prepare for rendering children - if searching for nodes,
-# unnecessary
+#######################################################################
+#######################################################################
+#######################################################################
+#
+# Prep --
+#  Prepare for rendering a node - e.g. for transforms, do the transform
+#  but not the children.
+#
+#
+
 %PrepC = (
 Transform => (join '','
 	glPushMatrix();
@@ -781,13 +798,24 @@ Viewpoint => (join '','
 			a1, angle);
 
 		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
+		glPopMatrix(); /* This is so we do picking right */
+		/* glLoadIdentity(); */
 		gluPerspective(angle,vp[2]/(float)vp[3],0.1,200000);
 		glMatrixMode(GL_MODELVIEW);
 	}
 '),
 
 );
+
+#######################################################################
+#######################################################################
+#######################################################################
+#
+# Fin --
+#  Finish the rendering i.e. restore matrices and whatever to the
+#  original state.
+#
+#
 
 # Finish rendering
 %FinC = (
@@ -798,6 +826,15 @@ Billboard => (join '','
 	glPopMatrix();
 '),
 );
+
+#######################################################################
+#######################################################################
+#######################################################################
+#
+# Child --
+#  Render the actual children of the node.
+#
+#
 
 # Render children (real child nodes, not e.g. appearance/geometry)
 %ChildC = (
@@ -877,6 +914,15 @@ Billboard => (join '','
 $ChildC{Transform} = $ChildC{Group};
 $ChildC{Billboard} = $ChildC{Group};
 $ChildC{Anchor} = $ChildC{Group};
+
+#######################################################################
+#######################################################################
+#######################################################################
+#
+# Light --
+#  Render a light. XXX This needs work to be like the spec :(
+#
+#
 
 # NO startlist -- nextlight() may change :(
 %LightC = (

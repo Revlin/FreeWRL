@@ -14,6 +14,10 @@ package VRML::Browser;
 use strict vars;
 use POSIX;
 
+###############################################
+#
+# Public functions
+
 sub new {
 	my($type,$pars) = @_;
 	my $this = bless {
@@ -29,18 +33,10 @@ sub clear_scene {
 	delete $this->{Scene};
 }
 
-# use Data::Dumper;
-# $Data::Dumper::Indent = 1;
 # Discards previous scene
 sub load_file {
 	my($this,$file) = @_;
 	$this->{URL} = $file;
-	# my $t;
-	# {local $/; undef $/;
-	# open F, $file or die("Cannot open file '$file'");
-	# $t = <F>;
-	# close F;
-	# }
 	my $t = VRML::URL::get_absolute($file);
 	$this->load_string($t,$file);
 }
@@ -52,11 +48,9 @@ sub load_string {
 	$this->{Scene}->set_browser($this);
 	VRML::Parser::parse($this->{Scene},$string);
 	$this->{Scene}->make_executable();
-	# print Dumper($this->{Scene});
 	$this->{Scene}->make_backend($this->{BE});
 	$this->{Scene}->setup_routing($this->{EV},$this->{BE});
 	$this->{EV}->print;
-	# print Dumper($this->{EV});
 }
 
 sub get_scene {
@@ -90,6 +84,51 @@ sub tick {
 }
 
 my $FPS = 0;
+
+# The routines below implement the browser object interface.
+
+sub getName { return "FreeWRL by Tuomas J. Lukka" }
+sub getVersion { return $VRML::Config{VERSION} } 
+sub getCurrentSpeed { return 0.0 } # legal
+sub getCurrentFrameRate { return $FPS }
+sub getWorldURL { return $_[0]{URL} }
+sub replaceWorld { die("Can't do replaceworld yet") }
+sub loadURL { die("Can't do loadURL yet") }
+sub setDescription { print "Set description: ",
+	(join '',reverse split '',$_[1]),"\n" } # Read the spec: 4.12.10.8 ;)
+
+# Warning: due to the lack of soft references, all unreferenced nodes
+# leak horribly. Perl 5.005 (to be out soon) will probably
+# provide soft references. If not, we are going to make a temporary
+# solution. For now, we leak.
+sub createVrmlFromString { 
+	my ($this,$string) = @_;
+	my $scene = VRML::Scene->new($this->{EV},"FROM A STRING, DUH");
+	$scene->set_browser($this);
+	VRML::Parser::parse($scene, $string);
+	$scene->make_executable();
+# Do NOT! This just makes the node root -- no good.
+#	$scene->make_backend($this->{BE});
+	$scene->setup_routing($this->{EV}, $this->{BE});
+	return $scene->get_as_mfnode();
+}
+
+
+sub createVrmlFromURL { die "Can't do createvrmlfromurl yet" }
+
+
+sub addRoute { die "No addroute yet" }
+sub deleteRoute { die "No deleteroute yet" }
+
+# EAI
+sub api_beginUpdate { }
+sub api_endUpdate { }
+sub api_getNode { }
+
+#########################################################3
+#
+# Private stuff
+
 {
 my $ind = 0; 
 my $start = (POSIX::times())[0] / &POSIX::CLK_TCK;
@@ -132,49 +171,9 @@ sub pmeasures {
 }
 }
 
-# The routines below implement the browser object interface.
-
-sub getName { return "FreeWRL by Tuomas J. Lukka" }
-sub getVersion { return $VRML::Config{VERSION} } 
-sub getCurrentSpeed { return 0.0 } # legal
-sub getCurrentFrameRate { return $FPS }
-sub getWorldURL { return $_[0]{URL} }
-sub replaceWorld { die("Can't do replaceworld yet") }
-sub loadURL { die("Can't do loadURL yet") }
-sub setDescription { print "Set description: ",
-	(join '',reverse split '',$_[1]),"\n" } # Read the spec: 4.12.10.8 ;)
-
-# Warning: due to the lack of soft references, all unreferenced nodes
-# leak horribly. Perl 5.005 (to be out soon) will probably
-# provide soft references. If not, we are going to make a temporary
-# solution. For now, we leak.
-sub createVrmlFromString { 
-	my ($this,$string) = @_;
-	my $scene = VRML::Scene->new($this->{EV},"FROM A STRING, DUH");
-	$scene->set_browser($this);
-	VRML::Parser::parse($scene, $string);
-	$scene->make_executable();
-# Do NOT! This just makes the node root -- no good.
-#	$scene->make_backend($this->{BE});
-	$scene->setup_routing($this->{EV}, $this->{BE});
-	return $scene->get_as_mfnode();
-}
-
-
-sub createVrmlFromURL { die "Can't do createvrmlfromurl yet" }
-
-
-sub addRoute { die "No addroute yet" }
-sub deleteRoute { die "No deleteroute yet" }
-
-# EAI
-sub api_beginUpdate { }
-sub api_endUpdate { }
-sub api_getNode { }
 
 # No other nice place to put this so it's here...
 # For explanation, see the file ARCHITECTURE
-
 package VRML::Handles;
 
 {
@@ -205,7 +204,7 @@ sub get {
 	}
 	return $S{$handle}[0];
 }
-
 }
+
 
 1;

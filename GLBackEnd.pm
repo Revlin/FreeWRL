@@ -18,6 +18,63 @@ require 'VRML/Viewer.pm';
 use strict vars;
 # ISA?
 
+###############################################################
+#
+# Public backend API
+
+####
+#
+# Set rendering accuracy vs speed tradeoff
+# 
+# Currently only has effect when something changes - otherwise
+# values stored in the display lists are used for nodes.
+
+sub set_best {
+	glShadeModel(&GL_SMOOTH);
+	VRML::VRMLFunc::set_divs(20,20);
+}
+sub set_fast {
+	glShadeModel(&GL_FLAT);
+	VRML::VRMLFunc::set_divs(8,8);
+}
+
+####
+#
+# Set / pop views for snapshots
+
+sub pushview {
+	my($this, $loc, $ori) = @_;
+	push @{$this->{AView}}, $this->{Viewer};
+	$this->{Viewer} = VRML::Viewer::None->new($loc,$ori);
+}
+
+sub popview {
+	my($this) = @_;
+	$this->{Viewer} = pop @{$this->{AView}};
+}
+
+####
+#
+# Take a snapshot of the world. Returns array ref, 
+# first member: width, second: height and third is a raw string
+# of RGB values. You can use e.g. rawtoppm to convert this
+
+sub snapshot {
+	my($this) = @_;
+	my($w,$h) = @{$this}{qw/W H/};
+	my $n = 3*$w*$h;
+	my $str = pack("C$n");
+	glPixelStorei(&GL_UNPACK_ALIGNMENT,1);
+	glPixelStorei(&GL_PACK_ALIGNMENT,1);
+	glReadPixels(0,0,$w,$h,&GL_RGB,&GL_UNSIGNED_BYTE,
+		$str);
+	return [$w,$h,$str];
+}
+
+###############################################################
+#
+# Private functions, used by other browser modules below
+
 if(0) {
 VRML::VRMLFunc::render_verbose(1);
 $VRML::verbose = 1;
@@ -46,7 +103,8 @@ sub new {
                         ExposureMask | StructureNotifyMask |
                         PointerMotionMask),
                 width => $w,height => $h,
-                "x" => $x);
+                "x" => $x,
+		cmap => !$ENV{FREEWRL_NO_COLORMAP});
 
         glClearColor(0,0,0,1);
 #        my $lb = VRML::OpenGL::glpRasterFont("5x8",0,256);
@@ -98,15 +156,6 @@ sub quitpressed {
 	return delete $_[0]{QuitPressed};
 }
 
-sub set_best {
-	glShadeModel(&GL_SMOOTH);
-	VRML::VRMLFunc::set_divs(20,20);
-}
-sub set_fast {
-	glShadeModel(&GL_FLAT);
-	VRML::VRMLFunc::set_divs(8,8);
-}
-
 sub update_scene {
 	my($this,$time) = @_;
 
@@ -127,7 +176,6 @@ sub update_scene {
 }
 
 sub set_root { $_[0]{Root} = $_[1] }
-sub set_viewpoint { $_[0]{Viewpoint} = $_[1] }
 
 sub bind_viewpoint {
 	my($this,$node,$bind_info) = @_;
@@ -174,7 +222,9 @@ sub event {
 		my $x = $args[1]/$this->{W}; my $y = $args[2]/$this->{H};
 		if($but == 1 or $but == 3) {
 			# print "BPRESS $but $x $y\n";
-			$this->{Viewer}->handle("PRESS",$but,$x,$y);
+			$this->{Viewer}->handle("PRESS",$but,$x,$y,
+				$args[5] & &ShiftMask,
+				$args[5] & &ControlMask);
 		}
 		push @{$this->{BUTEV}}, [PRESS, $but, $args[1], $args[2]];
 		$this->{BUT} = $but;
@@ -190,6 +240,7 @@ sub event {
 		}
 		push @{$this->{BUTEV}}, [RELEASE, $but, $args[1], $args[2]];
 		$this->finish_event;
+		$this->{Viewer}->handle("RELEASE",$but,0,0);
 		$this->{SENSBUTREL} = $but;
 		undef $this->{BUT};
 	} elsif($type == &KeyPress) {
@@ -288,7 +339,12 @@ sub delete_node {
 
 sub setup_projection {
 	my($this,$pick,$x,$y) = @_;
+	my $i = pack ("i",0);
 		glMatrixMode(&GL_PROJECTION);
+	glGetIntegerv(&GL_PROJECTION_STACK_DEPTH,$i);
+	my $dep = unpack("i",$i);
+	while($dep-- > 1) { glPopMatrix(); }
+
 		glViewport(0,0,$this->{W},$this->{H});
 		glLoadIdentity();
 	# print "SVP: $this->{W} $this->{H}\n";
@@ -304,6 +360,7 @@ sub setup_projection {
 			  if $VRML::verbose::glsens;
 			glupPickMatrix($x, $vp[3]-$y, 3, 3, @vp);
 		}
+		glPushMatrix();
 		gluPerspective(40.0, $this->{W}/$this->{H},	
 			0.1, 200000);
 		glHint(&GL_PERSPECTIVE_CORRECTION_HINT,&GL_NICEST);
@@ -312,10 +369,15 @@ sub setup_projection {
 		# glShadeModel(GL_SMOOTH);
 }
 
+# sub unsetup_projection {
+# 	glMatrixMode(&GL_PROJECTION);
+# 	glPopMatrix();
+# 	glMatrixMode(&GL_MODELVIEW);
+# }
+
 sub setup_viewpoint {
 	my($this,$node) = @_;
-	# print "Rendering for viewpoint '$this' '$this->{Viewpoint}' '$this->{Viewpoint}{CNode}'\n";
-	my $viewpoint = $this->{Viewpoint}{CNode};
+	my $viewpoint = 0;
 		$this->{Viewer}->togl(); # Make viewpoint
 	     # Store stack depth
 		my $i = pack ("i",0);
@@ -341,29 +403,6 @@ sub setup_viewpoint {
 			glLoadIdentity();
 			glMultMatrixd($mod);
 		}
-}
-
-sub snapshot {
-	my($this) = @_;
-	my($w,$h) = @{$this}{qw/W H/};
-	my $n = 3*$w*$h;
-	my $str = pack("C$n");
-	glPixelStorei(&GL_UNPACK_ALIGNMENT,1);
-	glPixelStorei(&GL_PACK_ALIGNMENT,1);
-	glReadPixels(0,0,$w,$h,&GL_RGB,&GL_UNSIGNED_BYTE,
-		$str);
-	return [$w,$h,$str];
-}
-
-sub pushview {
-	my($this, $loc, $ori) = @_;
-	push @{$this->{AView}}, $this->{Viewer};
-	$this->{Viewer} = VRML::Viewer::None->new($loc,$ori);
-}
-
-sub popview {
-	my($this) = @_;
-	$this->{Viewer} = pop @{$this->{AView}};
 }
 
 # Given root node of scene, render it all

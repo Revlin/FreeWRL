@@ -51,10 +51,10 @@ sub FETCH {
 			print "TIEHARRVAL: @$v\n";
 		}
 	}
-	while($DEREF{ref $v}) {
-		$v = ${$v->get_ref};
-		print "DEREF: $v\n" if $VRML::verbose::tief;
-	}
+	# while($DEREF{ref $v}) {
+	# 	$v = ${$v->get_ref};
+	# 	print "DEREF: $v\n" if $VRML::verbose::tief;
+	# }
 	if($REALN{ref $v}) {
 		$v = $v->real_node;
 	}
@@ -71,10 +71,10 @@ sub STORE {
 	}
 	my $node = $$this;
 	my $v = \$node->{Fields}{$k};
-	while($DEREF{ref $$v}) {
-		$v = ${$v}->get_ref;
-		print "DEREF: $v\n" if $VRML::verbose::tief;
-	}
+	# while($DEREF{ref $$v}) {
+	# 	$v = ${$v}->get_ref;
+	# 	print "DEREF: $v\n" if $VRML::verbose::tief;
+	# }
 	$$v = $value;
 	$node->{EventModel}->put_event($node, $k, $value);
 	if(defined $node->{BackNode}) { $node->set_backend_fields($k);}
@@ -115,7 +115,7 @@ sub get_ref { if(!defined $_[0][1]) {die("IS not def!")} $_[0][1] }
 sub initialize {()}
 
 sub as_string {" IS $_[0][0] "}
-
+ 
 package VRML::DEF;
 sub new {bless [$_[1],$_[2]],$_[0]}
 sub copy {(ref $_[0])->new($_[0][0], $_[0][1]->copy)}
@@ -385,7 +385,11 @@ sub make_executable {
 	my($this,$scene) = @_;
 	# print "MKEXE $this->{TypeName}\n";
 	for(keys %{$this->{Fields}}) {
-		if(ref $this->{Fields}{$_} and 
+		if( ref $this->{Fields}{$_} eq "VRML::IS" ) {
+			my $n = $this->{Fields}{$_}->name;
+			$this->{Fields}{$_} =
+				$scene->make_is($this, $_, $n);
+		} elsif(ref $this->{Fields}{$_} and 
 		   "ARRAY" ne ref $this->{Fields}{$_}) {
 			# print "EFIELDT: SFReference\n";
 			$this->{Fields}{$_}->make_executable($scene,
@@ -478,6 +482,12 @@ sub make_backend {
 }
 }
 
+#######################################################################
+#
+# VRML::Scene
+#  this package represents a scene or a prototype definition/copy of it.
+#
+
 package VRML::Scene;
 #
 # Pars - parameters for proto, hashref
@@ -508,6 +518,7 @@ sub newp {
 	$this->{Name} = $name;
 # Extract the field types
 	$this->{FieldTypes} = {map {$_ => $this->{Pars}{$_}[1]} keys %{$this->{Pars}}};
+	$this->{FieldKinds} = {map {$_ => $this->{Pars}{$_}[0]} keys %{$this->{Pars}}};
 	$this->{Parent} = $parent;
 	$this->{EventModel} = $parent->{EventModel};
 	$this->{Defaults} = {map {$_ => $this->{Pars}{$_}[2]} keys %{$this->{Pars}}};
@@ -528,8 +539,9 @@ sub newextp {
 	return $this;
 }
 
-#############################
-# This is the public interface
+##################################################################
+#
+# This is the public API for use of the parser or whoever..
 
 {my $cnt;
 sub new_node {
@@ -636,7 +648,9 @@ sub get_browser {
 	return $this->{Browser};
 }
 
-###############################
+########################################################
+#
+# Private functions again.
 
 sub get_as_mfnode {
 	return $_[0]{Nodes};
@@ -659,6 +673,42 @@ sub get_copy {
 	$new->{EventModel} = $this->{EventModel};
 	$new->{Routes} = $this->{Routes};
 	return $new;
+}
+
+sub make_is {
+	my($this, $node, $field, $is) = @_;
+	my $retval;
+	my $pk = $this->{NodeParent}{Type}{FieldKinds}{$is} or
+		die("IS node problem") ;
+	my $ck = $node->{Type}{FieldKinds}{$field} or
+		die("IS node problem 2");
+	if($pk ne $ck and $ck ne "exposedField") {
+		die("INCOMPATIBLE PROTO TYPES (XXX FIXME Error message)!");
+	}
+	# If child's a field or exposedField, get initial value
+	print "CK: $ck, PK: $pk\n";
+	if($ck =~ /[fF]ield$/ and $pk =~ /[fF]ield$/) {
+		print "SETV: $_ NP : '$this->{NodeParent}' '$this->{NodeParent}{Fields}{$_}'\n";
+		$retval=
+		 "VRML::Field::$node->{Type}{FieldTypes}{$field}"->copy(
+		 	$this->{NodeParent}{Fields}{$is}
+		 );
+	} else {
+		$retval = $node->{Type}{Defaults}{$_};
+	}
+	# For eventIn, eventOut or exposedField, store for route
+	# building.
+	if($ck ne "field" and $pk ne "field") {
+		if($pk eq "eventIn" or ($pk eq "exposedField" and
+			$ck eq "exposedField")) {
+			push @{$this->{IS_ALIAS_IN}{$is}}, [$node, $field];
+		}
+		if($pk eq "eventOut" or ($pk eq "exposedField" and
+			$ck eq "exposedField")) {
+			push @{$this->{IS_ALIAS_OUT}{$is}}, [$node, $field];
+		}
+	}
+	return $retval;
 }
 
 #
@@ -777,6 +827,7 @@ sub make_backend {
 sub setup_routing {
 	my($this,$eventmodel,$be) = @_;
 	print "SETUP_ROUTING $this $eventmodel $be\n";
+
 	$this->iterate_nodes(sub {
 		return unless "VRML::Node" eq ref $_[0];
 		if($VRML::Nodes::initevents{$_[0]->{TypeName}}) {
@@ -789,15 +840,15 @@ sub setup_routing {
 		}
 		# Look at child nodes
 		my $c;
-		for(keys %{$_[0]{Fields}}) {
-			if("VRML::IS" eq ref $_[0]{Fields}{$_}) {
-				$eventmodel->add_is($this->{NodeParent},
-					$_[0]{Fields}{$_}->name,
-					$_[0],
-					$_
-				);
-			}
-		}
+		# for(keys %{$_[0]{Fields}}) {
+		# 	if("VRML::IS" eq ref $_[0]{Fields}{$_}) {
+		# 		$eventmodel->add_is($this->{NodeParent},
+		# 			$_[0]{Fields}{$_}->name,
+		# 			$_[0],
+		# 			$_
+		# 		);
+		# 	}
+		# }
 		if(($c = $VRML::Nodes::children{$_[0]->{TypeName}})) {
 			my $ref = $_[0]{RFields}{$c};
 			for(@$ref) {
@@ -828,6 +879,18 @@ sub setup_routing {
 		} ($fnam, $tnam);
 		$eventmodel->add_route($fn,$ff,$tn,$tf);
 	}
+	for my $isn (keys %{$this->{IS_ALIAS_IN}}) {
+		for(@{$this->{IS_ALIAS_IN}{$isn}}) {
+			$eventmodel->add_is_in($this->{NodeParent},
+				$isn, @$_);
+		}
+	}
+	for my $isn (keys %{$this->{IS_ALIAS_OUT}}) {
+		for(@{$this->{IS_ALIAS_OUT}{$isn}}) {
+			$eventmodel->add_is_out($this->{NodeParent},
+				$isn, @$_);
+		}
+	}
 }
 
 
@@ -841,8 +904,13 @@ sub init_routing {
 	$this->iterate_nodes_all(sub { push @e, $_[0]->initialize($this); });
 
 	for(keys %{$this->{Bindable}}) {
-		$this->{Stack}{$_} = [$this->{Bindable}{$_}];
-		$this->{Bindable}{$_}{RFields}{isBound} = 1;
+		print "INIT_BINDABLE '$_'\n";
+		$eventmodel->send_event_to($this->{Bindable}{$_},
+			set_bind, 1);
+		# $this->{Bindable}{$_}{RFields}{set_bind} = 1;
+		# XX
+		# $this->{Stack}{$_} = [$this->{Bindable}{$_}];
+		# $this->{Bindable}{$_}{RFields}{isBound} = 1;
 		# push @e, [$this->{Bindable}{$_}, isBound, 1];
 		# print "SET_BINDABLE $_ $this->{Bindable}{$_}{BackNode}\n";
 		# $backend->set_bindable($_, $this->{Bindable}{$_}{BackNode});
@@ -854,36 +922,39 @@ sub init_routing {
 sub set_bind {
 	my($this, $node, $value, $time) = @_;
 	my $t = $node->{TypeName};
-	my $s = $this->{Stack}{$t};
-	print "SET_BIND!\n"
+	my $s = ($this->{Stack}{$t} or $this->{Stack}{$t} = []);
+	print "SET_BIND! $this ($node $t $value), STACK #: $#$s\n"
 		if $VRML::verbose::bind;
 	if($value) {
-		if($node == $s->[-1]) {
-			print("Bind eq, ign\n")
+		if($#$s != -1) {  # Do we have a stack?
+			if($node == $s->[-1]) {
+				print("Bind eq, ign\n")
+					if $VRML::verbose::bind;
+			}
+			my $i;
+			for(0..$#$s) {
+				if($s->[$_] == $node) {$i = $_}
+			}
+			print "WAS AS '$i'\n"
 				if $VRML::verbose::bind;
-		}
-		my $i;
-		for(0..$#$s) {
-			if($s->[$_] == $node) {$i = $_}
-		}
-		print "WAS AS '$i'\n"
-			if $VRML::verbose::bind;
-		$this->{Stack}{$t}->[-1]->{RFields}{isBound} = 0;
-		if($s->[-1]->{Type}{Actions}{WhenUnBound}) {
-			&{$s->[-1]->{Type}{Actions}{WhenUnBound}}($s->[-1],$this);
-		}
-		if(defined $i) {
-			splice @$s, $i, 1;
+			$s->[-1]->{RFields}{isBound} = 0;
+			if($s->[-1]->{Type}{Actions}{WhenUnBound}) {
+				&{$s->[-1]->{Type}{Actions}{WhenUnBound}}($s->[-1],$this);
+			}
+			if(defined $i) {
+				splice @$s, $i, 1;
+			}
 		}
 		$node->{RFields}{bindTime} = $time;
 		$node->{RFields}{isBound} = 1;
 		if($node->{Type}{Actions}{WhenBound}) {
 			&{$node->{Type}{Actions}{WhenBound}}($node,$this,0);
 		}
+		print "PUSHING $node on $s\n" if $VRML::verbose::bind;
 		push @$s, $node;
 	} else {
 		# We're unbinding a node.
-		print "UNBINDING!\n"
+		print "UNBINDING IT!\n"
 			if $VRML::verbose::bind;
 		if($node == $s->[-1]) {
 			print "WAS ON TOP!\n"

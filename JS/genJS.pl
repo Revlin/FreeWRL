@@ -33,6 +33,132 @@ require '../VRMLFields.pm';
 	SFRotation
 /;
 
+{
+
+my $ri = VRML::Field::SFRotation->rot_invert("rfrom->v","rto->v");
+my $mv = VRML::Field::SFRotation->rot_multvec("rfrom->v","vfrom->v", "vto->v");
+
+$extra{SFRotation} = {
+	inverse => qq~
+		JSObject *o;
+		JSObject *proto;
+		TJL_SFRotation *rfrom;
+		TJL_SFRotation *rto;
+	    proto = JS_GetPrototype(cx, obj);
+	    o = JS_ConstructObject(cx, &cls_SFRotation, proto, NULL);
+	    rfrom = JS_GetPrivate(cx,obj);
+	    rto = JS_GetPrivate(cx,o);
+	    {
+	    $ri;
+	    }
+	    *rval = OBJECT_TO_JSVAL(o);
+	~,
+	multVec => qq~
+
+		JSObject *ret ;
+		JSObject *o;
+		JSObject *ro;
+		JSObject *proto;
+		TJL_SFRotation *rfrom;
+		TJL_SFVec3f *vfrom;
+		TJL_SFVec3f *vto;
+	if(JS_ConvertArguments(cx, argc, argv, "o",&o) == JS_FALSE) {
+			printf("Convarg: false\\n");
+			return JS_FALSE;
+	};
+	    if (!JS_InstanceOf(cx, o, &cls_SFVec3f, argv)) {
+		die("multVec: has to be SFVec3f ");
+		return JS_FALSE;
+	    }
+	    proto = JS_GetPrototype(cx, o);
+	    ro = JS_ConstructObject(cx, &cls_SFVec3f, proto, NULL);
+		rfrom = JS_GetPrivate(cx,obj);
+		vfrom = JS_GetPrivate(cx,o);
+		vto = JS_GetPrivate(cx,ro);
+		{
+		$mv
+		}
+	    *rval = OBJECT_TO_JSVAL(ro);
+
+	~
+};
+
+my $veci = q~
+JSObject *ret;
+	    JSObject *v2;
+		JSObject *proto;
+		JSObject *ro;
+		TJL_SFVec3f *vec1;
+		TJL_SFVec3f *vec2;
+		TJL_SFVec3f *res;
+	if(JS_ConvertArguments(cx, argc, argv, "o",&v2) == JS_FALSE) {
+			printf("Convarg: false\\n");
+			return JS_FALSE;
+	};
+	    if (!JS_InstanceOf(cx, v2, &cls_SFVec3f, argv)) {
+		die("vec function: has to be SFVec3f ");
+		return JS_FALSE;
+	    }
+	    proto = JS_GetPrototype(cx, v2);
+	    ro = JS_ConstructObject(cx, &cls_SFVec3f, proto, NULL);
+	    vec1 = JS_GetPrivate(cx,obj);
+	    vec2 = JS_GetPrivate(cx,v2);
+	    res = JS_GetPrivate(cx,ro);
+	    *rval = OBJECT_TO_JSVAL(ro);
+	   ~;
+
+my $vecr = q~
+	JSObject *ret;
+		JSObject *ro;
+		JSObject *proto;
+		TJL_SFVec3f *vec1;
+		TJL_SFVec3f *res;
+	if(JS_ConvertArguments(cx, argc, argv, "") == JS_FALSE) {
+			printf("Convarg: false\\n");
+			return JS_FALSE;
+	};
+	    proto = JS_GetPrototype(cx, obj);
+	    ro = JS_ConstructObject(cx, &cls_SFVec3f, proto, NULL);
+	    vec1 = JS_GetPrivate(cx,obj);
+	    res = JS_GetPrivate(cx,ro);
+	    *rval = OBJECT_TO_JSVAL(ro);
+~;
+
+my $veco = q~
+	jsdouble result;
+	jsdouble *dp;
+	JSObject *ret;
+		JSObject *proto;
+		TJL_SFVec3f *vec1;
+		TJL_SFVec3f *res;
+	if(JS_ConvertArguments(cx, argc, argv, "") == JS_FALSE) {
+			printf("Convarg: false\\n");
+			return JS_FALSE;
+	};
+	    proto = JS_GetPrototype(cx, obj);
+	    vec1 = JS_GetPrivate(cx,obj);
+~;
+
+$extra{SFVec3f} = {
+	add => $veci.VRML::Field::SFVec3f->vec_add(qw/(*vec1).v (*vec2).v (*res).v/),
+	cross => $veci.VRML::Field::SFVec3f->vec_cross(qw/(*vec1).v (*vec2).v (*res).v/),
+	subtract => $veci.VRML::Field::SFVec3f->vec_subtract(qw/(*vec1).v (*vec2).v (*res).v/),
+	normalize => $vecr.VRML::Field::SFVec3f->vec_normalize(qw/(*vec1).v (*res).v/),
+	negate => $vecr.VRML::Field::SFVec3f->vec_negate(qw/(*vec1).v (*res).v/),
+	length => $veco.VRML::Field::SFVec3f->vec_length(qw/(*vec1).v result/).
+			" 
+		        dp = JS_NewDouble(cx,result);
+			*rval = DOUBLE_TO_JSVAL(dp); ",
+};
+
+}
+
+$header .= join '', map {"extern JSClass cls_$_; "} @Fields;
+
+$header .= "
+$VRML::Field::avecmacros
+";
+
 $field_funcs = join '',map {get_offsf($_)} @Fields;
 
 @MFFields = qw/
@@ -111,6 +237,9 @@ $load_classes .= "
 		cons_SFNode, 3,
 		NULL, meth_SFNode /* methods */,
 		NULL, NULL);
+	    { jsval v = OBJECT_TO_JSVAL(proto_SFNode);
+    JS_SetProperty(cx, globalObj, \"__SFNode_proto\", &v);
+    }
 ";
 
 $field_funcs .= qq~
@@ -203,6 +332,9 @@ sub def_mffield {
 			cons_$f, 3,
 			NULL, meth_$f /* methods */,
 			NULL, NULL);
+	    { jsval v = OBJECT_TO_JSVAL(proto_$f);
+	    JS_SetProperty(cx, globalObj, \"__${f}_proto\", &v);
+	    }
 	";
 
 
@@ -360,6 +492,13 @@ __STOP__
 
 }
 
+#################################################################
+#################################################################
+#################################################################
+#
+# SF fields
+#
+
 sub get_offsf {
 	my($f) = @_;
 	$ft = "VRML::Field::$_";
@@ -380,16 +519,56 @@ sub get_offsf {
 	my $setprop = join "", map {
 		"case $_: $numprop->{$_} = *JSVAL_TO_DOUBLE(myv); break; \n"
 	} keys %$numprop;
+	my $xtr = join "\n",map {
+		"
+		static JSBool
+		${_}_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+		{
+		    if (!JS_InstanceOf(cx, obj, &cls_$f, argv))
+			return JS_FALSE;
+		     printf(\"METHOD: $_ $f\\n\");
+		    {
+			$extra{$f}{$_}
+	            }
+		    return JS_TRUE;
+		}
+		"
+			} keys %{$extra{$f}};
+	my $extmethods = join "\n", map {
+		"{\"$_\", ${_}_$f, 0},"
+	} keys %{$extra{$f}};
 
 	my $jstostr = $ft->jstostr("(ptr->v)");
 	$jstostr =~ s/\$RET\(([^)]*)\)/str_ = JS_NewStringCopyZ(cx,$1)/;
 	my $jscons = $ft->jscons("(ptr->v)");
+	if($#$jscons != 1) {
+		$jscons->[1] = qq~
+			printf("CONSTRUCTING: GOT %d args\\n",argc);
+			if(argc==0) {
+				$jscons->[4];
+				return JS_TRUE;
+			}
+			if(JS_ConvertArguments(cx, argc, argv, "$jscons->[1]",
+				$jscons->[2]) == JS_FALSE) {
+					printf("Convarg: false\\n");
+					return JS_FALSE;
+			};
+			printf("CONSARGS: %f %f %f\\n",pars[0],pars[1],pars[2]);
+			{
+				$jscons->[3];
+			}
+		~;
+		$#$jscons = 1;
+	}
 
 	$load_classes .= "
 	    proto_$f = JS_InitClass(cx, globalObj, NULL, &cls_$f,
 			cons_$f, 3,
 			NULL, meth_$f /* methods */,
 			NULL, NULL);
+	    { jsval v = OBJECT_TO_JSVAL(proto_$f);
+	    JS_SetProperty(cx, globalObj, \"__${f}_proto\", &v);
+	    }
 	";
 
 	$add_classes .= <<__STOP__;
@@ -426,10 +605,10 @@ $cs
 
 static JSObject *proto_$f;
 
-struct TJL_$f {
+typedef struct TJL_$f {
 	int touched; 
 	$cv;
-};
+} TJL_$f;
 
 void *new_$f() {
 	struct TJL_$f *ptr;
@@ -489,7 +668,7 @@ setprop_$f(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return JS_TRUE;
 }
 
-static JSClass cls_$f = {
+JSClass cls_$f = {
 	"$f", JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,  JS_PropertyStub,  getprop_$f,  setprop_$f,
     JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   JS_FinalizeStub
@@ -558,13 +737,14 @@ touched_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-
+$xtr
 
 static JSFunctionSpec (meth_$f)[] = {
 /* $methlist, */
 {"assign", assign_$f, 0},
 {"toString", tostr_$f, 0},
 {"__touched", touched_$f, 0},
+$extmethods
 {0}
 };
 
@@ -574,22 +754,14 @@ cons_$f(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	void *p = new_$f();
 	struct TJL_$f *ptr = p;
 	$jscons->[0];
+
 	JS_DefineProperties(cx, obj, prop_$f);
 	JS_SetPrivate(cx, obj, p);
-
-	printf("CONSTRUCTING: GOT %d args\\n",argc);
-	if(JS_ConvertArguments(cx, argc, argv, "$jscons->[1]",
-		$jscons->[2]) == JS_FALSE) {
-			printf("Convarg: false\\n");
-			return JS_FALSE;
-	};
-	printf("CONSARGS: %f %f %f\\n",pars[0],pars[1],pars[2]);
-
-	{
-		$jscons->[3];
-	}
     /* printf("ptr: %d %f %f %f\\n", ptr, ptr->v.c[0],ptr->v.c[1],ptr->v.c[2]);
      */
+      {
+     	$jscons->[1]
+      }
 	return JS_TRUE;
 }
 
@@ -616,6 +788,7 @@ print XS <<__STOP__
 
 #define STACK_CHUNK_SIZE 8192
 
+
 static int verbose = 1;
 
 static JSRuntime *rt;
@@ -634,6 +807,8 @@ static JSBool global_resolve(JSContext *cx, JSObject *obj, jsval id)
 {
 	return JS_TRUE;
 }
+
+$header
 
 $browser_functions
 
@@ -814,5 +989,4 @@ CODE:
 
 $add_classes
 __STOP__
-
 

@@ -4,6 +4,8 @@
 # for conditions of use and redistribution.
 
 
+use strict qw/vars/;
+
 # 
 # The different viewers for VRML::Browser.
 #
@@ -21,9 +23,15 @@ require 'VRML/Quaternion.pm';
 sub new {
 	my($type,$old) = @_;
 	my $this = bless {
+	# For our viewpoint
 		Pos => [0,0,10],
 		Dist => 10,
 		Quat => new VRML::Quaternion(1,0,0,0),
+	# The viewpoint node at the time of the binding -- we have
+	# to counteract it.
+	# AntiPos is the real position, AntiQuat is inverted ;)
+		AntiPos => [0,0,0],
+		AntiQuat => new VRML::Quaternion(1,0,0,0),
 	}, $type;
 	if($old) {
 		$this->{Pos} = $old->{Pos};
@@ -42,7 +50,14 @@ sub bind_viewpoint {
 	if(defined $bind_info) {
 		$this->{Pos} = $bind_info->[0];
 		$this->{Quat} = $bind_info->[1];
+	} else {
+		$this->{Pos} = [@{$node->{Fields}{position}}];
+		$this->{Quat} = VRML::Quaternion->new_vrmlrot(
+		@{$node->{Fields}{orientation}});
 	}
+	$this->{AntiPos} = [@{$node->{Fields}{position}}];
+	$this->{AntiQuat} = VRML::Quaternion->new_vrmlrot(
+		@{$node->{Fields}{orientation}})->invert;
 }
 
 # Just restore these later...
@@ -51,8 +66,16 @@ sub unbind_viewpoint {
 	return [$this->{Pos},$this->{Quat}];
 }
 
+sub togl {
+	my($this) = @_;
+	VRML::OpenGL::glTranslatef(@{$this->{AntiPos}});
+	$this->{AntiQuat}->togl();
+	$this->{Quat}->togl();
+	VRML::OpenGL::glTranslatef(map {-$_} @{$this->{Pos}});
+}
+
 package VRML::Viewer::None;
-@ISA=VRML::Viewer;
+@VRML::Viewer::None::ISA=VRML::Viewer;
 
 sub new {
 	my($type, $loc, $ori) = @_;
@@ -63,51 +86,90 @@ sub new {
 	return $this;
 }
 
-sub togl {
-	my($this) = @_;
-	$this->{Quat}->togl();
-	VRML::OpenGL::glTranslatef(map {-$_} @{$this->{Pos}});
-	$ind ++;
-}
-
 package VRML::Viewer::Walk;
-@ISA=VRML::Viewer;
+@VRML::Viewer::Walk::ISA=VRML::Viewer;
 
 sub handle {
-	my($this, $mev, $but, $mx, $my) = @_;
-	# print "VEIEVENT\n";
-	if($mev eq "PRESS" and $but == 1) {
-		$this->{SY} = $my;
-		$this->{SX} = $mx;
-	} elsif($mev eq "DRAG" and $but == 1) {
-		my $yd = ($my - $this->{SY});
-		my $xd = ($mx - $this->{SX});
-		my $nv = $this->{Quat}->invert->rotate([0,0,0.15*$yd]);
-		for(0..2) {$this->{Pos}[$_] += $nv->[$_]}
-		my $nq = new VRML::Quaternion(1-0.2*$xd,0,0.2*$xd,0);
-		$nq->normalize_this;
-		$this->{Quat} = $nq->multiply($this->{Quat});
-		print "WVIEW: (",(join ',',@{$this->{Quat}}),") (",
-				(join ',',@{$this->{Pos}}),") (",
-				(join ',',@{$nv}),") \n";
-	}
+       my($this, $mev, $but, $mx, $my) = @_;
+       # print "VEIEVENT\n";
+       if($mev eq "PRESS" and $but == 1) {
+               $this->{SY} = $my;
+               $this->{SX} = $mx;
+       } elsif($mev eq "DRAG" and $but == 1) {
+               my $yd = ($my - $this->{SY});
+               my $xd = ($mx - $this->{SX});
+               my $nv = $this->{Quat}->invert->rotate([0,0,0.15*$yd]);
+               for(0..2) {$this->{Pos}[$_] += $nv->[$_]}
+               my $nq = new VRML::Quaternion(1-0.2*$xd,0,0.2*$xd,0);
+               $nq->normalize_this;
+               $this->{Quat} = $nq->multiply($this->{Quat});
+               print "WVIEW: (",(join ',',@{$this->{Quat}}),") (",
+                               (join ',',@{$this->{Pos}}),") (",
+                               (join ',',@{$nv}),") \n";
+       }
+    my($this, $mev, $but, $mx, $my) = @_;
+    # print "VEIEVENT\n";
+    if($mev eq "PRESS" and $but == 1) {
+        $this->{SY} = $my;
+        $this->{SX} = $mx;
+    } elsif($mev eq "PRESS" and $but == 3) {
+        $this->{SY} = $my;
+        $this->{SX} = $mx;
+    } elsif($mev eq "DRAG" and $but == 1) {
+        $this->{ZD} = ($my - $this->{SY});
+        $this->{RD} = ($mx - $this->{SX}) * 0.5;
+    } elsif($mev eq "DRAG" and $but == 3) {
+        $this->{XD} = ($mx - $this->{SX});
+        $this->{YD} = -($my - $this->{SY});
+    } elsif ($mev eq "RELEASE") {
+        if ($but == 1) {
+            $this->{ZD} = 0;
+            $this->{RD} = 0;
+        } elsif ($but == 3) {
+            $this->{XD} = 0;
+            $this->{YD} = 0;
+        }
+    }
 }
+
+sub handle_tick {
+    my($this, $time) = @_;
+    # print "handle_tick: time=$time rd=$this->{RD} yd=$this->{YD} zd=$this->{ZD}\n";
+    my $nv = $this->{Quat}->invert->rotate([0.15*$this->{XD},0.15*$this->{YD},0.15*$this->{ZD}]);
+    for(0..2) {$this->{Pos}[$_] += $nv->[$_]}
+    my $nq = new VRML::Quaternion(1-0.2*$this->{RD},0,0.2*$this->{RD},0);
+    $nq->normalize_this;
+    $this->{Quat} = $nq->multiply($this->{Quat});
+}
+
+
+# # The old routine
+# sub handle {
+# 	my($this, $mev, $but, $mx, $my) = @_;
+# 	# print "VEIEVENT\n";
+# 	if($mev eq "PRESS" and $but == 1) {
+# 		$this->{SY} = $my;
+# 		$this->{SX} = $mx;
+# 	} elsif($mev eq "DRAG" and $but == 1) {
+# 		my $yd = ($my - $this->{SY});
+# 		my $xd = ($mx - $this->{SX});
+# 		my $nv = $this->{Quat}->invert->rotate([0,0,0.15*$yd]);
+# 		for(0..2) {$this->{Pos}[$_] += $nv->[$_]}
+# 		my $nq = new VRML::Quaternion(1-0.2*$xd,0,0.2*$xd,0);
+# 		$nq->normalize_this;
+# 		$this->{Quat} = $nq->multiply($this->{Quat});
+# 		print "WVIEW: (",(join ',',@{$this->{Quat}}),") (",
+# 				(join ',',@{$this->{Pos}}),") (",
+# 				(join ',',@{$nv}),") \n";
+# 	}
+# }
 
 sub ignore_vpcoords {
 	return 0;
 }
 
-{my $ind = 0;
-sub togl {
-	my($this) = @_;
-	$this->{Quat}->togl();
-	VRML::OpenGL::glTranslatef(map {-$_} @{$this->{Pos}});
-	$ind ++;
-}
-}
-
 package VRML::Viewer::Fly; # Modeled after Descent(tm) ;)
-@ISA=VRML::Viewer;
+@VRML::Viewer::Fly::ISA=VRML::Viewer;
 #
 # Members:
 #  Velocity - current velocity as 3-vector
@@ -181,7 +243,7 @@ sub handle_tick {
 		$_ += $dt * $aadd[$ind++] * 18.5;
 		if(abs($_) > 9.0) {$_ /= abs($_)/9.0}
 	}
-	$nv = $this->{Quat}->invert->rotate(
+	my $nv = $this->{Quat}->invert->rotate(
 		[map {$_ * $dt} @{$this->{Velocity}}]
 		);
 	for(0..2) {$this->{Pos}[$_] += $nv->[$_]}
@@ -203,17 +265,8 @@ sub handle_tick {
 }
 }
 
-{my $ind = 0;
-sub togl {
-	my($this) = @_;
-	$this->{Quat}->togl();
-	VRML::OpenGL::glTranslatef(map {-$_} @{$this->{Pos}});
-	$ind ++;
-}
-}
-
 package VRML::Viewer::Examine;
-@ISA=VRML::Viewer;
+@VRML::Viewer::Examine::ISA=VRML::Viewer;
 
 # Mev: PRESS, DRAG
 sub handle {
@@ -270,21 +323,6 @@ sub change_viewpoint {
 	$this->{Dist} = sqrt($p->[0]**2 + $p->[1]**2 + $p->[2]**2);
 	$this->{Quat} = new VRML::Quaternion(
 		$oc, map {$os * $_} @{$o}[0..2]);
-}
-
-{my $ind = 0;
-sub togl {
-	my($this) = @_;
-#	print "VP: [",(join ', ',@{$this->{Pos}}),"] [",(join ', ',@{$this->{Quat}}),"]\n";
-	if($ind % 3 == -1) { # XXX Why doesn't this work?
-		$this->{Quat}->togl();
-		VRML::OpenGL::glTranslatef(map {-$_} @{$this->{Pos}});
-	} else {
-		VRML::OpenGL::glTranslatef(0,0,-$this->{Dist});
-		$this->{Quat}->togl();
-	}
-	$ind ++;
-}
 }
 
 # Whether to ignore the internal VP coords aside from jumps?

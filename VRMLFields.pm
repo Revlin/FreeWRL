@@ -52,12 +52,23 @@ sub cstruct () {""}
 sub cfunc {die("Must overload cfunc")}
 sub jsimpleget {return {}}
 
+sub copy {
+	my($type, $value) = @_;
+	if(!ref $value) {return $value}
+	if(ref $value eq "ARRAY") {
+		return [map {copy("",$_)} @$value]
+	}
+	die("Can't copy this")
+}
+
 package VRML::Field::SFFloat;
 @ISA=VRML::Field;
+VRML::Error->import();
 
 sub parse {
 	my($type,$p,$s,$n) = @_;
-	$_[2] =~ /\G\s*([\d\.+-eE]+)\b/gs or die "$s at $p didn't match number";
+	$_[2] =~ /\G\s*($Float)\b/ogcs or 
+		parsefail($_[2], "didn't match SFFloat");
 	return $1;
 }
 
@@ -96,11 +107,12 @@ sub jstr {"return new Double(v).toString();"}
 
 package VRML::Field::SFInt32;
 @ISA=VRML::Field;
+VRML::Error->import;
 
 sub parse {
 	my($type,$p,$s,$n) = @_;
-	$_[2] =~ /\G\s*(-?[\deE]+)\b/gsc 
-		or VRML::Error::parsefail($_[2],"not proper SFInt32");
+	$_[2] =~ /\G\s*($Integer)\b/ogsc 
+		or parsefail($_[2],"not proper SFInt32");
 	return $1;
 }
 
@@ -112,11 +124,12 @@ sub cfunc {return "$_[1] = SvIV($_[2]);\n"}
 
 package VRML::Field::SFColor;
 @ISA=VRML::Field;
+VRML::Error->import;
 
 sub parse {
 	my($type,$p) = @_;
-	$_[2] =~ /\G\s*([\d\.+-eE]+)\s+([\d\.+-eE]+)\s+([\d\.+-eE]+)\b/gsc 
-		or die "$_[2] at $p didn't match color: '",$type->es($_[2]),"'\n'";
+	$_[2] =~ /\G\s*($Float)\s+($Float)\s+($Float)\b/ogsc 
+		or parsefail($_[2],"Didn't match SFColor");
 	return [$1,$2,$3];
 }
 
@@ -202,7 +215,9 @@ sub jscons {
 		"jsdouble pars[3];",
 		"d d d",
 		"&(pars[0]),&(pars[1]),&(pars[2])",
-		"$_[1].c[0] = pars[0]; $_[1].c[1] = pars[1]; $_[1].c[2] = pars[2];"
+		"$_[1].c[0] = pars[0]; $_[1].c[1] = pars[1]; $_[1].c[2] = pars[2];",
+		# Last: argless
+		"$_[1].c[0] = 0; $_[1].c[1] = 0; $_[1].c[2] = 0;",
 	];
 }
 
@@ -222,14 +237,37 @@ sub js_default {
 	return "new SFVec3f(0,0,0)"
 }
 
+sub vec_add { join '',map {"$_[3].c[$_] = $_[1].c[$_] + $_[2].c[$_];"} 0..2; }
+sub vec_subtract { join '',map {"$_[3].c[$_] = $_[1].c[$_] - $_[2].c[$_];"} 0..2; }
+sub vec_negate { join '',map {"$_[2].c[$_] = -$_[1].c[$_];"} 0..2; }
+sub vec_length { "$_[2] = sqrt(".(join '+',map {"$_[1].c[$_]*$_[1].c[$_]"} 0..2)
+	.");"; }
+sub vec_normalize { "{double xx = sqrt(".(join '+',map {"$_[1].c[$_]*$_[1].c[$_]"} 0..2)
+	.");
+	". (join '', map {"$_[2].c[$_] = $_[1].c[$_]/xx;"} 0..2)."}" }
+
+sub vec_cross {
+	"
+		$_[3].c[0] = 
+			$_[1].c[1] * $_[2].c[2] - 
+			$_[2].c[1] * $_[1].c[2];
+		$_[3].c[1] = 
+			$_[1].c[2] * $_[2].c[0] - 
+			$_[2].c[2] * $_[1].c[0];
+		$_[3].c[2] = 
+			$_[1].c[0] * $_[2].c[1] - 
+			$_[2].c[0] * $_[1].c[1];
+	"
+}
 
 package VRML::Field::SFVec2f;
 @ISA=VRML::Field;
+VRML::Error->import();
 
 sub parse {
 	my($type,$p) = @_;
-	$_[2] =~ /\G\s*([\d\.+-eE]+)\s+([\d\.+-eE]+)\b/gsc 
-		or die "$_[2] at $p didn't match sfvec2f: '",$type->es($_[2]),"'\n'";
+	$_[2] =~ /\G\s*($Float)\s+($Float)\b/gsc 
+		or parsefail($_[2],"didn't match SFVec2f");
 	return [$1,$2];
 }
 
@@ -290,10 +328,11 @@ sub fromj {[split ' ',$_[1]]}
 
 package VRML::Field::SFRotation;
 @ISA=VRML::Field;
+VRML::Error->import();
 
 sub parse {
 	my($type,$p) = @_;
-	$_[2] =~ /\G\s*([\d\.eE+-]+)\s+([\d\.eE+-]+)\s+([\d\.eE+-]+)\s+([\d\.eE+-]+)\b/gsc 
+	$_[2] =~ /\G\s*($Float)\s+($Float)\s+($Float)\s+($Float)\b/ogsc 
 		or VRML::Error::parsefail($_[2],"not proper rotation");
 	return [$1,$2,$3,$4];
 }
@@ -303,6 +342,45 @@ sub as_string {join ' ',@{$_[1]}}
 
 sub cstruct {return "struct SFRotation {
  	float r[4]; };"}
+
+sub rot_invert {
+	"
+	 $_[2].r[0] = $_[1].r[0];
+	 $_[2].r[1] = $_[1].r[1];
+	 $_[2].r[2] = $_[1].r[2];
+	 $_[2].r[3] = -$_[1].r[3];
+	"
+}
+
+$VRML::Field::avecmacros = "
+#define AVECLEN(x) (sqrt((x)[0]*(x)[0]+(x)[1]*(x)[1]+(x)[2]*(x)[2]))
+#define AVECPT(x,y) ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
+#define AVECCP(x,y,z)   (z)[0]=(x)[1]*(y)[2]-(x)[2]*(y)[1]; \\
+			(z)[1]=(x)[2]*(y)[0]-(x)[0]*(y)[2]; \\
+			(z)[2]=(x)[0]*(y)[1]-(x)[1]*(y)[0];
+#define AVECSCALE(x,y) x[0] *= y; x[1] *= y; x[2] *= y;
+";
+
+sub rot_multvec {
+	qq~
+		double rl = AVECLEN($_[1].r);
+		double vl = AVECLEN($_[2].c);
+		double rlpt = AVECPT($_[1].r, $_[2].c) / rl / vl;
+		float c1[3];
+		float c2[3];
+		double s = sin($_[1].r[3]), c = cos($_[1].r[3]);
+		AVECCP($_[1].r,$_[2].c,c1); AVECSCALE(c1, 1.0 / rl );
+		AVECCP($_[1].r,c1,c2); AVECSCALE(c2, 1.0 / rl) ;
+		$_[3].c[0] = $_[2].c[0] + s * c1[0] + (1-c)*c2[0];
+		$_[3].c[1] = $_[2].c[1] + s * c1[1] + (1-c)*c2[1];
+		$_[3].c[2] = $_[2].c[2] + s * c1[2] + (1-c)*c2[2];
+		printf("ROT MULTVEC (%f %f %f : %f) (%f %f %f) -> (%f %f %f)\\n",
+			$_[1].r[0], $_[1].r[1], $_[1].r[2], $_[1].r[3],
+			$_[2].c[0], $_[2].c[1], $_[2].c[2],
+			$_[3].c[0], $_[3].c[1], $_[3].c[2]);
+	~
+}
+
 sub ctype {return "struct SFRotation $_[1]"}
 sub cget {return "($_[1].r[$_[2]])"}
 
@@ -347,18 +425,85 @@ sub jstostr {
 	"
 }
 sub jscons {
-	return [
-		"jsdouble pars[4];",
-		"d d d d",
-		"&(pars[0]),&(pars[1]),&(pars[2]),&(pars[3])",
-		"$_[1].r[0] = pars[0]; $_[1].r[1] = pars[1]; $_[1].r[2] = pars[2]; $_[1].r[3] = pars[3];"
-	];
+return ["",qq~
+	jsdouble pars[4];
+	JSObject *ob1;
+	JSObject *ob2;
+	if(JS_ConvertArguments(cx,argc,argv,"d d d d",
+		&(pars[0]),&(pars[1]),&(pars[2]),&(pars[3])) == JS_TRUE) {
+		$_[1].r[0] = pars[0]; 
+		$_[1].r[1] = pars[1]; 
+		$_[1].r[2] = pars[2]; 
+		$_[1].r[3] = pars[3];
+	} else if(JS_ConvertArguments(cx,argc,argv,"o o",
+		&ob1,&ob2) == JS_TRUE) {
+		TJL_SFVec3f *vec1;
+		TJL_SFVec3f *vec2;
+		double v1len, v2len, v12dp;
+		    if (!JS_InstanceOf(cx, ob1, &cls_SFVec3f, argv)) {
+			die("sfrot obj: has to be SFVec3f ");
+			return JS_FALSE;
+		    }
+		    if (!JS_InstanceOf(cx, ob2, &cls_SFVec3f, argv)) {
+			die("sfrot obj: has to be SFVec3f ");
+			return JS_FALSE;
+		    }
+		vec1 = JS_GetPrivate(cx,ob1);
+		vec2 = JS_GetPrivate(cx,ob2);
+		v1len = sqrt( vec1->v.c[0] * vec1->v.c[0] + 
+			vec1->v.c[1] * vec1->v.c[1] + 
+			vec1->v.c[2] * vec1->v.c[2] );
+		v2len = sqrt( vec2->v.c[0] * vec2->v.c[0] + 
+			vec2->v.c[1] * vec2->v.c[1] + 
+			vec2->v.c[2] * vec2->v.c[2] );
+		v12dp = vec1->v.c[0] * vec2->v.c[0] + 
+			vec1->v.c[1] * vec2->v.c[1] + 
+			vec1->v.c[2] * vec2->v.c[2] ;
+		$_[1].r[0] = 
+			vec1->v.c[1] * vec2->v.c[2] - 
+			vec2->v.c[1] * vec1->v.c[2];
+		$_[1].r[1] = 
+			vec1->v.c[2] * vec2->v.c[0] - 
+			vec2->v.c[2] * vec1->v.c[0];
+		$_[1].r[2] = 
+			vec1->v.c[0] * vec2->v.c[1] - 
+			vec2->v.c[0] * vec1->v.c[1];
+		v12dp /= v1len * v2len;
+		$_[1].r[3] = 
+			atan2(sqrt(1-v12dp*v12dp),v12dp);
+		printf("V12cons: (%f %f %f) (%f %f %f) %f %f %f (%f %f %f : %f)\n",
+			vec1->v.c[0], vec1->v.c[1], vec1->v.c[2],
+			vec2->v.c[0], vec2->v.c[1], vec2->v.c[2],
+			v1len, v2len, v12dp, 
+			$_[1].r[0], $_[1].r[1], $_[1].r[2], $_[1].r[3]);
+	} else if(JS_ConvertArguments(cx,argc,argv,"o d",
+		&ob1,&(pars[0])) == JS_TRUE) {
+		TJL_SFVec3f *vec;
+		    if (!JS_InstanceOf(cx, ob1, &cls_SFVec3f, argv)) {
+			die("multVec: has to be SFVec3f ");
+			return JS_FALSE;
+		    }
+		vec = JS_GetPrivate(cx,ob1);
+		$_[1].r[0] = vec->v.c[0]; 
+		$_[1].r[1] = vec->v.c[1]; 
+		$_[1].r[2] = vec->v.c[2]; 
+		$_[1].r[3] = pars[0];
+		
+	} else if(argc == 0) {
+		$_[1].r[0] = 0;
+		$_[1].r[0] = 0;
+		$_[1].r[0] = 1;
+		$_[1].r[0] = 0;
+	} else {
+		die("Invalid constructor for SFRotation");
+	}
+
+~];
 }
 
 sub js_default {
 	return "new SFRotation(0,0,1,0)"
 }
-
 
 package VRML::Field::SFBool;
 @ISA=VRML::Field;
@@ -496,6 +641,7 @@ package VRML::Field::MFRotation;
 @ISA=VRML::Field::Multi;
 
 package VRML::Field::Multi;
+@ISA=VRML::Field;
 
 sub ctype {
 	my $r = (ref $_[0] or $_[0]);
@@ -621,6 +767,8 @@ sub js_default {
 }
 
 package VRML::Field::SFNode;
+
+sub copy { return $_[1] }
 
 sub ctype {"void *$_[1]"}      # XXX ???
 sub calloc {"$_[1] = 0;"}

@@ -191,6 +191,7 @@ fonts/Baklava_.txt
 fonts/README
 fonts/baklava.ttf
 freewrl
+freewrl.PL
 java/BaseNode.java
 java/Browser.java
 java/ConstField.java
@@ -266,6 +267,7 @@ pt/snap.pl
 speed/1.wrl
 speed/2.wrl
 tests/1.wrl			Sample things
+tests/10.wrl
 tests/2.wrl
 tests/2.wrl.PL
 tests/3.wrl

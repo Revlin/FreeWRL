@@ -5,6 +5,7 @@
 # which belong under the mozilla public license.
 
 Welcome to a developer-alpha release of VRML::Browser.
+See below for what has changed.
 
 For updates, see the FreeWRL homepage, currently at 
 http://www.fas.harvard.edu/~lukka/freewrl
@@ -17,7 +18,9 @@ version.
 Textures are probably the last thing I'm going to make really well --
 if you want to change that, buy me a computer with Linux-supported
 3D acceleration for textures and you'll find them working in the next
-release ;) ;) -- or just fix the implementation yourself.
+release (even lending a machine for some months would do) ;) ;) 
+-- or just fix the implementation yourself. Same applies to a multi-threaded 
+version and multi-CPU machines ;)
 
 See the file INSTALL for how to compile this program.
 
@@ -53,6 +56,40 @@ university or company is interested. I would like to be able
 at the same time to continue free software development and research.
 
 -----------------
+V0.10 - Yea!
+ - fixed YEQ, ZEQ tests for raycasting - sensors should be more
+   reliable now when the ray is parallel to some axis. Oops.
+   Thanks for Bernhard Reiter for the report.
+ - VRML::Field::Multi ISA VRML::Field -> MF* things in PROTOs now
+   work. Thanks to John Breen for the bug report and fix.
+ - actually included tests/10.wrl (oops ;) 
+ - viewpoint fixes galore - jump=TRUE viewpoints should now work
+   completely. jump=FALSE is more difficult but luckily less used.
+   Thanks to several people for bugging me about it ;)
+ - box touchsensor now works properly even when looking on the xz plane
+ - make an environment variable FREEWRL_NO_COLORMAP to prevent
+   creation of window's own colormap - thanks to William R. Ward
+ - more documentations / organizations in the source
+ - new Walk viewer from John Breen
+ - Events.pm: ToQueue so you can send events TO a node instead of just
+   from
+
+V0.09 - bugs & docs
+ - fixed a bad parser bug, reported by Bernhard Reiter.
+   now [1 1 1,2 2 2,3 3 3] works as it is supposed to.
+ - commented VRMLC.pm and VRMLRend.pm
+ - fixed prototypes & events -- now they should finally work
+   closer to the spec
+ - new demo: tests/10.wrl which was my challenge to myself to
+   improve the javascript api to include SFVec3f and SFRotation
+   functions.
+ - as a result, JavaScript api now has SFVec3f and SFRotation
+   methods ;)
+ - now viewers should get the shift / control status as extra
+   arguments - so the Descent mode is possible to do with mouse
+   (as requested by John Breen).
+   Didn't have time to improve the descent mode yet, though.
+
 V0.08 - important details
  - using libwww-perl for getting documents from over the web.
    we can use general URLS, hurray!

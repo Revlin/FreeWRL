@@ -15,6 +15,7 @@ Downloads:
 	Mesa:		http://www.ssec.wisc.edu/~brianp/Mesa.html
 	FreeType:	http://www.freetype.org
 	libJPEG		ftp://ftp.uu.net:/graphics/jpeg/
+ 	 (note you need a fairly recent version)
 
 	gnu make, if you don't have it yet
 			any GNU archive

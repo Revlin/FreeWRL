@@ -7,7 +7,7 @@
 # Config system idea from PDL
 #
 
-$VERSION = "0.08";
+$VERSION = "0.10";
 
 BEGIN{
  eval "use 5.004";
@@ -80,6 +80,8 @@ WriteMakefile(
 	VERSION => $VERSION,
     DEFINE => $VRML_CONFIG{OPENGL_DEFINE},
     INC => $VRML_CONFIG{OPENGL_INC},
+    EXE_FILES => ['freewrl'],
+    PL_FILES => {'freewrl.PL' => 'freewrl'},
 );
 
 sub MY::postamble {
