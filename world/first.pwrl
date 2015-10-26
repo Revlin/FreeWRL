@@ -1,0 +1,36 @@
+#PerlWRL V2.0 utf8
+# A demonstration of the PWRLMAPI (Perl World Modeling API)
+# A brown hut described with PerlWRL syntax
+#
+# Adapted from
+# The VRML 2.0 Sourcebook (John Wiley & Sons, Inc.)
+# Copyright 1997 By
+# Andrea L. Ames, David R. Nadeau, and John L. Moreland
+
+Group {
+	children => [
+		# Draw the hut walls
+		Shape {
+			appearance => DEF('Brown' => Appearance {
+				material => Material {
+					diffuseColor => [0.6, 0.4, 0.0]
+				}
+			}),
+			geometry => Cylinder {
+				height => 2.0,
+				radius => 2.0
+			}
+		},
+		# Draw the hut roof
+		Transform {
+			translation => [0.0, 2.0, 0.0],
+			children => Shape {
+				appearance => USE 'Brown',
+				geometry => Cone {
+					height => 2.0,
+					bottomRadius => 2.5
+				}
+			}
+		},
+	]
+};

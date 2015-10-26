@@ -1,0 +1,46 @@
+#PerlWRL V2.0 utf8
+# A demonstration of the PWRLMAPI (Perl World Modeling API)
+# A brown hut described with PerlWRL syntax
+#
+# Adapted from
+# The VRML 2.0 Sourcebook (John Wiley & Sons, Inc.)
+# Copyright 1997 By
+# Andrea L. Ames, David R. Nadeau, and John L. Moreland
+
+# Pulsing ball
+DEF 'Ball', Transform{
+    children => Shape {
+        appearance => Appearance {
+            material => Material { }
+        },
+        geometry => Sphere { }
+    }
+};
+
+# Animation clock
+DEF 'Clock', TimeSensor {
+    cycleInterval => 2.0,
+    loop => TRUE
+};
+
+# Animation path
+DEF 'BallPath', PositionInterpolator {
+    key => [ 0.0, 0.20, 0.65, 1.0 ],
+    keyValue => [
+        [1.0, 1.0, 1.0],
+        [1.5, 1.5, 1.5],
+        [1.1, 1.1, 1.1],
+        [1.0, 1.0, 1.0],
+    ]
+};
+
+Group {
+	children => [
+        USE 'Ball',
+        USE 'BallPath',
+        USE 'Clock'
+	]
+};
+
+ROUTE 'Clock.fraction_changed', TO 'BallPath.set_fraction';
+ROUTE 'BallPath.value_changed', TO 'Ball.set_scale';
