@@ -252,7 +252,7 @@ class VRML2Export:
 		self.writeIndented("position 0.0 0.0 0.0\n")
 		# Need camera to point to -y in local space to accomodate
 		# the transforma node above
-		self.writeIndented("orientation 1.0 0.0 0.0 0.0") #%f\n" % (-math.pi/2.0))
+		self.writeIndented("orientation 1.0 0.0 0.0 0.0\n") #%f\n" % (-math.pi/2.0))
 		self.writeIndented("fieldOfView %.3f\n" % (lens))
 		self.writeIndented("}\n", -1)
 		self.writeIndented("\n")
