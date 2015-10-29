@@ -13,7 +13,7 @@ VRML::ColorMap - Generate Index From RGB Color List
 
 	VRML::ColorMap::loadCoordFromFile('coord.txt');
 
-	VRML::ColorMap::loadColorFromFile('color-set.txt');
+	VRML::ColorMap::loadColorsFromFile('color-set.txt');
 
 	VRML::ColorMap::mapColorsToCoords("heightMap"); # Output 'color.txt'
 
@@ -24,16 +24,24 @@ VRML::ColorMap - Generate Index From RGB Color List
 
 =head1 DESCRIPTION
 
-	The methods in this module require two arrays as input and produce a third 
-	array as output. The first input array is a set of references to interger
-	quartets, each of which represents a polygonal faces. The second input array 
-	is a set of references to normalized floating-point (3D) vectors, each of 
-	which represents a color in RGB space (i.e. 1.0, 0.5, 0.5). The output array 
-	is a set of interger indeces, each representing an index for an element in the 
-	array of RGB colors. The output array of indeces should have exactly as many 
-	elements as the input array of coordinates indeces.
+	The methods in this module require two arrays as input and produce a 
+	third array as output. The first input array is either a set of 
+	references to floating-point trios, each of which represents a 
+	vertex in 3D (@coord), or a set of references to interger quartets, 
+	each of which represents a polygonal face (@colorIndex). The second 
+	input array is a set of references to normalized floating-point trios, 
+	each of which represents a color in RGB space (i.e. 1.0, 0.5, 0.5). 
+	The output array is either an extended set of RGB color elements, one 
+	for each vertex, or a set of interger indices, each representing an 
+	index for an element in the initial array of RGB colors. The output 
+	array of colors should have exaclty as many color elements as the input
+	array of vertices, while the output array of color indices should have 
+	exactly as many elements as the input array of coordinate index 
+	sequences (faces).
 
 =head1 ATTRIBUTES
+
+=head2 @colors
 
 =head2 @coord 
 
@@ -49,18 +57,19 @@ VRML::ColorMap - Generate Index From RGB Color List
 
 =cut
 
-my( @coord, @coordIndex, @color, @colorIndex, $minHeight, $maxHeight ); 
+my( @colors, @coord, @coordIndex, @color, @colorIndex, $minHeight, $maxHeight ); 
 
 =head1 METHODS
 
 =head2 loadCoordFromFile( $filename )
 
 	Loads a file of the same name/path as the value of $filename and parses 
-	the file line-by-line for VRML Coordinate data. The entire data set should 
-	be delimited by square brackets and formatted as trios of floating-point 
-	values. Commas between each value are optional and will be ignored. Each 
-	line is passed to parse3FVectorArray which assigns an array reference for 
-	each floating-point triplet to a new element of the @coord array.
+	the file line-by-line for VRML Coordinate data. The entire data set 
+	should be delimited by square brackets and formatted as trios of 
+	floating-point values. Commas between each value are optional and will 
+	be ignored. Each line is passed to parse3FVectorArray which assigns an 
+	array reference for each floating-point triplet to a new element of 
+	the @coord array.
 
 =cut
 
@@ -105,11 +114,12 @@ sub loadCoordFromFile( $ ) {
 =head2 loadCoordIndexFromFile( $filename )
 
 	Loads a file of the same name/path as the value of $filename and parses 
-	the file line-by-line for VRML CoordIndex data. The entire data set should 
-	be delimited by square brackets and formatted as quartet of integer
-	values. Commas between each value are optional and will be ignored. Each 
-	line is passed to parse4IntVectorArray which assigns an array reference for 
-	each integer quartet to a new element of the @coordIndex array.
+	the file line-by-line for VRML CoordIndex data. The entire data set 
+	should be delimited by square brackets and formatted as quartets of 
+	integer values. Commas between each value are optional and will be 
+	ignored. Each line is passed to parse4IntVectorArray which assigns an 
+	array reference for each integer quartet to a new element of the 
+	@coordIndex array.
 
 =cut
 
@@ -140,18 +150,19 @@ sub loadCoordIndexFromFile( $ ) {
 	return @coordIndex;
 }
 
-=head2 loadColorFromFile( $filename )
+=head2 loadColorsFromFile( $filename )
 
 	Loads a file of the same name/path as the value of $filename and parses 
-	the file line-by-line for VRML Color data. The entire data set should be 
-	delimited by square brackets and formatted as trios of floating-point 
-	values. Commas between each value are optional and will be ignored. Each 
-	line is passed to parse3FVectorArray which assigns an array reference for 
-	each floating-point triplet to a new element of the @color array.
+	the file line-by-line for VRML Color data. The entire data set should 
+	be delimited by square brackets and formatted as trios of floating-point 
+	values. Commas between each value are optional and will be ignored. 
+	Each line is passed to parse3FVectorArray which assigns an array 
+	reference for each floating-point triplet to a new element of the 
+	@colors array.
 
 =cut
 
-sub loadColorFromFile( $ ) {
+sub loadColorsFromFile( $ ) {
 	my $filename = shift;
 	my $fh;
 	my $start = 0;
@@ -163,7 +174,7 @@ sub loadColorFromFile( $ ) {
 			$start = 1;
 		}
 		if( $start && !$end) {
-			parse3FVectorArray(\@color, $_);
+			parse3FVectorArray(\@colors, $_);
 		}
 		if( $_ =~ /\]/ ) {
 			# Outside the color array block
@@ -171,11 +182,11 @@ sub loadColorFromFile( $ ) {
 			last;
 		}
 	}
-#	print "color: ", join(" ", $_->@*), "\n" for @color;
+#	print "color: ", join(" ", $_->@*), "\n" for @colors;
 	print "Number of colors: ", ($#color + 1), "\n";
 	close $fh;
 	
-	return @color;
+	return @colors;
 }
 
 =head2 parse3FVectorArray( $refToArray, $lineOfData )
@@ -204,9 +215,9 @@ sub parse3FVectorArray( @ ) {
 
 =head2 parse4IntVectorArray( $refToArray, $lineOfData )
 
-	Parses the given $lineOfData for quartets of integer values and
-	assigns a reference for an array of each quartet to a new element in 
-	the array given by $refToArray.
+	Parses the given $lineOfData for quartets of integer values and assigns 
+	a reference for an array of each quartet to a new element in the array 
+	given by $refToArray.
 
 =cut
 
@@ -239,47 +250,54 @@ sub parse4IntVectorArray( @ ) {
 
 =head2 mapColorsToCoords( [$] )
 
-	Adds exactly one element to the @colorIndex array for each element in 
-	the @coord array. Each value in @colorIndex is a refernce to a color 
-	element in the @color array. The resulting @colorIndex array is printed to a
-	file on disk called 'color.txt'.
+	Adds exactly one element to the @color array for each element in 
+	the @coord array. Each value in @color is a refernce to a color array 
+	element in the @colors array. The optional argument is a string which 
+	names one of the available mapping routines.
+	
+	The concept here is that within a VRML geometry node the colorPerVertex
+	fields is set to TRUE, the colorIndex field is empty ([]) and therefore 
+	this color array can be used as the color field of a Color node to 
+	indicate a specific color for each of the vertices in the point field 
+	of the Coordinate node (coord Coordinate { point [...] }).The resulting 
+	@color array is printed to a file on disk called 'color.txt'.  
 	
 =cut
 
 sub mapColorsToCoords {
 	my $map = shift;
-	my $clength = @color;
+	my $clength = @colors;
 	my $fh;
 	
 	if( $map =~ /(?:defaultMap|heightMap)/ ) {
-		&{$map}(\@color, \@coord);
+		&{$map}(\@colors, \@coord);
 	} else {
-		defaultMap(\@color, \@coord);
+		defaultMap(\@colors, \@coord);
 	}
 	
 	open $fh, '>', 'color.txt';
 	print $fh "[\n";
-#		print "colorIndex: ", join(" ", $_->@*), ",\n" for @colorIndex;
-		print $fh "\t", join(" ", $_->@*), ",\n" for @colorIndex;
+#		print "colorIndex: ", join(" ", $_->@*), ",\n" for @color;
+		print $fh "\t", join(" ", $_->@*), ",\n" for @color;
 	print $fh "]\n";
 	close $fh;
 	
-	print "Length of colorIndex: ", ($#colorIndex + 1), "\n";
+	print "Length of colorIndex: ", ($#color + 1), "\n";
 
-	return @colorIndex;
+	return @color;
 }
 
 =head2 mapColorsToFaces
 
 	Adds exactly one element to the @colorIndex array for each element in 
-	the @coordIndex array. Each value in @colorIndex is an index for a color 
-	element in the @color array. The resulting @colorIndex array is printed to a
-	file on disk called 'colorIndex.txt'.
+	the @coordIndex array. Each value in @colorIndex is an integer index 
+	for a color element in the @colors array. The resulting @colorIndex 
+	array is printed to a file on disk called 'colorIndex.txt'.
 	
 =cut
 
 sub mapColorsToFaces {
-	my $clength = @color;
+	my $clength = @colors;
 	my $cidx = 0;
 	my $fh;
 	
@@ -300,18 +318,20 @@ sub mapColorsToFaces {
 	return @colorIndex;
 }
 
-=head2 defaultMap( $refToColorArray, $index )
+=head2 defaultMap( \@colors, $geoms )
 
-	Maps colors from $refToColorArray to each element in $index
+	Maps colors from @colors to each element in $geoms, which could either
+	represent a list of vertices or a list of polygons, respectively 
+	depending on whether a reference to @coord or @coordIndex is passed.
 
 =cut
 
 sub defaultMap( @ ) {
-	my @color = @{+shift}; 
-	my @index = @{+shift};
+	my @colors = @{+shift}; 
+	my @geoms = @{+shift};
 	my $cidx = 0;
 	
-	foreach ( @index ) {
+	foreach ( @geoms ) {
 		push @colorIndex, $color[($cidx++)];
 		$cidx = 0 if( $cidx > $#color );
 	}
@@ -319,22 +339,27 @@ sub defaultMap( @ ) {
 	return @colorIndex;
 }
 
-=head2 heightMap( $refToColorArray, $index )
+=head2 heightMap( \@colors, $geoms )
 
-	Maps colors from $refToColorArray to each element in $index by 
-	foremost color to lowest y coordinate.
+	Maps colors from @colors to each element in $geoms, which could either
+	represent a list of vertices or a list of polygons, respectively 
+	depending on whether a reference to @coord or @coordIndex is passed. 
+	This mapping divides the height range of the geometry into as many 
+	sections as there are color elements in @colors. The last to the first 
+	color in @colors is assigned from the spacially lowest to the highest 
+	elements of geometry as demarcated by $heightMin and $heightMax.
 
 =cut
 
 sub heightMap( @ ) {
-	my @color = @{+shift}; 
-	my @index = @{+shift};
+	my @colors = @{+shift}; 
+	my @geoms = @{+shift};
 	my $cidx = 0;
-	my $cRange = @color;
+	my $cRange = @colors;
 	my $heightRange = $maxHeight - $minHeight;
 	my @heightBand;
 	
-	foreach (@color) {
+	foreach (@colors) {
 		push @heightBand, ($cidx*$heightRange/$cRange + $minHeight);
 		$cidx++;
 	}
@@ -342,7 +367,7 @@ sub heightMap( @ ) {
 	$cidx = 0;	
 	(print "heightBand". $cidx++ .": $_\n" ) foreach @heightBand;
 	
-	foreach ( @index ) {
+	foreach ( @geoms ) {
 		my $coord = $_;
 		$cidx = -1;
 		foreach ( @heightBand ) {
