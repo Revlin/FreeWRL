@@ -3,17 +3,35 @@
 
 #########################
 
-# change 'tests => 1' to 'tests => last_test_to_print';
-
+package PerWRL::Test;
+use 5.20.2;
 use strict;
-use warnings;
 
-use Test::More tests => 1;
-BEGIN { 
-	chdir 't' if -d 't'; 	# Change to the test directory
-	use lib '../lib';		# Set the location of the library
-	use_ok('PerlWRL'); 		# Test that library loads
-};
+# change 'tests => 1' to 'tests => last_test_to_print';
+use Test::More;
+use constant libDir => '../lib';
+
+BEGIN {
+	chdir 't' if -d 't'; 		# Change to the test directory
+	use lib libDir;			# Set the location of the library
+	use_ok('PerlWRL'); 			# Test that library loads
+	$PerlWRL::Test::ALL = 1;
+	
+	eval('use Test::Pod');
+	$PerWRL::Test::POD = 1; 	# Test POD docs by default
+	$PerWRL::Test::POD = 0 
+		if(  "$@" ); 			# Skip POD docs if Test::Pod is not available;
+}
+
+if( $PerWRL::Test::POD ) {
+	pod_file_ok(libDir .'/PerlWRL.pm');
+	pod_file_ok(libDir .'/PerlWRL/vrml.pm');
+}
+
+require_ok('VRML/ColorMap.t');
+&$PerlWRL::Test::ColorMap();
+
+done_testing();
 
 #########################
 
