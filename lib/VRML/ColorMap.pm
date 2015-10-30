@@ -78,6 +78,9 @@ sub loadCoordFromFile( $ ) {
 	my $fh;
 	my $start = 0;
 	my $end = 0;
+	
+	die "loadCoordFromFile requires the name of a coord file\n" if(! $filename );
+	
 	open $fh, '<', $filename;
 	while(<>) {
 		if( $_ =~ /\[/ ) {
@@ -128,6 +131,9 @@ sub loadCoordIndexFromFile( $ ) {
 	my $fh;
 	my $start = 0;
 	my $end = 0;
+	
+	die "loadCoordIndexFromFile requires the name of a coordIndex file\n" if(! $filename );
+	
 	open $fh, '<', $filename;
 	while(<>) {
 		if( $_ =~ /\[/ ) {
@@ -167,6 +173,9 @@ sub loadColorsFromFile( $ ) {
 	my $fh;
 	my $start = 0;
 	my $end = 0;
+	
+	die "loadColorsFromFile requires the name of a colors file\n" if(! $filename );
+	
 	open $fh, '<', $filename;
 	while(<>) {
 		if( $_ =~ /\[/ ) {
@@ -183,7 +192,7 @@ sub loadColorsFromFile( $ ) {
 		}
 	}
 #	print "color: ", join(" ", $_->@*), "\n" for @colors;
-	print "Number of colors: ", ($#color + 1), "\n";
+	print "Number of colors: ", ($#colors + 1), "\n";
 	close $fh;
 	
 	return @colors;
@@ -277,12 +286,12 @@ sub mapColorsToCoords {
 	
 	open $fh, '>', 'color.txt';
 	print $fh "[\n";
-#		print "colorIndex: ", join(" ", $_->@*), ",\n" for @color;
+		print "color: ", join(" ", $_->@*), ",\n" for @color;
 		print $fh "\t", join(" ", $_->@*), ",\n" for @color;
 	print $fh "]\n";
 	close $fh;
 	
-	print "Length of colorIndex: ", ($#color + 1), "\n";
+	print "Length of color: ", ($#color + 1), "\n";
 
 	return @color;
 }
@@ -332,11 +341,11 @@ sub defaultMap( @ ) {
 	my $cidx = 0;
 	
 	foreach ( @geoms ) {
-		push @colorIndex, $color[($cidx++)];
+		push @color, $color[($cidx++)];
 		$cidx = 0 if( $cidx > $#color );
 	}
 
-	return @colorIndex;
+	return @color;
 }
 
 =head2 heightMap( \@colors, $geoms )
@@ -375,11 +384,11 @@ sub heightMap( @ ) {
 		}
 		$cidx = $#color if( $cidx > $#color );
 		$cidx = 0 if( $cidx < 0 );
-#		print "Use heightBand$cidx (", join(" ", $color[$cidx]->@*) ,") for y=", $coord->[2], "\n";
-		push @colorIndex, $color[$cidx];
+#		print "Use heightBand$cidx (", join(" ", $colors[$cidx]->@*) ,") for y=", $coord->[2], "\n";
+		push @color, $colors[$cidx];
 	}
 
-	return @colorIndex;
+	return @color;
 }
 
 =head1 SEE ALSO
