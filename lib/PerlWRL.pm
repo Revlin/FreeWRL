@@ -1,5 +1,5 @@
 package PerlWRL;
-use 5.10.1;
+use 5.20.2;
 use strict;
 use warnings;
 

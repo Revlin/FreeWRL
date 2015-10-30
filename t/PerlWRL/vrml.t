@@ -1,9 +1,9 @@
-package VRML::Test::ColorMap;
+package PerWRL::Test;
 use 5.20.2;
 use strict;
 
 BEGIN {
-	unless( defined $VRML::Test::ALL ) {
+	unless( defined $PerlWRL::Test::ALL ) {
 		use Test::More;
 		eval('use constant libDir => qw(lib)');
 		eval('use Test::Pod');
@@ -13,14 +13,14 @@ BEGIN {
 	} 
 }
 
-$VRML::Test::ColorMap = sub {	
+$PerlWRL::Test::vrml = sub {	
 	if( $PerWRL::Test::POD ) {
-		pod_file_ok(libDir .'/VRML/ColorMap.pm');
+		pod_file_ok(libDir .'/PerlWRL/vrml.pm');
 	}
 };
 
-unless( defined $VRML::Test::ALL ) {
-	&$VRML::Test::ColorMap;
+unless( defined $PerlWRL::Test::ALL ) {
+	&$PerlWRL::Test::vrml;
 
 	done_testing();
 }
