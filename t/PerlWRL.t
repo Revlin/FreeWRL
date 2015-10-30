@@ -9,7 +9,11 @@ use strict;
 use warnings;
 
 use Test::More tests => 1;
-BEGIN { use_ok('PerlWRL') };
+BEGIN { 
+	chdir 't' if -d 't'; 	# Change to the test directory
+	use lib '../lib';		# Set the location of the library
+	use_ok('PerlWRL'); 		# Test that library loads
+};
 
 #########################
 
