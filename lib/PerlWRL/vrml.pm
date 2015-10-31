@@ -133,10 +133,14 @@ sub PositionInterpolator {
 sub ROUTE { return $VRML .= "\n". "ROUTE"; }
 sub TO { return $VRML .= "\n". "TO"; }
 
-sub see {
-    my( $self, $name ) = @_;
-    my $pwrl = do($name .'.pwrl');
+sub examine {
+    my( $self, $name ) = ($_[0], ($_[1] =~ /([A-Za-z0-9|\-|\_|\,|\.|\s|\/]+\.pwrl$)/));
+    my $pwrl;
+	eval {
+		$pwrl = do $name;
+	};
 	print "\n";
+	return 0 if( $@ );
 
     if( $pwrl ) {
         say $VRML;

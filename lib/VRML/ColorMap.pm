@@ -1,4 +1,6 @@
 package VRML::ColorMap;
+use 5.20.2;
+use strict;
 use feature qw(postderef);
 
 =encoding utf8

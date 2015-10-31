@@ -1,19 +1,20 @@
 #!/usr/bin/env perl
-use 5.10.1;
+use 5.20.2;
 use strict;
 use warnings;
 
 use lib 'lib';
 use PerlWRL::vrml;
 
-if( defined $ARGV[0] && $ARGV[0] =~ /see/ && PerlWRL::vrml->see($ARGV[1]) ) {
-
-} else {
+sub instructions {
     print <<INSTRUCTIONS;
     'see' a PerlWRL(.pwrl):\n
     Ex.
-        ./vrml.pl see first
+        examine world/first.pwrl
 
 INSTRUCTIONS
 
+	exit 0;
 }
+
+instructions() unless( defined $ARGV[0] && PerlWRL::vrml->examine(+shift) );
