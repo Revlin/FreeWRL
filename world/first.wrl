@@ -1,0 +1,3 @@
+﻿#VRML V2.0 utf8
+
+Group { children [ Shape { appearance DEF Brown Appearance { material Material { diffuseColor 0.6 0.4 0  } } geometry Cylinder { radius 2 height 2 } } Transform { children [ Shape { geometry Cone { height 2 bottomRadius 2.5 } appearance USE Brown } ] translation 0 2 0  } ] }
